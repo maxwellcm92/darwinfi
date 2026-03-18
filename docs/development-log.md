@@ -142,21 +142,73 @@
 
 ---
 
+
+## Session 4: Cost-Optimized Launch (Paper Trading MVP)
+
+**Objective:** Get DarwinFi paper trading ASAP for the agentic judge review (March 18). The original architecture required Anthropic and Venice API keys for every market tick -- ~28K API calls/day at ~$65-75/2wk. Redesigned the signal evaluation pipeline to use Claude Code Max subscription (free CLI calls) for high-frequency signals, reserving paid Venice API for low-frequency evolution only.
+
+### Architecture Change
+
+**Before (expensive):**
+```
+Every 30s: Venice API (paid) -> entry/exit signals (~28K calls/day)
+Every 4h:  Anthropic API (paid) -> strategy evolution (~18 calls/day)
+```
+
+**After (cost-optimized):**
+```
+Every 30s:  Rule-based checks only (hard stops, take profits) -- FREE
+Every 2min: Claude CLI subscription -> batch entry/exit signals -- FREE
+Every 4h:   Venice API -> strategy evolution (sponsor showcase) -- ~$0.30/day
+```
+
+**Cost impact:** ~$65-75/2wk drops to ~$2-5/2wk total.
+
+### Key Decisions
+
+- **Three-tier loop architecture.** Split the monolithic 30s main loop into three tiers: fast tick (30s, prices + rule-based stops), signal tick (2min, Claude CLI batch AI evaluation), evolution tick (4h, Venice API). Each tier runs at the frequency appropriate for its cost profile.
+
+- **Claude CLI as signal engine.** Created `ClaudeCliEngine` that spawns `claude -p --model claude-haiku-4-5-20251001` via `child_process.execSync()` for entry/exit signal evaluation. Batch mode evaluates all positions/candidates in a single CLI call instead of N individual API calls. Free via Claude Code Max subscription.
+
+- **Venice API for evolution only (sponsor showcase).** Evolution engine swapped from Anthropic SDK (`@anthropic-ai/sdk`) to OpenAI-compatible SDK (`openai`) pointing at `https://api.venice.ai/api/v1` with `llama-3.3-70b`. This ensures Venice AI (a hackathon sponsor) is prominently used while keeping costs minimal (~6 calls/day).
+
+- **Removed Anthropic API key dependency.** The agent no longer requires `ANTHROPIC_API_KEY` to start. Evolution uses Venice; signals use Claude CLI.
+
+### What Claude Code Built
+
+**New file:**
+- `claude-cli-engine.ts` -- Claude CLI wrapper implementing the same interface as VeniceEngine (`evaluateEntry()`, `evaluateExit()`, `recommendTokens()`). Batch mode: takes arrays of snapshots/positions, returns arrays of signals from a single CLI call. 30-second timeout. Handles JSON envelope parsing from `claude -p --output-format json`.
+
+**Modified files:**
+- `evolution-engine.ts` -- Replaced `@anthropic-ai/sdk` import with `openai`. Pointed client at Venice API (`https://api.venice.ai/api/v1`). Swapped `client.messages.create()` for `client.chat.completions.create()`. Higher temperature (0.7) for creative evolution.
+- `darwin-agent.ts` -- Replaced `VeniceEngine` with `ClaudeCliEngine` for signal evaluation. Split `mainLoopIteration()` into fast tick / signal tick / evolution tick. Added `SIGNAL_INTERVAL_SEC` config. Separated exit evaluation into `evaluateRuleBasedExits()` (every 30s, free) and `evaluateAiExits()` (every 2min, CLI). Removed `ANTHROPIC_API_KEY` requirement.
+- `.env` -- Added `VENICE_API_KEY`, `SIGNAL_INTERVAL_SEC=120`, `PRIVATE_KEY` (dummy for paper trading chain client init). Removed `ANTHROPIC_API_KEY`.
+
+### Deployment
+
+- Removed standalone `darwinfi-dashboard` PM2 process (port conflict with agent's built-in dashboard).
+- Registered `darwinfi` with PM2 for persistence.
+- Dashboard serving at `https://darwinfi.corduroycloud.com` (port 3502).
+- Agent running in DRY_RUN mode with 12 strategies, live strategy: main-alpha.
+
+**Code Impact:** 1 file created, 3 files modified. Agent now starts and paper trades without any paid API keys.
+
+---
 ## Technical Summary
 
 | Metric | Value |
 |--------|-------|
-| Source files | 24 |
+| Source files | 25 |
 | Lines of code | 7,635 |
 | Smart contracts | 3 (Solidity) |
 | TypeScript modules | 18 |
 | Trading strategies | 12 (3 main + 9 variations) |
 | Token pairs | 6 (ETH, USDC, UNI, wstETH, ENS, AERO) |
 | Chains supported | 2 (Base, Celo) |
-| AI models integrated | 2 (Claude for evolution, Venice AI for execution) |
+| AI models integrated | 3 (Claude CLI for signals, Venice AI for evolution, Claude Haiku for batch eval) |
 | Sponsor integrations | 7 (Base, Uniswap, Venice AI, Celo, ENS, Filecoin, Locus) |
-| Git commits | 4 |
-| Build time | ~2 hours |
+| Git commits | 5 |
+| Build time | ~2.5 hours |
 
 ---
 

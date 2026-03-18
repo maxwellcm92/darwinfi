@@ -44,8 +44,15 @@ let state: DashboardState = {
   evolutionHistory: [],
 };
 
+// Conversation log entries (populated by the agent)
+let conversationLogEntries: unknown[] = [];
+
 export function updateDashboardState(newState: Partial<DashboardState>): void {
   state = { ...state, ...newState };
+}
+
+export function updateConversationLog(entries: unknown[]): void {
+  conversationLogEntries = entries;
 }
 
 export function startDashboard(port: number = 3500): void {
@@ -67,6 +74,17 @@ export function startDashboard(port: number = 3500): void {
 
   app.get("/api/evolution", (_req, res) => {
     res.json(state.evolutionHistory);
+  });
+
+  app.get("/api/conversation-log", (req, res) => {
+    const type = req.query.type as string | undefined;
+    const limit = parseInt(req.query.limit as string || '200', 10);
+
+    let entries = conversationLogEntries as Array<Record<string, unknown>>;
+    if (type && type !== 'all') {
+      entries = entries.filter(e => e.type === type);
+    }
+    res.json(entries.slice(-limit));
   });
 
   app.get("/api/health", (_req, res) => {

@@ -203,7 +203,7 @@ CONSTRAINTS:
 - entryThreshold: depends on method (RSI: 10-40, EMA: 0.1-2.0, Bollinger: 1.0-3.0, MACD: -5 to 5, Volume: 1.5-5.0)
 - riskPerTradePct: 0.5-5.0
 - maxPositions: 1-6
-- tokenPreferences: from [WETH, cbBTC, USDC, DAI, AERO, DEGEN, BRETT, TOSHI]
+- tokenPreferences: from [ETH, USDC, UNI, wstETH, ENS, AERO]
 
 RESPOND WITH ONLY a JSON object in this exact format:
 {

@@ -6,6 +6,11 @@
  *   - Evolution Engine (Claude API for strategy mutation)
  *   - Venice Engine (real-time market analysis)
  *   - Performance Tracker (composite fitness scoring)
+ *   - Price Feed (Uniswap V3 on-chain quotes)
+ *   - Live Engine (on-chain trade execution)
+ *   - Dashboard (Express web UI)
+ *   - State Persistence (JSON file-based)
+ *   - Conversation Log (agent decision audit trail)
  *
  * Main loop: check prices -> evaluate signals -> execute trades -> check evolution timer
  * Evolution triggers: every N hours OR after M completed trades (whichever first)
@@ -18,6 +23,12 @@ import { PerformanceTracker, TradeRecord } from './performance';
 import { StrategyManager, StrategyGenome } from './strategy-manager';
 import { EvolutionEngine } from './evolution-engine';
 import { VeniceEngine, MarketSnapshot, EntrySignal, ExitSignal } from './venice-engine';
+import { PriceFeed, TOKEN_UNIVERSE } from '../trading/price-feed';
+import { UniswapClient } from '../trading/uniswap-client';
+import { LiveEngine } from '../trading/live-engine';
+import { StatePersistence, PersistedState } from './state-persistence';
+import { ConversationLog } from './conversation-log';
+import { startDashboard, updateDashboardState, updateConversationLog, DashboardState } from '../dashboard/server';
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -30,6 +41,7 @@ interface AgentConfig {
   minTradesForEvolution: number;
   pollIntervalMs: number;
   dryRun: boolean;
+  dashboardPort: number;
 }
 
 function loadConfig(): AgentConfig {
@@ -52,23 +64,9 @@ function loadConfig(): AgentConfig {
     minTradesForEvolution: minTrades * 2, // 10 trades = 2x the promotion minimum
     pollIntervalMs: 30_000, // 30 seconds between market checks
     dryRun: process.env.DRY_RUN === 'true',
+    dashboardPort: parseInt(process.env.DASHBOARD_PORT || '3500', 10),
   };
 }
-
-// ---------------------------------------------------------------------------
-// Token Universe (approved tokens for trading on Base)
-// ---------------------------------------------------------------------------
-
-const TOKEN_UNIVERSE: Record<string, { address: string; decimals: number }> = {
-  WETH: { address: '0x4200000000000000000000000000000000000006', decimals: 18 },
-  cbBTC: { address: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf', decimals: 8 },
-  USDC: { address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals: 6 },
-  DAI: { address: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', decimals: 18 },
-  AERO: { address: '0x940181a94A35A4569E4529A3CDfB74e38FD98631', decimals: 18 },
-  DEGEN: { address: '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed', decimals: 18 },
-  BRETT: { address: '0x532f27101965dd16442E59d40670FaF5eBB142E4', decimals: 18 },
-  TOSHI: { address: '0xAC1Bd2486aAf3B5C0fc3Fd868558b082a531B2B4', decimals: 18 },
-};
 
 // ---------------------------------------------------------------------------
 // DarwinAgent
@@ -80,12 +78,17 @@ class DarwinAgent {
   private strategyManager: StrategyManager;
   private evolutionEngine: EvolutionEngine;
   private veniceEngine: VeniceEngine;
+  private priceFeed: PriceFeed;
+  private liveEngine: LiveEngine;
+  private statePersistence: StatePersistence;
+  private conversationLog: ConversationLog;
 
   private running: boolean = false;
   private lastEvolutionTime: Date = new Date();
   private tradesAtLastEvolution: number = 0;
   private tradeIdCounter: number = 0;
   private loopCount: number = 0;
+  private startTime: Date = new Date();
 
   constructor(config: AgentConfig) {
     this.config = config;
@@ -93,6 +96,15 @@ class DarwinAgent {
     this.strategyManager = new StrategyManager(this.performanceTracker);
     this.evolutionEngine = new EvolutionEngine(config.anthropicApiKey);
     this.veniceEngine = new VeniceEngine(config.veniceApiKey);
+
+    // Trading infrastructure
+    const uniswap = new UniswapClient();
+    this.priceFeed = new PriceFeed(uniswap);
+    this.liveEngine = new LiveEngine(undefined, { uniswap, priceFeed: this.priceFeed });
+
+    // Persistence
+    this.statePersistence = new StatePersistence();
+    this.conversationLog = new ConversationLog();
   }
 
   /**
@@ -108,26 +120,55 @@ class DarwinAgent {
     console.log(`[DarwinFi] Evolution trade trigger: ${this.config.minTradesForEvolution} trades`);
     console.log(`[DarwinFi] Poll interval: ${this.config.pollIntervalMs / 1000}s`);
 
-    // Initialize strategy population
-    this.strategyManager.initialize();
+    this.conversationLog.system('agent', 'DarwinFi agent starting', {
+      mode: this.config.dryRun ? 'dry_run' : 'live',
+      evolutionInterval: this.config.evolutionIntervalMs,
+      pollInterval: this.config.pollIntervalMs,
+    });
+
+    // Try to load saved state
+    const savedState = this.statePersistence.load();
+    if (savedState) {
+      this.loadState(savedState);
+      this.conversationLog.system('agent', 'Resumed from saved state', {
+        savedAt: savedState.savedAt,
+        strategies: savedState.strategies?.length || 0,
+      });
+    } else {
+      // Initialize fresh strategy population
+      this.strategyManager.initialize();
+      this.conversationLog.system('agent', 'Initialized fresh strategy population (12 strategies)');
+    }
 
     this.running = true;
+    this.startTime = new Date();
     this.lastEvolutionTime = new Date();
     this.tradesAtLastEvolution = 0;
+
+    // Start dashboard
+    startDashboard(this.config.dashboardPort);
+    this.conversationLog.system('dashboard', `Dashboard started on port ${this.config.dashboardPort}`);
+
+    // Start conversation log periodic flush
+    this.conversationLog.startPeriodicFlush(30_000);
+
+    // Start auto-save
+    this.statePersistence.startAutoSave(() => this.buildPersistedState());
 
     // Register shutdown handlers
     this.registerShutdownHandlers();
 
     // Main loop
     console.log('[DarwinFi] Entering main loop...');
+    this.conversationLog.system('agent', 'Entering main trading loop');
     while (this.running) {
       try {
         await this.mainLoopIteration();
+        this.updateDashboard();
       } catch (err) {
-        console.error(
-          '[DarwinFi] Error in main loop iteration:',
-          err instanceof Error ? err.message : err,
-        );
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error('[DarwinFi] Error in main loop iteration:', msg);
+        this.conversationLog.error('agent', `Main loop error: ${msg}`);
         // Don't crash on single iteration failure -- keep going
       }
       await this.sleep(this.config.pollIntervalMs);
@@ -142,6 +183,15 @@ class DarwinAgent {
   async stop(): Promise<void> {
     console.log('[DarwinFi] Shutdown requested...');
     this.running = false;
+
+    // Save state
+    this.statePersistence.stopAutoSave();
+    this.statePersistence.save(this.buildPersistedState());
+
+    // Flush conversation log
+    this.conversationLog.stopPeriodicFlush();
+    this.conversationLog.system('agent', 'Agent shutting down');
+    this.conversationLog.flushToDisk();
 
     // Close any open positions in sell-only mode
     const liveStrategy = this.strategyManager.getLiveStrategy();
@@ -203,56 +253,42 @@ class DarwinAgent {
   // -------------------------------------------------------------------------
 
   /**
-   * Fetch market snapshots for all tokens in the universe.
-   * TODO: Replace with real price feed (DEX subgraph, Coingecko, on-chain oracle).
+   * Fetch market snapshots for all tokens in the universe using real price feeds.
    */
   private async fetchMarketSnapshots(): Promise<MarketSnapshot[]> {
     const snapshots: MarketSnapshot[] = [];
+    const symbols = Object.keys(TOKEN_UNIVERSE).filter(s => s !== 'USDC'); // Skip USDC as a trading target
 
-    for (const [symbol, info] of Object.entries(TOKEN_UNIVERSE)) {
+    for (const symbol of symbols) {
       try {
-        // Placeholder: in production, this fetches from DEX price feeds or oracles
-        const snapshot = await this.fetchTokenSnapshot(symbol, info.address);
-        if (snapshot) {
-          snapshots.push(snapshot);
+        const priceData = await this.priceFeed.getPrice(symbol);
+        if (priceData && priceData.priceUsd > 0) {
+          snapshots.push({
+            token: symbol,
+            price: priceData.priceUsd,
+            priceChange1h: 0,
+            priceChange24h: 0,
+            volume24h: 0,
+            volumeChange: 0,
+            high24h: 0,
+            low24h: 0,
+          });
         }
       } catch (err) {
         console.warn(
-          `[DarwinFi] Failed to fetch snapshot for ${symbol}:`,
+          `[DarwinFi] Failed to fetch price for ${symbol}:`,
           err instanceof Error ? err.message : err,
         );
       }
     }
 
+    if (snapshots.length > 0 && this.loopCount % 10 === 1) {
+      console.log(
+        `[DarwinFi] Prices: ${snapshots.map(s => `${s.token}=$${s.price.toFixed(2)}`).join(' | ')}`
+      );
+    }
+
     return snapshots;
-  }
-
-  /**
-   * Fetch a single token's market snapshot.
-   * TODO: Implement real price feed integration.
-   */
-  private async fetchTokenSnapshot(
-    symbol: string,
-    _address: string,
-  ): Promise<MarketSnapshot | null> {
-    // PLACEHOLDER: This needs to be replaced with actual market data fetching.
-    // For now, return a synthetic snapshot to allow the agent loop to function.
-    // Integration points:
-    //   - Uniswap V3 Subgraph for pool prices/volume
-    //   - On-chain oracle reads via ethers.js
-    //   - Technical indicator calculation from OHLCV candles
-    console.log(`[DarwinFi] [STUB] Fetching market data for ${symbol}`);
-
-    return {
-      token: symbol,
-      price: 0,
-      priceChange1h: 0,
-      priceChange24h: 0,
-      volume24h: 0,
-      volumeChange: 0,
-      high24h: 0,
-      low24h: 0,
-    };
   }
 
   // -------------------------------------------------------------------------
@@ -280,6 +316,14 @@ class DarwinAgent {
     let recommendations;
     try {
       recommendations = await this.veniceEngine.recommendTokens(liveStrategy, relevantSnapshots);
+      this.conversationLog.aiCall(
+        'venice',
+        `Token recommendations for ${liveStrategy.id}`,
+        'llama-3.3-70b',
+        `Recommend tokens for ${liveStrategy.name}`,
+        `${recommendations.length} recommendations returned`,
+        { recommendations: recommendations.map(r => ({ token: r.token, score: r.score })) },
+      );
     } catch (err) {
       console.warn(
         '[DarwinFi] Venice token recommendation failed:',
@@ -305,6 +349,11 @@ class DarwinAgent {
         const signal = await this.veniceEngine.evaluateEntry(liveStrategy, snapshot);
 
         if (signal.action === 'buy' && signal.confidence >= 60) {
+          this.conversationLog.decision(
+            'agent',
+            `BUY signal: ${snapshot.token} @ $${snapshot.price.toFixed(2)} (confidence: ${signal.confidence})`,
+            { strategy: liveStrategy.id, signal },
+          );
           await this.executeBuy(liveStrategy, signal, snapshot);
         } else {
           console.log(
@@ -374,13 +423,17 @@ class DarwinAgent {
             `[DarwinFi] Venice EXIT signal for ${position.token}: ` +
             `confidence=${exitSignal.confidence} reason="${exitSignal.reasoning}"`
           );
+          this.conversationLog.decision(
+            'agent',
+            `SELL signal (Venice): ${position.token} (confidence: ${exitSignal.confidence})`,
+            { strategy: strategy.id, exitSignal },
+          );
           await this.executeSell(strategy, position, snapshot.price, 'venice_signal');
         } else if (exitSignal.action === 'tighten_stop' && exitSignal.newStopPrice) {
           console.log(
             `[DarwinFi] Venice TIGHTEN STOP for ${position.token}: ` +
             `new stop=$${exitSignal.newStopPrice}`
           );
-          // In a full implementation, update the trailing stop here
         }
       } catch (err) {
         console.warn(
@@ -428,10 +481,31 @@ class DarwinAgent {
       `target=$${signal.suggestedTarget.toFixed(4)}`
     );
 
+    // Execute live trade if not dry run and strategy is live
     if (!this.config.dryRun && strategy.status === 'live') {
-      // TODO: Execute real trade via Uniswap V3 router
-      // const tx = await this.executeSwap(TOKEN_UNIVERSE[signal.token].address, ...);
-      console.log(`[DarwinFi] [TODO] Real trade execution not yet implemented`);
+      try {
+        const result = await this.liveEngine.executeLiveTrade({
+          strategyId: strategy.id,
+          action: 'buy',
+          tokenSymbol: signal.token,
+          amount: signal.suggestedSize * 0.25, // Scale by $25 budget per strategy
+          slippageTolerance: 0.01,
+        });
+        if (result.success) {
+          this.conversationLog.trade('live-engine', `Live BUY executed: ${signal.token}`, {
+            txHash: result.txHash,
+            amountIn: result.amountIn,
+            amountOut: result.amountOut,
+            gasUsed: result.gasUsed,
+          });
+        } else {
+          this.conversationLog.error('live-engine', `Live BUY failed: ${result.error}`);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[DarwinFi] Live trade execution failed: ${msg}`);
+        this.conversationLog.error('live-engine', `Live trade failed: ${msg}`);
+      }
     }
 
     // Record the trade (paper or live)
@@ -448,6 +522,19 @@ class DarwinAgent {
     };
 
     this.performanceTracker.recordTrade(trade);
+
+    this.conversationLog.trade(
+      'agent',
+      `${this.config.dryRun ? '[DRY RUN] ' : ''}BUY ${signal.token} @ $${snapshot.price.toFixed(2)}`,
+      {
+        tradeId,
+        strategy: strategy.id,
+        token: signal.token,
+        price: snapshot.price,
+        confidence: signal.confidence,
+        mode: this.config.dryRun ? 'paper' : 'live',
+      },
+    );
   }
 
   private async executeSell(
@@ -462,9 +549,31 @@ class DarwinAgent {
       `reason=${reason} | strategy=${strategy.id}`
     );
 
+    // Execute live sell if not dry run and strategy is live
     if (!this.config.dryRun && strategy.status === 'live') {
-      // TODO: Execute real sell via Uniswap V3 router
-      console.log(`[DarwinFi] [TODO] Real trade execution not yet implemented`);
+      try {
+        const result = await this.liveEngine.executeLiveTrade({
+          strategyId: strategy.id,
+          action: 'sell',
+          tokenSymbol: position.token,
+          amount: 'max',
+          slippageTolerance: 0.01,
+        });
+        if (result.success) {
+          this.conversationLog.trade('live-engine', `Live SELL executed: ${position.token}`, {
+            txHash: result.txHash,
+            amountIn: result.amountIn,
+            amountOut: result.amountOut,
+            reason,
+          });
+        } else {
+          this.conversationLog.error('live-engine', `Live SELL failed: ${result.error}`);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[DarwinFi] Live sell execution failed: ${msg}`);
+        this.conversationLog.error('live-engine', `Live sell failed: ${msg}`);
+      }
     }
 
     // Close the trade in the tracker
@@ -480,6 +589,20 @@ class DarwinAgent {
       console.log(
         `[DarwinFi] Trade closed: ${closedTrade.token} PnL=$${closedTrade.pnl?.toFixed(4)} ` +
         `(${closedTrade.pnlPct?.toFixed(2)}%)`
+      );
+      this.conversationLog.trade(
+        'agent',
+        `${this.config.dryRun ? '[DRY RUN] ' : ''}SELL ${position.token} @ $${currentPrice.toFixed(2)} (PnL: ${closedTrade.pnlPct?.toFixed(2)}%)`,
+        {
+          tradeId: position.id,
+          strategy: strategy.id,
+          token: position.token,
+          entryPrice: position.entryPrice,
+          exitPrice: currentPrice,
+          pnl: closedTrade.pnl,
+          pnlPct: closedTrade.pnlPct,
+          reason,
+        },
       );
     }
   }
@@ -554,6 +677,12 @@ class DarwinAgent {
         `trades_since=${tradessinceLastEvolution})`
       );
 
+      this.conversationLog.evolution(
+        'agent',
+        `Evolution cycle triggered by ${trigger}`,
+        { elapsed: msSinceLastEvolution, tradesSince: tradessinceLastEvolution },
+      );
+
       try {
         const report = await this.evolutionEngine.runEvolutionCycle(
           this.strategyManager,
@@ -568,13 +697,170 @@ class DarwinAgent {
           `${report.results.length} mutations, ${report.promotionEvents.length} promotions, ` +
           `${report.durationMs}ms`
         );
+
+        this.conversationLog.evolution(
+          'evolution-engine',
+          `Cycle #${report.cycleNumber}: ${report.results.length} mutations, ${report.promotionEvents.length} promotions`,
+          {
+            cycleNumber: report.cycleNumber,
+            mutations: report.results.map(r => ({ id: r.strategyId, role: r.role, reasoning: r.reasoning })),
+            promotions: report.promotionEvents,
+            durationMs: report.durationMs,
+          },
+        );
+
+        // Log promotions individually
+        for (const promo of report.promotionEvents) {
+          this.conversationLog.promotion('strategy-manager', promo);
+        }
       } catch (err) {
         console.error(
           '[DarwinFi] Evolution cycle failed:',
           err instanceof Error ? err.message : err,
         );
+        this.conversationLog.error('evolution-engine', `Evolution cycle failed: ${err instanceof Error ? err.message : err}`);
         // Don't update lastEvolutionTime -- retry next check
       }
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Dashboard Update
+  // -------------------------------------------------------------------------
+
+  private updateDashboard(): void {
+    const allStrategies = this.strategyManager.getAllStrategies();
+    const report = this.strategyManager.getStatusReport();
+    const uptimeSeconds = (Date.now() - this.startTime.getTime()) / 1000;
+
+    const strategies: DashboardState['strategies'] = allStrategies.map(s => {
+      const metrics = this.performanceTracker.getMetrics(s.id);
+      const score = this.performanceTracker.getCompositeScore(s.id);
+      return {
+        id: s.id,
+        name: s.name,
+        type: s.type,
+        role: s.role,
+        status: s.status,
+        score: Math.round(score * 1000) / 1000,
+        pnl: metrics?.totalPnL ?? 0,
+        winRate: metrics?.winRate ?? 0,
+        trades: metrics?.tradesCompleted ?? 0,
+        generation: s.generation,
+      };
+    });
+
+    // Collect recent trades from all strategies
+    const recentTrades: DashboardState['recentTrades'] = [];
+    for (const s of allStrategies) {
+      const metrics = this.performanceTracker.getMetrics(s.id);
+      if (!metrics) continue;
+      const recent = metrics.tradeHistory
+        .filter(t => t.status === 'closed')
+        .slice(-5);
+      for (const t of recent) {
+        recentTrades.push({
+          timestamp: (t.exitTime || t.entryTime).toISOString(),
+          strategyId: t.strategyId,
+          action: t.side,
+          token: t.token,
+          amount: t.quantity,
+          price: t.exitPrice || t.entryPrice,
+          pnl: t.pnl,
+        });
+      }
+    }
+    recentTrades.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    // Collect evolution history from conversation log
+    const evolutionEntries = this.conversationLog.getEntries('evolution', 20)
+      .concat(this.conversationLog.getEntries('promotion', 20));
+    const evolutionHistory: DashboardState['evolutionHistory'] = evolutionEntries
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 20)
+      .map(e => ({
+        timestamp: e.timestamp,
+        event: e.type,
+        details: e.summary,
+      }));
+
+    // Total PnL from live strategy
+    const liveId = report.live;
+    const liveMetrics = liveId ? this.performanceTracker.getMetrics(liveId) : null;
+
+    updateDashboardState({
+      strategies,
+      liveStrategy: report.live,
+      lastEvolution: this.lastEvolutionTime.toISOString(),
+      totalPnL: liveMetrics?.totalPnL ?? 0,
+      uptime: uptimeSeconds,
+      recentTrades: recentTrades.slice(0, 20),
+      evolutionHistory,
+    });
+
+    // Push conversation log entries to the dashboard server
+    updateConversationLog(this.conversationLog.serialize());
+  }
+
+  // -------------------------------------------------------------------------
+  // State Persistence
+  // -------------------------------------------------------------------------
+
+  private buildPersistedState(): PersistedState {
+    return {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      agent: {
+        loopCount: this.loopCount,
+        tradeIdCounter: this.tradeIdCounter,
+        lastEvolutionTime: this.lastEvolutionTime.toISOString(),
+        tradesAtLastEvolution: this.tradesAtLastEvolution,
+        evolutionCycleCount: this.evolutionEngine.getCycleCount(),
+        startTime: this.startTime.toISOString(),
+      },
+      strategies: this.strategyManager.serialize(),
+      performance: this.performanceTracker.serialize(),
+      conversationLog: this.conversationLog.serialize(),
+    };
+  }
+
+  private loadState(state: PersistedState): void {
+    console.log('[DarwinFi] Loading saved state...');
+
+    // Restore agent counters
+    if (state.agent) {
+      this.loopCount = state.agent.loopCount || 0;
+      this.tradeIdCounter = state.agent.tradeIdCounter || 0;
+      this.lastEvolutionTime = new Date(state.agent.lastEvolutionTime || Date.now());
+      this.tradesAtLastEvolution = state.agent.tradesAtLastEvolution || 0;
+    }
+
+    // Restore strategies
+    if (state.strategies && state.strategies.length > 0) {
+      // Re-initialize with saved genomes
+      this.strategyManager.initialize(); // Sets up defaults first
+      for (const genome of state.strategies) {
+        this.strategyManager.updateGenome(genome.id, genome.parameters);
+      }
+      console.log(`[DarwinFi] Restored ${state.strategies.length} strategy genomes`);
+    } else {
+      this.strategyManager.initialize();
+    }
+
+    // Restore performance metrics
+    if (state.performance) {
+      for (const [id, metrics] of Object.entries(state.performance)) {
+        this.performanceTracker.initStrategy(id, true);
+        // Replay trade history to rebuild metrics
+        if (metrics.tradeHistory) {
+          for (const trade of metrics.tradeHistory) {
+            if (trade.status === 'closed') {
+              this.performanceTracker.recordTrade(trade);
+            }
+          }
+        }
+      }
+      console.log(`[DarwinFi] Restored performance metrics for ${Object.keys(state.performance).length} strategies`);
     }
   }
 
@@ -638,12 +924,16 @@ class DarwinAgent {
 
     process.on('uncaughtException', (err) => {
       console.error('[DarwinFi] Uncaught exception:', err);
+      this.conversationLog.error('agent', `Uncaught exception: ${err.message}`);
+      this.conversationLog.flushToDisk();
+      this.statePersistence.save(this.buildPersistedState());
       this.printStatusReport();
       process.exit(1);
     });
 
     process.on('unhandledRejection', (reason) => {
       console.error('[DarwinFi] Unhandled rejection:', reason);
+      this.conversationLog.error('agent', `Unhandled rejection: ${reason}`);
       // Don't exit -- let the main loop handle it
     });
   }

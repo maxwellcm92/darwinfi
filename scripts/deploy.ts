@@ -11,7 +11,7 @@ async function main() {
   // Deploy PerformanceLog first (no dependencies)
   console.log("\n[DarwinFi] Deploying PerformanceLog...");
   const PerformanceLog = await ethers.getContractFactory("PerformanceLog");
-  const performanceLog = await PerformanceLog.deploy();
+  const performanceLog = await PerformanceLog.deploy(deployer.address);
   await performanceLog.waitForDeployment();
   const perfLogAddr = await performanceLog.getAddress();
   console.log(`[DarwinFi] PerformanceLog deployed at: ${perfLogAddr}`);
@@ -19,47 +19,42 @@ async function main() {
   // Deploy DarwinVault
   console.log("\n[DarwinFi] Deploying DarwinVault...");
   const DarwinVault = await ethers.getContractFactory("DarwinVault");
-  const vault = await DarwinVault.deploy();
+  const vault = await DarwinVault.deploy(deployer.address);
   await vault.waitForDeployment();
   const vaultAddr = await vault.getAddress();
   console.log(`[DarwinFi] DarwinVault deployed at: ${vaultAddr}`);
 
-  // Deploy StrategyExecutor with references to vault and performance log
-  // Uniswap V3 SwapRouter addresses by chain
-  const SWAP_ROUTERS: Record<string, string> = {
-    "8453": "0x2626664c2603336E57B271c5C0b26F421741e481",  // Base mainnet
-    "84532": "0x94cC0AaC535CCDB3C01d6787D6413C739ae12bc4", // Base Sepolia
-    "42220": "0x5615CDAb10dc425a742d643d949a7F474C01abc4", // Celo
-  };
-
-  const chainId = network.chainId.toString();
-  const swapRouter = SWAP_ROUTERS[chainId];
-  if (!swapRouter) {
-    throw new Error(`No SwapRouter address for chain ${chainId}`);
-  }
-
-  console.log(`\n[DarwinFi] Deploying StrategyExecutor (router: ${swapRouter})...`);
+  // Deploy StrategyExecutor
+  console.log(`\n[DarwinFi] Deploying StrategyExecutor...`);
   const StrategyExecutor = await ethers.getContractFactory("StrategyExecutor");
-  const executor = await StrategyExecutor.deploy(vaultAddr, swapRouter, perfLogAddr);
+  const executor = await StrategyExecutor.deploy(deployer.address, vaultAddr, deployer.address);
   await executor.waitForDeployment();
   const executorAddr = await executor.getAddress();
   console.log(`[DarwinFi] StrategyExecutor deployed at: ${executorAddr}`);
 
   // Authorize executor on vault
   console.log("\n[DarwinFi] Authorizing StrategyExecutor on DarwinVault...");
-  const authTx = await vault.setExecutor(executorAddr);
+  const authTx = await vault.setStrategyExecutor(executorAddr);
   await authTx.wait();
   console.log("[DarwinFi] Executor authorized.");
+
+  // Authorize executor and deployer as loggers on PerformanceLog
+  console.log("[DarwinFi] Setting up PerformanceLog loggers...");
+  const logTx1 = await performanceLog.setLogger(executorAddr, true);
+  await logTx1.wait();
+  const logTx2 = await performanceLog.setLogger(deployer.address, true);
+  await logTx2.wait();
+  console.log("[DarwinFi] Loggers authorized.");
 
   // Summary
   console.log("\n========================================");
   console.log("[DarwinFi] Deployment Complete!");
   console.log("========================================");
-  console.log(`Chain:            ${chainId}`);
+  console.log(`Chain:            ${network.chainId}`);
+  console.log(`Deployer:         ${deployer.address}`);
   console.log(`DarwinVault:      ${vaultAddr}`);
   console.log(`StrategyExecutor: ${executorAddr}`);
   console.log(`PerformanceLog:   ${perfLogAddr}`);
-  console.log(`SwapRouter:       ${swapRouter}`);
   console.log("========================================");
   console.log("\nAdd these to your .env:");
   console.log(`DARWIN_VAULT_ADDRESS=${vaultAddr}`);

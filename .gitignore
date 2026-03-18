@@ -7,3 +7,4 @@ typechain-types/
 coverage/
 *.log
 .DS_Store
+data/

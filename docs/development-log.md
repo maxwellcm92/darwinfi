@@ -1,7 +1,7 @@
 # DarwinFi Development Log
 
 > Built with [Claude Code](https://claude.com/claude-code) (`claude-opus-4-6`) as the agent harness.
-> Sessions: March 18-19, 2026. Total: 25 source files, 7,635 lines of code.
+> Sessions: March 18-19, 2026. Total: 30 source files, ~10,500 lines of code, 59 tests.
 
 ---
 
@@ -243,20 +243,94 @@ Every 4h:   Venice API -> strategy evolution (sponsor showcase) -- ~$0.30/day
 
 ---
 
+## Session 6: Full Audit Sprint
+
+**Objective:** Comprehensive audit sprint prompted by agentic judge feedback (scores 5.7-6.4/10). Judges flagged: no tests, math bugs in scoring, no circuit breakers, sparse documentation. Goal was to address every critique and push scores above 8/10.
+
+### Team Parallelization
+
+Used 4 Claude Code agents working in parallel on isolated worktrees:
+- **core-fixes**: Math bug fixes + proving ground rule
+- **circuit-breaker**: Safety systems + risk management
+- **dashboard-polish**: UI improvements + event feed
+- **test-suite**: 59 tests across 4 modules
+
+### Key Decisions
+
+- **Proving Ground Rule.** All strategies start paper-only regardless of initial score. A strategy must complete its first profitable paper trade before becoming eligible for live promotion. Prevents untested strategies from risking real capital on day one.
+
+- **Sigmoid normalization for scores.** Raw composite scores were unbounded and hard to compare. Applied sigmoid mapping to compress scores into 0-100 range with meaningful distribution. Midpoint at 0 raw score maps to 50 normalized.
+
+- **Circuit breaker design.** Three independent trip conditions: (1) per-strategy drawdown exceeds 15% -> that strategy pauses, (2) portfolio-wide drawdown exceeds 25% -> all trading halts, (3) any strategy hits 5 consecutive losses -> that strategy pauses. Plus stale price detection (>5min old = skip trading). All thresholds configurable.
+
+### What Claude Code Built
+
+**Phase 0.5 -- Proving Ground Rule:**
+- Modified `strategy-manager.ts` -- added `qualifyingTrade` tracking, `isQualified` gate on promotion
+- Modified `darwin-agent.ts` -- promotion logic now checks qualifying status
+
+**Phase 1 -- Math Bug Fixes (5 files):**
+- `performance.ts` -- Sharpe ratio uses N-1 denominator (sample std dev), PnL% includes estimated fees, sigmoid normalization
+- `price-feed.ts` -- Ring buffer for price history (fixed memory leak), parallel pool fetches
+- `paper-engine.ts` -- Fee estimation from Uniswap pool fee tier
+- `uniswap-client.ts` -- Added `getPoolFee()` method
+
+**Phase 2 -- Circuit Breaker System (2 files, ~400 lines):**
+- `circuit-breaker.ts` (new) -- `CircuitBreaker` class with per-strategy and portfolio-wide trip conditions, consecutive loss tracking, stale price detection, auto-reset after cooldown
+- `darwin-agent.ts` -- Integrated circuit breaker checks into main trading loop
+
+**Phase 3 -- Test Suite (4 files, ~1,200 lines):**
+- `test/performance.test.ts` -- 18 tests (Sharpe, composite score, sigmoid, rolling windows)
+- `test/circuit-breaker.test.ts` -- 16 tests (drawdown trips, consecutive losses, portfolio halt, reset)
+- `test/strategy-manager.test.ts` -- 14 tests (seeding, promotion, qualifying gate, demotion)
+- `test/paper-engine.test.ts` -- 11 tests (trade execution, fee calculation, position tracking)
+
+**Phase 6 -- Dashboard Polish (~300 lines modified):**
+- `index.html` -- Live event feed panel, health status bars per strategy, genome detail modal, qualifying badge, CSS glow animations, responsive layout fixes
+
+**Phase 7 -- Code Quality:**
+- `eslint.config.js` (new) -- ESLint v10 flat config with TypeScript support
+- Parallel price fetches in `price-feed.ts` (Promise.all instead of sequential)
+- Unused import cleanup across 8 files
+
+**Phase 8 -- Documentation:**
+- `README.md` -- Full rewrite with architecture diagram, test coverage section, quick start guide
+- `docs/development-log.md` -- This session entry
+
+### Challenges
+
+- **ESLint v10 flat config.** The project had no linter. ESLint v10 uses `eslint.config.js` (flat config) instead of `.eslintrc`. Required `@typescript-eslint/parser` and `@typescript-eslint/eslint-plugin` as ESM imports with `tsconfig.json` project reference.
+- **hardhat-chai-matchers version.** Test suite initially pulled `@nomicfoundation/hardhat-chai-matchers` which conflicted with the existing Hardhat setup. Resolved by using standalone Chai + Mocha without Hardhat test helpers.
+- **Import cleanup cascades.** Removing unused imports in one file sometimes revealed that the export was also unused in the source file, requiring a chain of cleanups.
+
+### Verification
+
+| Check | Result |
+|-------|--------|
+| TypeScript compilation | 0 errors |
+| ESLint | 0 errors, 0 warnings |
+| Test suite | 59/59 passing |
+| Build (npx hardhat compile) | Clean |
+
+**Code Impact:** 7 files created, 12 files modified, ~2,900 lines added. Commits: `4984dbd` through `766536d`.
+
+---
+
 ## Technical Summary
 
 | Metric | Value |
 |--------|-------|
-| Source files | 25 |
-| Lines of code | 7,635 |
+| Source files | 30 |
+| Lines of code | ~10,500 |
+| Test coverage | 59 tests (4 modules) |
 | Smart contracts | 3 (Solidity) |
 | TypeScript modules | 18 |
 | Trading strategies | 12 (3 main + 9 variations) |
 | Token pairs | 6 (ETH, USDC, UNI, wstETH, ENS, AERO) |
 | Chains supported | 2 (Base, Celo) |
 | AI models integrated | 3 (Claude CLI for signals, Venice AI for evolution, Claude Haiku for batch eval) |
-| Sponsor integrations | 7 (Base, Uniswap, Venice AI, Celo, ENS, Filecoin, Locus) |
-| Git commits | 7 |
+| Sponsor integrations | 6 (Base, Uniswap, Venice AI, Celo, ENS, Filecoin) |
+| Git commits | 14 |
 | Build time | ~3.5 hours |
 
 ---

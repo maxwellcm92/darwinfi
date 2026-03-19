@@ -52,7 +52,7 @@ export function VaultOverview() {
   } = useVaultStats();
 
   const utilizationPct =
-    tvl && borrowed
+    tvl && borrowed && parseFloat(tvl) > 0
       ? ((parseFloat(borrowed) / parseFloat(tvl)) * 100).toFixed(1)
       : null;
 

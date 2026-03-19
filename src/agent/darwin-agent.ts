@@ -31,6 +31,7 @@ import { StatePersistence, PersistedState } from './state-persistence';
 import { ConversationLog } from './conversation-log';
 import { startDashboard, updateDashboardState, updateConversationLog, DashboardState } from '../dashboard/server';
 import { ContractClient } from '../chain/contract-client';
+import { FilecoinStore } from '../integrations/filecoin';
 
 // ---------------------------------------------------------------------------
 // Strategy ID -> uint256 mapping for on-chain logging
@@ -101,6 +102,7 @@ class DarwinAgent {
   private statePersistence: StatePersistence;
   private conversationLog: ConversationLog;
   private contractClient: ContractClient | null = null;
+  private filecoinStore: FilecoinStore | null = null;
 
   private priceHistory: Map<string, Array<{price: number, timestamp: number}>> = new Map();
   private running: boolean = false;
@@ -136,6 +138,12 @@ class DarwinAgent {
       } catch (err) {
         console.warn('[DarwinFi] ContractClient init failed, on-chain logging disabled:', err);
       }
+    }
+
+    // IPFS genome pinning (optional -- only if Storacha token configured)
+    if (process.env.WEB3_STORAGE_TOKEN) {
+      this.filecoinStore = new FilecoinStore(process.env.WEB3_STORAGE_TOKEN);
+      console.log('[DarwinFi] FilecoinStore initialized for IPFS genome pinning');
     }
   }
 
@@ -885,7 +893,7 @@ class DarwinAgent {
             .then(hash => console.log(`[DarwinFi] On-chain generation advanced: ${hash}`))
             .catch(err => console.error(`[DarwinFi] On-chain advanceGeneration failed: ${err.message}`));
 
-          // Log the live strategy's genome hash
+          // Log the live strategy's genome hash (with IPFS pinning if configured)
           const liveStrategy = this.strategyManager.getLiveStrategy();
           if (liveStrategy) {
             const stratId = STRATEGY_ID_MAP[liveStrategy.id];
@@ -893,9 +901,28 @@ class DarwinAgent {
               const genomeJson = JSON.stringify(liveStrategy.parameters);
               const { keccak256, toUtf8Bytes } = require('ethers');
               const genomeHash = keccak256(toUtf8Bytes(genomeJson));
-              this.contractClient.recordGenomeHash(stratId, genomeHash, '')
-                .then(hash => console.log(`[DarwinFi] On-chain genome hash recorded: ${hash}`))
-                .catch(err => console.error(`[DarwinFi] On-chain genome hash failed: ${err.message}`));
+
+              // Pin genome to IPFS first, then record hash + CID on-chain
+              const pinAndRecord = async () => {
+                let cid = '';
+                if (this.filecoinStore) {
+                  try {
+                    cid = await this.filecoinStore.pinGenome(
+                      liveStrategy.parameters,
+                      liveStrategy.id,
+                      liveStrategy.generation,
+                    );
+                    console.log(`[DarwinFi] Genome pinned to IPFS: ${cid}`);
+                  } catch (err) {
+                    console.error(`[DarwinFi] IPFS pin failed, recording hash without CID:`, err instanceof Error ? err.message : err);
+                  }
+                }
+                const hash = await this.contractClient!.recordGenomeHash(stratId, genomeHash, cid);
+                console.log(`[DarwinFi] On-chain genome hash recorded: ${hash}${cid ? ` (IPFS: ${cid})` : ''}`);
+              };
+              pinAndRecord().catch(err =>
+                console.error(`[DarwinFi] Genome recording failed: ${err.message}`)
+              );
             }
           }
 

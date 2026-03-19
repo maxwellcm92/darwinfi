@@ -43,7 +43,18 @@ export interface PerformanceEntry {
 // ABI loader
 // -------------------------------------------------------------------
 
-const ARTIFACTS_DIR = path.resolve(__dirname, '../../artifacts/contracts');
+// Walk up to find package.json (works from both src/ and dist/)
+function findProjectRoot(): string {
+  let dir = __dirname;
+  for (let i = 0; i < 10; i++) {
+    if (fs.existsSync(path.join(dir, 'package.json'))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return process.cwd();
+}
+const ARTIFACTS_DIR = path.join(findProjectRoot(), 'artifacts', 'contracts');
 
 /**
  * Load ABI from Hardhat artifacts. Falls back to a minimal ABI

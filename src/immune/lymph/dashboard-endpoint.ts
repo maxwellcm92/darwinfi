@@ -8,9 +8,7 @@
 import express from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
-import { IMMUNE_FILES } from '../config';
-
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+import { IMMUNE_FILES, PROJECT_ROOT } from '../config';
 const PREFIX = '[Immune:Lymph]';
 
 function readJsonFile(relativePath: string): any {

@@ -6,10 +6,8 @@
  */
 
 import { exec } from 'child_process';
-import * as path from 'path';
 import { CheckResult } from '../types';
-
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+import { PROJECT_ROOT } from '../config';
 
 export async function scanDependencies(): Promise<CheckResult> {
   const start = Date.now();

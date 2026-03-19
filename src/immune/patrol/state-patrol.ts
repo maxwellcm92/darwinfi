@@ -8,9 +8,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { CheckResult, CheckSeverity } from '../types';
-import { MONITORED_STATE_FILES, THRESHOLDS } from '../config';
-
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+import { MONITORED_STATE_FILES, THRESHOLDS, PROJECT_ROOT } from '../config';
 
 interface FileCheckResult {
   file: string;

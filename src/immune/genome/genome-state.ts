@@ -17,12 +17,10 @@ import {
   FixRecord,
   LogEntry,
 } from '../types';
-import { IMMUNE_FILES, THRESHOLDS, CHECK_INTERVALS } from '../config';
+import { IMMUNE_FILES, THRESHOLDS, CHECK_INTERVALS, PROJECT_ROOT } from '../config';
 import { analyzeIncidents } from './evolution-log';
 import { tuneThresholds } from './threshold-tuner';
 import { generateChecks } from './check-generator';
-
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 const PREFIX = '[Immune:Genome]';
 
 export class GenomeStateManager {

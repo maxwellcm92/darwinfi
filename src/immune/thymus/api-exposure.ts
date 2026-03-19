@@ -12,9 +12,7 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CheckResult } from '../types';
-import { API_ENDPOINTS, DASHBOARD_PORT } from '../config';
-
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+import { API_ENDPOINTS, DASHBOARD_PORT, PROJECT_ROOT } from '../config';
 const PRIVATE_KEY_HEX = /0x[a-fA-F0-9]{64}/;
 
 interface ExposureFinding {

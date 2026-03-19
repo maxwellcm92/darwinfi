@@ -11,8 +11,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { CheckResult } from '../types';
-
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+import { PROJECT_ROOT } from '../config';
 const CONTRACTS_DIR = path.join(PROJECT_ROOT, 'contracts');
 
 interface ContractFinding {

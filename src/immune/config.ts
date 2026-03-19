@@ -5,6 +5,28 @@
  * Values can be overridden by the Genome self-evolution system.
  */
 
+import * as path from 'path';
+import * as fs from 'fs';
+
+// ---------------------------------------------------------------------------
+// Project Root (works both in src/ dev and dist/ compiled contexts)
+// ---------------------------------------------------------------------------
+
+function resolveProjectRoot(): string {
+  // Walk up from __dirname until we find package.json
+  let dir = __dirname;
+  for (let i = 0; i < 10; i++) {
+    if (fs.existsSync(path.join(dir, 'package.json'))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  // Fallback: process.cwd() (PM2 always runs from project root)
+  return process.cwd();
+}
+
+export const PROJECT_ROOT = resolveProjectRoot();
+
 // ---------------------------------------------------------------------------
 // Check Intervals (ms)
 // ---------------------------------------------------------------------------

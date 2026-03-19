@@ -18,7 +18,7 @@ import * as fs from 'fs';
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
 import { CheckResult, ImmuneHealthSummary, DivisionStatus } from './types';
-import { CHECK_INTERVALS, IMMUNE_FILES } from './config';
+import { CHECK_INTERVALS, IMMUNE_FILES, PROJECT_ROOT } from './config';
 import { LogAggregator } from './lymph/log-aggregator';
 import { AlertManager } from './lymph/alert-manager';
 import { PatrolScheduler } from './patrol/patrol-scheduler';
@@ -45,8 +45,6 @@ import { scanDependencies } from './thymus/dependency-scanner';
 import { scanKeySafety } from './thymus/key-safety';
 import { scanContracts } from './thymus/contract-scanner';
 import { scanApiExposure } from './thymus/api-exposure';
-
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
 
 // ---------------------------------------------------------------------------
 // Immune Agent

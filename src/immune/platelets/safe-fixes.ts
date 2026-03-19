@@ -9,9 +9,7 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { RPC_ENDPOINTS, MONITORED_STATE_FILES } from '../config';
-
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+import { RPC_ENDPOINTS, MONITORED_STATE_FILES, PROJECT_ROOT } from '../config';
 const PREFIX = '[Immune:Platelets]';
 
 /**

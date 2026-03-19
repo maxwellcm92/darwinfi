@@ -8,9 +8,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { LogEntry, LogLevel } from '../types';
-import { IMMUNE_FILES, THRESHOLDS } from '../config';
-
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+import { IMMUNE_FILES, THRESHOLDS, PROJECT_ROOT } from '../config';
 
 export class LogAggregator {
   private entries: LogEntry[] = [];

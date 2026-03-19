@@ -9,7 +9,7 @@ import { exec } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CheckResult } from '../types';
-import { IMMUNE_FILES } from '../config';
+import { IMMUNE_FILES, PROJECT_ROOT } from '../config';
 
 interface TestRunResult {
   timestamp: number;
@@ -50,7 +50,7 @@ function parseHardhatOutput(stdout: string, stderr: string): { passing: number; 
 
 function saveResult(result: TestRunResult): void {
   try {
-    const resultsDir = path.resolve(process.cwd(), IMMUNE_FILES.antibodyResults);
+    const resultsDir = path.join(PROJECT_ROOT, IMMUNE_FILES.antibodyResults);
     if (!fs.existsSync(resultsDir)) {
       fs.mkdirSync(resultsDir, { recursive: true });
     }
@@ -76,8 +76,7 @@ export async function runHardhatTests(): Promise<CheckResult> {
   const start = Date.now();
 
   return new Promise((resolve) => {
-    const cwd = process.cwd();
-    exec('npx hardhat test', { cwd, timeout: 120_000 }, (error, stdout, stderr) => {
+    exec('npx hardhat test', { cwd: PROJECT_ROOT, timeout: 120_000 }, (error, stdout, stderr) => {
       const durationMs = Date.now() - start;
       const { passing, failing, pending, failures } = parseHardhatOutput(stdout, stderr);
 

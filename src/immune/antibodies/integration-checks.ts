@@ -8,7 +8,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { CheckResult } from '../types';
-import { DASHBOARD_PORT, MONITORED_STATE_FILES } from '../config';
+import { DASHBOARD_PORT, MONITORED_STATE_FILES, PROJECT_ROOT } from '../config';
 
 interface MismatchDetail {
   field: string;
@@ -40,7 +40,7 @@ export async function checkIntegration(): Promise<CheckResult> {
     const apiState = await response.json() as any;
 
     // Read file state
-    const statePath = path.resolve(process.cwd(), MONITORED_STATE_FILES.agentState);
+    const statePath = path.join(PROJECT_ROOT, MONITORED_STATE_FILES.agentState);
     const raw = fs.readFileSync(statePath, 'utf-8');
     const fileState = JSON.parse(raw);
 

@@ -9,8 +9,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { CheckResult } from '../types';
-
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+import { PROJECT_ROOT } from '../config';
 
 const PRIVATE_KEY_HEX = /0x[a-fA-F0-9]{64}/;
 const PEM_PRIVATE_KEY = /-----BEGIN.*PRIVATE KEY-----/;

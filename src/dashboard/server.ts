@@ -3,6 +3,7 @@ import path from "path";
 import { ContractClient } from "../chain/contract-client";
 import { ethers } from "ethers";
 import { StateWriter } from "../instinct/nerves/state-writer";
+import { registerImmuneRoutes } from "../immune/lymph/dashboard-endpoint";
 
 export interface DashboardState {
   strategies: Array<{
@@ -232,6 +233,9 @@ export function startDashboard(port: number = 3500): void {
       res.status(500).json({ error: msg });
     }
   });
+
+  // Immune system dashboard routes (must be before SPA catch-all)
+  registerImmuneRoutes(app);
 
   // SPA catch-all: serve index.html for all non-API routes (client-side routing)
   app.get('*', (_req, res) => {

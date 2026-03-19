@@ -140,9 +140,9 @@ class DarwinAgent {
       }
     }
 
-    // IPFS genome pinning (optional -- only if Storacha token configured)
-    if (process.env.WEB3_STORAGE_TOKEN) {
-      this.filecoinStore = new FilecoinStore(process.env.WEB3_STORAGE_TOKEN);
+    // IPFS genome pinning (optional -- only if Storacha proof configured)
+    if (process.env.STORACHA_PROOF) {
+      this.filecoinStore = new FilecoinStore(process.env.STORACHA_PROOF);
       console.log('[DarwinFi] FilecoinStore initialized for IPFS genome pinning');
     }
   }

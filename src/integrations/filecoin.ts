@@ -2,9 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 // Strategy genome storage on IPFS/Filecoin via Storacha
-// Uses HTTP API for uploads when w3up-client is not available
-
-const STORACHA_API = "https://api.web3.storage";
+// Uses @storacha/client with UCAN delegation-based auth
 
 export interface StoredGenome {
   cid: string;
@@ -14,13 +12,35 @@ export interface StoredGenome {
   genomeHash: string;
 }
 
+// Lazy-loaded Storacha client (ESM module requires dynamic import)
+let storachaClient: any = null;
+let storachaReady = false;
+let storachaInitError: string | null = null;
+
+async function getStorachaClient(proofBase64: string): Promise<any> {
+  if (storachaClient && storachaReady) return storachaClient;
+
+  const Client = await import("@storacha/client");
+  // Dynamic import for ESM-only subpath (moduleResolution: node can't resolve it statically)
+  const { parse } = await (Function('return import("@storacha/client/proof")')() as Promise<{ parse: (s: string) => Promise<any> }>);
+
+  const client = await Client.create();
+  const proof = await parse(proofBase64);
+  const space = await client.addSpace(proof);
+  await client.setCurrentSpace(space.did());
+
+  storachaClient = client;
+  storachaReady = true;
+  return client;
+}
+
 export class FilecoinStore {
-  private apiToken: string;
+  private proofBase64: string;
   private history: StoredGenome[] = [];
   private historyPath: string;
 
-  constructor(apiToken: string, dataDir: string = "./data") {
-    this.apiToken = apiToken;
+  constructor(proofBase64: string, dataDir: string = "./data") {
+    this.proofBase64 = proofBase64;
     this.historyPath = path.join(dataDir, "ipfs-history.json");
     this.loadHistory();
   }
@@ -54,27 +74,17 @@ export class FilecoinStore {
     console.log(`[DarwinFi] Pinning genome for ${strategyId} gen ${generation} to IPFS...`);
 
     try {
-      const response = await fetch(`${STORACHA_API}/upload`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${this.apiToken}`,
-          "Content-Type": "application/json",
-          "X-Name": `darwinfi-${strategyId}-gen${generation}`,
-        },
-        body: payload,
+      const client = await getStorachaClient(this.proofBase64);
+      const file = new File([payload], `darwinfi-${strategyId}-gen${generation}.json`, {
+        type: "application/json",
       });
+      const cid = await client.uploadFile(file);
+      const cidStr = cid.toString();
 
-      if (!response.ok) {
-        throw new Error(`IPFS upload failed: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json() as { cid: string };
-      const cid = result.cid;
-
-      console.log(`[DarwinFi] Genome pinned! CID: ${cid}`);
+      console.log(`[DarwinFi] Genome pinned! CID: ${cidStr}`);
 
       const record: StoredGenome = {
-        cid,
+        cid: cidStr,
         strategyId,
         generation,
         timestamp: new Date().toISOString(),
@@ -84,7 +94,7 @@ export class FilecoinStore {
       this.history.push(record);
       this.saveHistory();
 
-      return cid;
+      return cidStr;
     } catch (error) {
       console.log(`[DarwinFi] IPFS pin failed, storing locally:`, error);
       // Fallback: store locally

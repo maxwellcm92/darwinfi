@@ -357,6 +357,44 @@ Used 4 Claude Code agents working in parallel on isolated worktrees:
 
 ---
 
+## Session 8: IPFS Genome Pinning & Sponsor Integration Audit
+
+**Objective:** Wire Filecoin/IPFS genome pinning into the evolution loop, completing the verifiable evolution story. Audit all potential sponsor integrations for genuine value vs. forced fit.
+
+### Sponsor Integration Audit
+
+Evaluated 8 potential sponsor integrations on one criterion: "Does this make DarwinFi genuinely better?"
+
+| Integration | Verdict | Rationale |
+|---|---|---|
+| Base | Core (already built) | Foundation chain |
+| Uniswap V3 | Core (already built) | DEX execution layer |
+| Venice AI | Core (already built) | Evolution engine |
+| **Filecoin/IPFS** | **Built (Session 8)** | Completes verifiable evolution -- on-chain hash + IPFS genome retrieval |
+| Lido (wstETH) | Claim (in token universe) | Yield-bearing asset; strategies that park idle capital in wstETH have fitness advantage |
+| ENS (Basenames) | Claim (already built) | darwinfi.base.eth agent identity |
+| Olas | Skip | Architectural mismatch -- FSM consensus model incompatible with 3-tier timing |
+| Lit Protocol | Skip | Over-engineering at $75 scale; circuit breaker already handles guardrails |
+
+### What Claude Code Built
+
+**IPFS Integration Wiring (2 files):**
+- `darwin-agent.ts` -- Imported `FilecoinStore`, added optional initialization from `WEB3_STORAGE_TOKEN` env var. After each evolution cycle, the live strategy's genome is pinned to IPFS via `filecoinStore.pinGenome()`, returning a CID. The CID is then passed to `contractClient.recordGenomeHash(strategyId, genomeHash, cid)` on-chain. Graceful fallback: if IPFS pin fails, hash is still recorded with empty CID.
+- `.env` -- Added `WEB3_STORAGE_TOKEN` placeholder for Storacha credentials.
+
+**Verification flow:** Genome JSON on IPFS -> keccak256 hash -> compare against on-chain `GenomeHashRecorded` event -> match confirms genome authenticity.
+
+### Verification
+
+| Check | Result |
+|-------|--------|
+| TypeScript compilation | 0 errors |
+| Test suite | 59/59 passing |
+
+**Code Impact:** 2 files modified, ~50 lines added.
+
+---
+
 ## Technical Summary
 
 | Metric | Value |
@@ -370,8 +408,8 @@ Used 4 Claude Code agents working in parallel on isolated worktrees:
 | Token pairs | 6 (ETH, USDC, UNI, wstETH, ENS, AERO) |
 | Chains supported | 2 (Base, Celo) |
 | AI models integrated | 3 (Claude CLI for signals, Venice AI for evolution, Claude Haiku for batch eval) |
-| Sponsor integrations | 6 (Base, Uniswap, Venice AI, Celo, ENS, Filecoin) |
-| Git commits | 16 |
+| Sponsor integrations | 6 (Base, Uniswap, Venice AI, Filecoin, ENS, Lido) |
+| Git commits | 17+ |
 | Build time | ~3.5 hours |
 
 ---

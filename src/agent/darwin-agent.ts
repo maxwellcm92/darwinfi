@@ -1075,8 +1075,18 @@ class DarwinAgent {
       this.strategyManager.initialize(); // Sets up defaults first
       for (const genome of state.strategies) {
         this.strategyManager.updateGenome(genome.id, genome.parameters);
+        // Restore status (updateGenome only restores parameters)
+        if (genome.status && genome.status !== 'paper') {
+          this.strategyManager.setStrategyStatus(genome.id, genome.status);
+        }
       }
       console.log(`[DarwinFi] Restored ${state.strategies.length} strategy genomes`);
+      const restoredLive = this.strategyManager.getLiveStrategy();
+      if (restoredLive) {
+        console.log(`[DarwinFi] Live strategy after restore: ${restoredLive.id} [${restoredLive.status}]`);
+      } else {
+        console.log(`[DarwinFi] No live strategy after restore -- statuses: ${state.strategies.map(s => s.id + '=' + s.status).join(', ')}`);
+      }
     } else {
       this.strategyManager.initialize();
     }

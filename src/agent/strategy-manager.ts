@@ -222,6 +222,18 @@ export class StrategyManager {
    * Update a strategy's genome (used by evolution engine).
    * Resets performance metrics when the genome changes.
    */
+  /**
+   * Set a strategy's status directly (used for state restoration).
+   */
+  setStrategyStatus(strategyId: string, status: StrategyGenome['status']): void {
+    const strategy = this.strategies.get(strategyId);
+    if (!strategy) return;
+    strategy.status = status;
+    if (status === 'live') {
+      this._qualificationMode = false;
+    }
+  }
+
   updateGenome(strategyId: string, newParams: Partial<StrategyGenome['parameters']>): void {
     const strategy = this.strategies.get(strategyId);
     if (!strategy) {

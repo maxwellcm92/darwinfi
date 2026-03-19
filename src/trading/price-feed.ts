@@ -69,13 +69,6 @@ export const TOKEN_UNIVERSE: Record<string, TokenDefinition> = {
     decimals: 18,
     ethFeeTier: 100, // wstETH/WETH is typically the 0.01% tier
   },
-  ENS: {
-    address: BASE_TOKENS.ENS,
-    symbol: 'ENS',
-    decimals: 18,
-    ethFeeTier: 3000,
-    usdcFeeTier: 3000,
-  },
   AERO: {
     address: BASE_TOKENS.AERO,
     symbol: 'AERO',

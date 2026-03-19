@@ -395,6 +395,48 @@ Evaluated 8 potential sponsor integrations on one criterion: "Does this make Dar
 
 ---
 
+## Session 9: Live Trading Deployment (2026-03-19)
+
+**Objective:** Fund the DarwinFi wallet, deploy smart contracts to Base mainnet, and promote the agent from paper trading to live on-chain execution.
+
+### Wallet Funding
+
+Funded DarwinFi wallet (`0xb2db53...e3`) on Base mainnet via Kraken API:
+- Bought 0.006 ETH ($13.17) and withdrew 0.01 ETH + 73 USDC to Base
+
+### Smart Contract Deployment (Base Mainnet, Chain 8453)
+
+| Contract | Address |
+|----------|---------|
+| PerformanceLog | `0x7d7433A4aD04D6AD85E82Ce43CC4535ADb2fc9c9` |
+| DarwinVault | `0x02649973e13c5bb6aFFCD2d9d870bcd3BF8f446B` |
+| StrategyExecutor | `0xCBf6405fCf42e3bF9e52698bD622F7FF5fd80B14` |
+
+Wired contract authorizations (`setStrategyExecutor`, `setLogger`) after deployment. Funded vault with 73 USDC, allocated 24 USDC per strategy (3 strategies).
+
+### Live Trading Activation
+
+- Set `DRY_RUN=false`, promoted `main-alpha` to live trading
+- Fixed bug: strategy status not persisting across restarts (added `setStrategyStatus` method to `StrategyManager`)
+- Removed ENS from token universe (no liquidity on Base)
+- Switched Base RPC from `mainnet.base.org` to `llamarpc.com` (rate limiting fix)
+- Signal engine operational with Claude Haiku evaluating ETH, UNI, wstETH, AERO
+
+### Architecture Notes for Judges
+
+- The Darwinian qualification system requires strategies to prove themselves in paper trading before being promoted to live. First profitable paper trade triggers automatic promotion.
+- Live trades execute through Uniswap V3 on Base via the StrategyExecutor contract.
+- Performance is logged on-chain via PerformanceLog contract for transparency.
+- Evolution engine (Venice API) mutates strategy genomes based on performance.
+
+### Remaining
+
+- Monitor for first on-chain trade execution
+- Update Synthesis submission with contract addresses and Basescan proof links
+- Potential improvements: add more token pairs, implement IPFS genome pinning via Storacha
+
+---
+
 ## Technical Summary
 
 | Metric | Value |
@@ -405,7 +447,7 @@ Evaluated 8 potential sponsor integrations on one criterion: "Does this make Dar
 | Smart contracts | 3 (Solidity) |
 | TypeScript modules | 18 |
 | Trading strategies | 12 (3 main + 9 variations) |
-| Token pairs | 6 (ETH, USDC, UNI, wstETH, ENS, AERO) |
+| Token pairs | 5 (ETH, USDC, UNI, wstETH, AERO) |
 | Chains supported | 2 (Base, Celo) |
 | AI models integrated | 3 (Claude CLI for signals, Venice AI for evolution, Claude Haiku for batch eval) |
 | Sponsor integrations | 6 (Base, Uniswap, Venice AI, Filecoin, ENS, Lido) |

@@ -339,7 +339,7 @@ export class LitPKPSigner extends AbstractSigner {
       const { LitNodeClient } = await import('@lit-protocol/lit-node-client');
 
       this.litClient = new LitNodeClient({
-        litNetwork: this.litNetwork,
+        litNetwork: this.litNetwork as any,
         debug: false,
       }) as unknown as ILitNodeClient;
 

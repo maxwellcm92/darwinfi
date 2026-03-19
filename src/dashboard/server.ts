@@ -97,8 +97,9 @@ export function startDashboard(port: number = 3500): void {
     next();
   });
 
-  app.use(express.static(path.join(__dirname)));
-  app.use('/assets', express.static(path.join(__dirname, '../../assets')));
+  // Serve the React DApp from dapp/dist/ (Caddy strips /darwinfi prefix via handle_path)
+  const dappDistPath = path.resolve(__dirname, '../../../dapp/dist');
+  app.use(express.static(dappDistPath));
 
   app.get("/api/state", (_req, res) => {
     res.json(state);
@@ -206,7 +207,13 @@ export function startDashboard(port: number = 3500): void {
     }
   });
 
+  // SPA catch-all: serve index.html for all non-API routes (client-side routing)
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(dappDistPath, 'index.html'));
+  });
+
   app.listen(port, () => {
     console.log(`[DarwinFi] Dashboard running at http://localhost:${port}`);
+    console.log(`[DarwinFi] Serving React DApp from ${dappDistPath}`);
   });
 }

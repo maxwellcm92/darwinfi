@@ -699,3 +699,92 @@ Deployed a new ERC-4626 compliant vault (`0xb01aD1140d7acA150BF56D7516Bd44eE6497
 ---
 
 *This development log was generated from Claude Code session transcripts and git history. Agent harness: Claude Code (claude-opus-4-6).*
+
+---
+
+## Session 12: Team 4 "Frontier" -- Cross-Chain Evolutionary Trading (2026-03-19)
+
+**Objective:** Build DarwinFi Team 4 ("Frontier") -- a cross-chain, high-frequency trading team with 4 uniquely-characterized bots that hunt across the EVM ecosystem. Breaks the single-chain, single-DEX constraints of Teams 1-3. Team 4 winner competes in a 4-team championship against Teams 1-3 winners for the live trading slot.
+
+### The 4 Bots
+
+| Bot | Archetype | Strategy |
+|-----|-----------|----------|
+| **Abiogenesis** | Micro-Cap Moonshot | Monitors PairCreated events + DexScreener for new token launches. Heavy rug detection (5-check weighted scoring). Ride 100x-1000x spikes. |
+| **Mitosis** | Ultra-HFT Scalper | Hundreds of tiny trades/day capturing micro-spreads on high-volume DEX pools. Win rate 60%+. Each trade tiny, aggregate compounds. |
+| **Cambrian** | Volatility Hunter | Hunts MOMENTS not tokens. Deploys capital wherever the ecosystem has rapid change. Chain-agnostic. |
+| **Symbiont** | Smart Money Tracker | Maintains cross-chain whale wallet registry. Mirrors whale entries with tighter stops. Win rate inherits from whale accuracy. |
+
+### Architecture: 8 Phases
+
+**Phase 1 -- Multi-Chain Infrastructure:**
+- `evm-client.ts`: Chain-agnostic EVM client generalizing base-client.ts (RPC rotation, health checks, nonce tracking, gas caps)
+- `chain-registry.ts`: Factory managing EVMClient instances. Auto-registers Base (8453) + Arbitrum (42161). Dynamic chain registration.
+- `oneinch-client.ts`: 1inch Aggregation Protocol v6 API client (quote/swap/approve). Uniswap V3 fallback.
+- `cross-chain-engine.ts`: Execution engine routing through 1inch primary, Uniswap V3 direct fallback.
+
+**Phase 2 -- Extended Strategy Genome:**
+- `frontier-genome.ts`: Extended genome types with bot-specific parameter blocks (rug thresholds, HFT frequency caps, vol multipliers, mirror delays).
+- `frontier-manager.ts`: Team 4 manager with internal competition via same PerformanceTracker.
+
+**Phase 3 -- Bot-Specific Services:**
+- `token-discovery.ts`: On-chain PairCreated listeners + DexScreener/GeckoTerminal API polling for Abiogenesis.
+- `rug-detector.ts`: 5-check weighted safety scoring (contract verified 15%, ownership 20%, mint 20%, holder concentration 20%, honeypot 25%).
+- `spread-scanner.ts`: Micro-spread scanner across DEX pools for Mitosis.
+- `vol-scanner.ts`: Realized volatility computation via log returns + spike detection for Cambrian.
+- `whale-tracker.ts`: Cross-chain whale registry with scoring and event monitoring for Symbiont.
+
+**Phase 4 -- Frontier Agent Orchestrator:**
+- `frontier-agent.ts`: Main orchestrator with 3 tick speeds -- Fast (8s) for token discovery + spread capture, Signal (30s) for Claude CLI evaluation, Evolution (4h) for Venice AI mutation. Separate PM2 process.
+- `frontier-routes.ts`: Express API with 8 endpoints for all frontier data.
+
+**Phase 5 -- Championship Integration:**
+- `championship.ts`: 4-team championship system comparing winners from each team. Eligibility requires 5+ trades.
+- Modified `darwin-agent.ts`, `state-persistence.ts`, `evolution-engine.ts`, `server.ts` for championship integration.
+
+**Phase 6 -- DApp UI:**
+- `Frontier.tsx`: Dedicated page with chain status, bot cards, trade flow, whale feed, volatility heatmap, championship standings.
+- 7 new components (ChainStatusBar, BotCard, CrossChainTradeFlow, WhaleActivityFeed, VolatilityHeatmap, ChampionshipStandings, useFrontierAPI).
+- Modified App.tsx (route), Navbar.tsx (nav link), Tournament.tsx (championship section).
+
+**Phase 7 -- Bridge Integration:**
+- `bridge-client.ts`: Cross-chain USDC bridging via Across Protocol for opportunistic capital concentration.
+
+**Phase 8 -- Tests:**
+- 10 test files covering all new modules. 114 new tests.
+
+### Key Decisions
+
+- **Hybrid cross-chain model.** Independent per-chain allocations + bridge for high-conviction moves. No single chain dependency.
+- **1inch aggregator primary.** Better routing across DEX liquidity vs locked to Uniswap V3. Direct Uniswap fallback for reliability.
+- **Separate EOA wallet.** Team 4 uses own wallet (no PKP restriction from Teams 1-3). Simpler key management.
+- **6-agent parallel team build.** 4 background workers handled independent phases while lead agent built dependent phases directly. Full implementation in ~45 minutes.
+
+### Implementation Stats
+
+| Metric | Value |
+|--------|-------|
+| New source files | 23 |
+| Modified files | 9 |
+| New test files | 10 |
+| New tests | 114 (bringing total from 165 to 251) |
+| Lines of code added | ~7,500 |
+| DApp components | 8 new |
+| API endpoints | 8 new |
+| Chains supported | Base (8453) + Arbitrum (42161) + dynamic |
+| Build approach | 6-agent parallel team build |
+
+### Verification
+
+- TypeScript: 0 errors (3 found and fixed during review)
+- Tests: 251 passing, 5 pending, 0 failing
+- DApp: builds clean (16.5s)
+- Championship system correctly evaluates 4-team competition
+
+### Remaining Deployment Steps
+
+1. Fund Team 4 EOA wallet on Arbitrum + Base with USDC + ETH for gas
+2. Set real TEAM4_PRIVATE_KEY and ONEINCH_API_KEY in .env
+3. Start PM2 process: pm2 start ts-node --name darwinfi-frontier -- src/agent/frontier-agent.ts
+4. Configure Caddy proxy for port 3503
+

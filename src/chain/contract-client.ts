@@ -17,6 +17,7 @@ import { BaseClient, getBaseClient } from './base-client';
 
 export interface ContractAddresses {
   darwinVault?: string;
+  darwinVaultV2?: string;
   strategyExecutor?: string;
   performanceLog?: string;
 }
@@ -96,6 +97,33 @@ const STRATEGY_EXECUTOR_ABI: InterfaceAbi = [
   'event StrategyRegistered(bytes32 indexed id, string name)',
 ];
 
+const DARWIN_VAULT_V2_ABI: InterfaceAbi = [
+  'function deposit(uint256 assets, address receiver) external returns (uint256)',
+  'function withdraw(uint256 assets, address receiver, address owner) external returns (uint256)',
+  'function redeem(uint256 shares, address receiver, address owner) external returns (uint256)',
+  'function agentBorrow(uint256 amount) external',
+  'function agentReturn(uint256 amount) external',
+  'function emergencyWithdraw() external',
+  'function totalAssets() external view returns (uint256)',
+  'function totalSupply() external view returns (uint256)',
+  'function sharePrice() external view returns (uint256)',
+  'function availableAssets() external view returns (uint256)',
+  'function totalBorrowed() external view returns (uint256)',
+  'function maxTotalAssets() external view returns (uint256)',
+  'function balanceOf(address account) external view returns (uint256)',
+  'function convertToAssets(uint256 shares) external view returns (uint256)',
+  'function convertToShares(uint256 assets) external view returns (uint256)',
+  'function agent() external view returns (address)',
+  'function asset() external view returns (address)',
+  'function setAgent(address _agent) external',
+  'function pause() external',
+  'function unpause() external',
+  'event AgentBorrowed(uint256 amount, uint256 totalBorrowed)',
+  'event AgentReturned(uint256 amount, uint256 totalBorrowed)',
+  'event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)',
+  'event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)',
+];
+
 const PERFORMANCE_LOG_ABI: InterfaceAbi = [
   'function logTradeResult(uint256 strategyId, int256 pnl, bool win) external',
   'function logPromotion(uint256 strategyId, string reason) external',
@@ -121,6 +149,7 @@ export class ContractClient {
   private addresses: ContractAddresses;
 
   private _darwinVault: Contract | null = null;
+  private _darwinVaultV2: Contract | null = null;
   private _strategyExecutor: Contract | null = null;
   private _performanceLog: Contract | null = null;
 
@@ -128,6 +157,7 @@ export class ContractClient {
     this.baseClient = baseClient ?? getBaseClient();
     this.addresses = {
       darwinVault: addresses?.darwinVault ?? process.env.DARWIN_VAULT_ADDRESS,
+      darwinVaultV2: addresses?.darwinVaultV2 ?? process.env.DARWIN_VAULT_V2_ADDRESS,
       strategyExecutor: addresses?.strategyExecutor ?? process.env.STRATEGY_EXECUTOR_ADDRESS,
       performanceLog: addresses?.performanceLog ?? process.env.PERFORMANCE_LOG_ADDRESS,
     };
@@ -144,6 +174,15 @@ export class ContractClient {
       this._darwinVault = new Contract(address, abi, this.baseClient.signer);
     }
     return this._darwinVault;
+  }
+
+  get darwinVaultV2(): Contract {
+    if (!this._darwinVaultV2) {
+      const address = this.requireAddress('darwinVaultV2');
+      const abi = this.resolveAbi('DarwinVaultV2', DARWIN_VAULT_V2_ABI);
+      this._darwinVaultV2 = new Contract(address, abi, this.baseClient.signer);
+    }
+    return this._darwinVaultV2;
   }
 
   get strategyExecutor(): Contract {
@@ -305,6 +344,62 @@ export class ContractClient {
       winRate: raw[3],
       active: raw[4],
     };
+  }
+
+  // ---------------------------------------------------------------
+  // Type-safe wrappers: DarwinVaultV2
+  // ---------------------------------------------------------------
+
+  async vaultV2BorrowFromVault(amount: bigint): Promise<string> {
+    const tx = await this.darwinVaultV2.agentBorrow(amount);
+    const receipt = await tx.wait();
+    return receipt.hash;
+  }
+
+  async vaultV2ReturnToVault(amount: bigint): Promise<string> {
+    const tx = await this.darwinVaultV2.agentReturn(amount);
+    const receipt = await tx.wait();
+    return receipt.hash;
+  }
+
+  async vaultV2TotalAssets(): Promise<bigint> {
+    return this.darwinVaultV2.totalAssets();
+  }
+
+  async vaultV2AvailableAssets(): Promise<bigint> {
+    return this.darwinVaultV2.availableAssets();
+  }
+
+  async vaultV2TotalBorrowed(): Promise<bigint> {
+    return this.darwinVaultV2.totalBorrowed();
+  }
+
+  async vaultV2SharePrice(): Promise<bigint> {
+    return this.darwinVaultV2.sharePrice();
+  }
+
+  async vaultV2TotalSupply(): Promise<bigint> {
+    return this.darwinVaultV2.totalSupply();
+  }
+
+  async vaultV2MaxTotalAssets(): Promise<bigint> {
+    return this.darwinVaultV2.maxTotalAssets();
+  }
+
+  async vaultV2BalanceOf(address: string): Promise<bigint> {
+    return this.darwinVaultV2.balanceOf(address);
+  }
+
+  async vaultV2ConvertToAssets(shares: bigint): Promise<bigint> {
+    return this.darwinVaultV2.convertToAssets(shares);
+  }
+
+  hasVaultV2(): boolean {
+    return !!this.addresses.darwinVaultV2;
+  }
+
+  getVaultV2Address(): string | undefined {
+    return this.addresses.darwinVaultV2;
   }
 
   // ---------------------------------------------------------------

@@ -5,8 +5,9 @@
  * Reads configuration from environment variables.
  */
 
-import { ethers, JsonRpcProvider, Wallet, TransactionRequest, TransactionResponse } from 'ethers';
+import { ethers, AbstractSigner, JsonRpcProvider, Wallet, TransactionRequest, TransactionResponse } from 'ethers';
 import * as dotenv from 'dotenv';
+import type { LitPKPSigner } from './lit-wallet';
 
 dotenv.config();
 
@@ -35,6 +36,8 @@ export interface BaseClientConfig {
   testnet?: boolean;
   /** Maximum gas price willing to pay (in gwei) */
   maxGasPriceGwei?: number;
+  /** Optional Lit PKP signer -- when provided, used instead of a Wallet derived from privateKey */
+  litSigner?: LitPKPSigner;
 }
 
 export interface GasEstimate {
@@ -52,7 +55,7 @@ export interface GasEstimate {
 
 export class BaseClient {
   public provider: JsonRpcProvider;
-  public signer: Wallet;
+  public signer: Wallet | LitPKPSigner;
   public readonly expectedChainId: number;
   public readonly maxGasPriceGwei: number;
 
@@ -61,15 +64,19 @@ export class BaseClient {
   private rpcEndpoints: string[];
   private currentRpcIndex: number = 0;
   private privateKey: string;
+  private _litSigner: LitPKPSigner | null;
 
   constructor(config: BaseClientConfig = {}) {
     const testnet = config.testnet ?? false;
     this.expectedChainId = testnet ? BASE_TESTNET_CHAIN_ID : BASE_MAINNET_CHAIN_ID;
     this.maxGasPriceGwei = config.maxGasPriceGwei ?? 5; // Base L2 gas is cheap
 
-    const privateKey = config.privateKey ?? process.env.PRIVATE_KEY;
-    if (!privateKey) {
-      throw new Error('PRIVATE_KEY is required. Set it in .env or pass via config.');
+    this._litSigner = config.litSigner ?? null;
+
+    // privateKey is optional when litSigner is provided
+    const privateKey = config.privateKey ?? process.env.PRIVATE_KEY ?? '';
+    if (!privateKey && !this._litSigner) {
+      throw new Error('PRIVATE_KEY is required (or provide a litSigner). Set it in .env or pass via config.');
     }
     this.privateKey = privateKey;
 
@@ -86,7 +93,13 @@ export class BaseClient {
     this.provider = new JsonRpcProvider(this.rpcEndpoints[0], this.expectedChainId, {
       staticNetwork: true,
     });
-    this.signer = new Wallet(privateKey, this.provider);
+
+    // Use Lit PKP signer if provided, otherwise fall back to standard Wallet
+    if (this._litSigner) {
+      this.signer = this._litSigner.connect(this.provider) as LitPKPSigner;
+    } else {
+      this.signer = new Wallet(this.privateKey, this.provider);
+    }
 
     console.log(`[BaseClient] Initialized with RPC: ${this.rpcEndpoints[0]} (${this.rpcEndpoints.length} endpoints available)`);
   }
@@ -103,7 +116,11 @@ export class BaseClient {
     this.provider = new JsonRpcProvider(newRpc, this.expectedChainId, {
       staticNetwork: true,
     });
-    this.signer = new Wallet(this.privateKey, this.provider);
+    if (this._litSigner) {
+      this.signer = this._litSigner.connect(this.provider) as LitPKPSigner;
+    } else {
+      this.signer = new Wallet(this.privateKey, this.provider);
+    }
     this.nonceTracker = null; // Reset nonce on provider change
 
     console.log(`[BaseClient] Rotated to RPC: ${newRpc}`);

@@ -1,5 +1,7 @@
 import express from "express";
 import path from "path";
+import { ContractClient } from "../chain/contract-client";
+import { ethers } from "ethers";
 
 export interface DashboardState {
   strategies: Array<{
@@ -88,6 +90,13 @@ export function updateConversationLog(entries: unknown[]): void {
 export function startDashboard(port: number = 3500): void {
   const app = express();
 
+  // CORS for DApp requests
+  app.use((_req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+  });
+
   app.use(express.static(path.join(__dirname)));
   app.use('/assets', express.static(path.join(__dirname, '../../assets')));
 
@@ -138,6 +147,63 @@ export function startDashboard(port: number = 3500): void {
       totalPnL: state.totalPnL,
       strategiesActive: state.strategies.length,
     });
+  });
+
+  // VaultV2 stats endpoint
+  app.get("/api/vault", async (_req, res) => {
+    try {
+      const cc = new ContractClient();
+      if (!cc.hasVaultV2()) {
+        return res.json({ configured: false, message: "VaultV2 not deployed" });
+      }
+      const [totalAssets, totalSupply, sharePrice, totalBorrowed, maxTotalAssets, availableAssets] = await Promise.all([
+        cc.vaultV2TotalAssets(),
+        cc.vaultV2TotalSupply(),
+        cc.vaultV2SharePrice(),
+        cc.vaultV2TotalBorrowed(),
+        cc.vaultV2MaxTotalAssets(),
+        cc.vaultV2AvailableAssets(),
+      ]);
+      res.json({
+        configured: true,
+        address: cc.getVaultV2Address(),
+        tvl: ethers.formatUnits(totalAssets, 6),
+        totalShares: ethers.formatUnits(totalSupply, 6),
+        sharePrice: ethers.formatUnits(sharePrice, 6),
+        totalBorrowed: ethers.formatUnits(totalBorrowed, 6),
+        maxTotalAssets: ethers.formatUnits(maxTotalAssets, 6),
+        availableAssets: ethers.formatUnits(availableAssets, 6),
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: msg });
+    }
+  });
+
+  // User portfolio endpoint
+  app.get("/api/portfolio/:address", async (req, res) => {
+    try {
+      const cc = new ContractClient();
+      if (!cc.hasVaultV2()) {
+        return res.json({ configured: false, message: "VaultV2 not deployed" });
+      }
+      const userAddress = req.params.address;
+      const [shares, sharePrice] = await Promise.all([
+        cc.vaultV2BalanceOf(userAddress),
+        cc.vaultV2SharePrice(),
+      ]);
+      const assetsValue = await cc.vaultV2ConvertToAssets(shares);
+      res.json({
+        configured: true,
+        address: userAddress,
+        shares: ethers.formatUnits(shares, 6),
+        sharePrice: ethers.formatUnits(sharePrice, 6),
+        assetsValue: ethers.formatUnits(assetsValue, 6),
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: msg });
+    }
   });
 
   app.listen(port, () => {

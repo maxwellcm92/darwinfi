@@ -11,6 +11,7 @@ import { UniswapClient, SwapResult, BASE_TOKENS } from './uniswap-client';
 import { PriceFeed, TOKEN_UNIVERSE, TokenDefinition } from './price-feed';
 import { BaseClient, getBaseClient } from '../chain/base-client';
 import { WalletManager } from '../chain/wallet-manager';
+import { ContractClient } from '../chain/contract-client';
 
 // -------------------------------------------------------------------
 // Types
@@ -71,6 +72,8 @@ export interface LiveEngineConfig {
   maxTradeSizeUsd?: number;
   /** Enable sell_only mode (no new buys, only exits) */
   sellOnly?: boolean;
+  /** Use VaultV2 for fund management (agent borrows before trade, returns after) */
+  useVaultV2?: boolean;
 }
 
 interface StrategyState {
@@ -95,6 +98,8 @@ export class LiveEngine {
   private minGasReserveEth: number;
   private maxTradeSizeUsd: number;
   private globalSellOnly: boolean;
+  private useVaultV2: boolean;
+  private contractClient: ContractClient | null = null;
 
   private strategyStates: Map<string, StrategyState> = new Map();
   private tradeLog: LiveTradeResult[] = [];
@@ -116,6 +121,23 @@ export class LiveEngine {
     this.minGasReserveEth = config?.minGasReserveEth ?? 0.002;
     this.maxTradeSizeUsd = config?.maxTradeSizeUsd ?? 1000;
     this.globalSellOnly = config?.sellOnly ?? false;
+    this.useVaultV2 = config?.useVaultV2 ?? false;
+
+    // Initialize VaultV2 integration if enabled
+    if (this.useVaultV2) {
+      try {
+        this.contractClient = new ContractClient(this.baseClient);
+        if (this.contractClient.hasVaultV2()) {
+          console.log('[LiveEngine] VaultV2 integration enabled');
+        } else {
+          console.warn('[LiveEngine] VaultV2 enabled but address not set, falling back to direct trading');
+          this.useVaultV2 = false;
+        }
+      } catch (err) {
+        console.warn('[LiveEngine] VaultV2 init failed, falling back to direct trading:', err);
+        this.useVaultV2 = false;
+      }
+    }
   }
 
   // ---------------------------------------------------------------
@@ -228,6 +250,12 @@ export class LiveEngine {
     // Check if we need to go through WETH (no direct USDC pool)
     const effectiveFee = fee;
 
+    // If using VaultV2, borrow USDC from vault before swap
+    if (this.useVaultV2 && this.contractClient) {
+      console.log(`[LiveEngine] Borrowing $${amountUsd} USDC from VaultV2 for trade`);
+      await this.contractClient.vaultV2BorrowFromVault(usdcAmount);
+    }
+
     console.log(
       `[LiveEngine] BUY ${tokenSymbol}: swapping $${amountUsd} USDC -> ${tokenSymbol} ` +
       `(fee tier: ${effectiveFee}, slippage: ${(slippageTolerance * 100).toFixed(1)}%)`
@@ -316,6 +344,12 @@ export class LiveEngine {
     const tokensSold = Number(ethers.formatUnits(tokenAmount, tokenDef.decimals));
     const usdcReceived = Number(ethers.formatUnits(swapResult.amountOut, 6));
     const executionPriceUsd = tokensSold > 0 ? usdcReceived / tokensSold : 0;
+
+    // If using VaultV2, return USDC proceeds to vault after sell
+    if (this.useVaultV2 && this.contractClient && swapResult.amountOut > 0n) {
+      console.log(`[LiveEngine] Returning $${usdcReceived.toFixed(2)} USDC to VaultV2`);
+      await this.contractClient.vaultV2ReturnToVault(swapResult.amountOut);
+    }
 
     const result = this.buildResult(
       strategyId,
@@ -453,6 +487,32 @@ export class LiveEngine {
 
   getStrategyStats(strategyId: string): StrategyState | null {
     return this.strategyStates.get(strategyId) ?? null;
+  }
+
+  // ---------------------------------------------------------------
+  // VaultV2 helpers
+  // ---------------------------------------------------------------
+
+  /**
+   * Get max trade size based on vault TVL (5% of TVL per trade).
+   * Falls back to the configured maxTradeSizeUsd if VaultV2 is not active.
+   */
+  async getVaultScaledMaxTradeSize(): Promise<number> {
+    if (!this.useVaultV2 || !this.contractClient) {
+      return this.maxTradeSizeUsd;
+    }
+    try {
+      const totalAssets = await this.contractClient.vaultV2TotalAssets();
+      const tvlUsd = Number(ethers.formatUnits(totalAssets, 6));
+      const vaultMaxTrade = tvlUsd * 0.05; // 5% of TVL
+      return Math.min(vaultMaxTrade, this.maxTradeSizeUsd);
+    } catch {
+      return this.maxTradeSizeUsd;
+    }
+  }
+
+  isVaultV2Active(): boolean {
+    return this.useVaultV2 && !!this.contractClient;
   }
 
   // ---------------------------------------------------------------

@@ -127,7 +127,11 @@ class DarwinAgent {
     // Trading infrastructure (RPC health check happens at start())
     const uniswap = new UniswapClient();
     this.priceFeed = new PriceFeed(uniswap);
-    this.liveEngine = new LiveEngine(undefined, { uniswap, priceFeed: this.priceFeed });
+    const useVaultV2 = !!process.env.DARWIN_VAULT_V2_ADDRESS;
+    this.liveEngine = new LiveEngine(
+      { useVaultV2 },
+      { uniswap, priceFeed: this.priceFeed }
+    );
 
     // Persistence
     this.statePersistence = new StatePersistence();
@@ -765,11 +769,17 @@ class DarwinAgent {
     // Execute live trade if not dry run and strategy is live
     if (!this.config.dryRun && strategy.status === 'live') {
       try {
+        // Scale trade size: use vault TVL (5% per trade) if VaultV2 active, else fixed $25 budget
+        const maxTradeSize = await this.liveEngine.getVaultScaledMaxTradeSize();
+        const tradeAmount = this.liveEngine.isVaultV2Active()
+          ? Math.min(signal.suggestedSize * 0.25, maxTradeSize)
+          : signal.suggestedSize * 0.25;
+
         const result = await this.liveEngine.executeLiveTrade({
           strategyId: strategy.id,
           action: 'buy',
           tokenSymbol: signal.token,
-          amount: signal.suggestedSize * 0.25, // Scale by $25 budget per strategy
+          amount: tradeAmount,
           slippageTolerance: 0.01,
         });
         if (result.success) {

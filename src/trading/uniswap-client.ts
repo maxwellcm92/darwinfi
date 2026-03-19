@@ -10,6 +10,7 @@
 
 import { ethers, Contract, Wallet } from 'ethers';
 import { BaseClient, getBaseClient } from '../chain/base-client';
+import type { LitPKPSigner } from '../chain/lit-wallet';
 
 // -------------------------------------------------------------------
 // Base mainnet addresses
@@ -202,7 +203,7 @@ export class UniswapClient {
   async approveToken(
     tokenAddress: string,
     amount?: bigint,
-    signer?: Wallet
+    signer?: Wallet | LitPKPSigner
   ): Promise<string | null> {
     const effectiveSigner = signer ?? this.baseClient.signer;
     const token = new Contract(tokenAddress, ERC20_ABI, effectiveSigner);
@@ -232,7 +233,7 @@ export class UniswapClient {
   /**
    * Execute an exactInputSingle swap on Uniswap V3.
    */
-  async swap(params: SwapParams, signer?: Wallet): Promise<SwapResult> {
+  async swap(params: SwapParams, signer?: Wallet | LitPKPSigner): Promise<SwapResult> {
     const {
       tokenIn,
       tokenOut,

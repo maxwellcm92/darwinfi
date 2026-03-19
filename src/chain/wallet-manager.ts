@@ -14,6 +14,7 @@ import {
   TransactionReceipt,
 } from 'ethers';
 import { BaseClient, getBaseClient } from './base-client';
+import type { LitPKPSigner } from './lit-wallet';
 
 // -------------------------------------------------------------------
 // Types
@@ -66,7 +67,7 @@ const ERC20_BALANCE_ABI = [
 // -------------------------------------------------------------------
 
 export class WalletManager {
-  private wallets: Map<string, Wallet> = new Map();
+  private wallets: Map<string, Wallet | LitPKPSigner> = new Map();
   private labels: Map<string, string> = new Map();
   private baseClient: BaseClient;
 
@@ -114,7 +115,7 @@ export class WalletManager {
   /**
    * Get wallet for a strategy bucket. Falls back to primary signer.
    */
-  getWallet(strategyBucket: string): Wallet {
+  getWallet(strategyBucket: string): Wallet | LitPKPSigner {
     return this.wallets.get(strategyBucket) ?? this.baseClient.signer;
   }
 

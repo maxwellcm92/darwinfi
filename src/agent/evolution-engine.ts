@@ -209,6 +209,7 @@ CONSTRAINTS:
 - riskPerTradePct: 0.5-5.0
 - maxPositions: 1-6
 - tokenPreferences: from [ETH, USDC, UNI, wstETH, ENS, AERO]
+- instinctWeight: 0.0-1.0 (how much to trust Instinct prediction layer; 0=ignore, 1=full trust)
 
 RESPOND WITH ONLY a JSON object in this exact format:
 {
@@ -222,7 +223,8 @@ RESPOND WITH ONLY a JSON object in this exact format:
     "indicators": [...],
     "riskPerTradePct": ...,
     "maxPositions": ...,
-    "tokenPreferences": [...]
+    "tokenPreferences": [...],
+    "instinctWeight": ...
   },
   "reasoning": "1-2 sentence explanation of the mutation rationale"
 }
@@ -387,6 +389,9 @@ Create a strategy that would rank #1 on the composite score by cherry-picking wi
       }
       if (params.maxPositions !== undefined) {
         params.maxPositions = Math.max(1, Math.min(6, Math.floor(params.maxPositions)));
+      }
+      if (params.instinctWeight !== undefined) {
+        params.instinctWeight = Math.max(0, Math.min(1.0, params.instinctWeight));
       }
 
       return {

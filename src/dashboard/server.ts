@@ -32,6 +32,15 @@ export interface DashboardState {
     event: string;
     details: string;
   }>;
+  circuitBreakerStates?: Array<{
+    strategyId: string;
+    isPaused: boolean;
+    pauseReason?: string;
+    consecutiveLosses: number;
+    currentDrawdown: number;
+    manualOverride: boolean;
+  }>;
+  qualificationMode?: boolean;
 }
 
 let state: DashboardState = {
@@ -46,6 +55,27 @@ let state: DashboardState = {
 
 // Conversation log entries (populated by the agent)
 let conversationLogEntries: unknown[] = [];
+
+// Event feed for live dashboard updates
+let eventFeed: Array<{
+  timestamp: string;
+  type: 'trade' | 'evolution' | 'promotion' | 'demotion' | 'circuit_breaker' | 'error' | 'qualification';
+  message: string;
+  details?: Record<string, unknown>;
+}> = [];
+
+export function pushEvent(type: string, message: string, details?: Record<string, unknown>): void {
+  eventFeed.push({
+    timestamp: new Date().toISOString(),
+    type: type as any,
+    message,
+    details,
+  });
+  // Keep last 100 events
+  if (eventFeed.length > 100) {
+    eventFeed = eventFeed.slice(-100);
+  }
+}
 
 export function updateDashboardState(newState: Partial<DashboardState>): void {
   state = { ...state, ...newState };
@@ -86,6 +116,18 @@ export function startDashboard(port: number = 3500): void {
       entries = entries.filter(e => e.type === type);
     }
     res.json(entries.slice(-limit));
+  });
+
+  app.get("/api/events", (_req, res) => {
+    res.json(eventFeed);
+  });
+
+  app.get("/api/strategy/:id/genome", (req, res) => {
+    const strategy = state.strategies.find(s => s.id === req.params.id);
+    if (!strategy) {
+      return res.status(404).json({ error: 'Strategy not found' });
+    }
+    res.json(strategy);
   });
 
   app.get("/api/health", (_req, res) => {

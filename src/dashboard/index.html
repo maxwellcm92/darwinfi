@@ -406,6 +406,162 @@
       text-align: center;
     }
 
+    /* Qualifying Badge */
+    .badge-qualifying {
+      background: rgba(255, 200, 0, 0.15);
+      color: #FFD040;
+      border: 1px solid rgba(255, 200, 0, 0.3);
+      animation: pulse 1.5s infinite;
+    }
+
+    /* Health Bar */
+    .health-bar-container {
+      width: 60px;
+      height: 8px;
+      background: rgba(30, 30, 74, 0.8);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .health-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s ease, background 0.3s;
+    }
+
+    .health-paused {
+      color: var(--danger);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    /* Elimination/Promotion Animations */
+    @keyframes eliminated {
+      0% { background: rgba(255, 48, 80, 0.3); }
+      100% { background: transparent; }
+    }
+
+    @keyframes promoted {
+      0% { background: rgba(128, 64, 221, 0.3); }
+      100% { background: transparent; }
+    }
+
+    @keyframes qualified {
+      0% { background: rgba(0, 240, 192, 0.4); transform: scale(1.02); }
+      100% { background: transparent; transform: scale(1); }
+    }
+
+    /* Live Event Feed */
+    .event-feed {
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    .event-entry {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(30, 30, 74, 0.3);
+      font-size: 12px;
+    }
+
+    .event-entry:last-child { border-bottom: none; }
+
+    .event-time {
+      color: var(--text-dim);
+      font-size: 10px;
+      min-width: 60px;
+    }
+
+    .event-type-badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .event-type-trade { background: rgba(255, 200, 0, 0.15); color: #FFD040; }
+    .event-type-evolution { background: rgba(64, 160, 255, 0.15); color: #40A0FF; }
+    .event-type-promotion { background: rgba(128, 64, 221, 0.15); color: var(--purple); }
+    .event-type-demotion { background: rgba(255, 48, 80, 0.15); color: var(--danger); }
+    .event-type-error { background: rgba(255, 48, 80, 0.15); color: var(--danger); }
+    .event-type-circuit_breaker { background: rgba(255, 128, 64, 0.15); color: #FF8040; }
+    .event-type-qualification { background: rgba(0, 240, 192, 0.15); color: var(--primary); }
+
+    .event-message {
+      color: var(--text);
+      flex: 1;
+    }
+
+    /* Genome Modal */
+    .genome-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .genome-modal {
+      background: var(--bg-card);
+      border: 1px solid var(--primary-dim);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 0 40px rgba(0, 240, 192, 0.1);
+    }
+
+    .genome-modal-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 11px;
+      color: var(--primary);
+      text-shadow: var(--glow-primary);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .genome-param {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(30, 30, 74, 0.5);
+      font-size: 12px;
+    }
+
+    .genome-param:last-child { border-bottom: none; }
+
+    .genome-param-label {
+      color: var(--text-dim);
+    }
+
+    .genome-param-value {
+      color: var(--text-bright);
+      font-weight: 600;
+    }
+
+    /* Strategy rows clickable */
+    .strategy-table tbody tr {
+      cursor: pointer;
+    }
+
+    /* Loading state */
+    .loading-text {
+      color: var(--text-dim);
+      font-size: 11px;
+      font-style: italic;
+    }
+
     /* Responsive */
     @media (max-width: 900px) {
       .overview-grid { grid-template-columns: repeat(2, 1fr); }
@@ -415,6 +571,7 @@
     @media (max-width: 600px) {
       .overview-grid { grid-template-columns: 1fr; }
       .header { flex-direction: column; gap: 12px; }
+      .event-feed { max-height: 200px; }
     }
   </style>
 </head>
@@ -425,6 +582,9 @@
       <div>
         <h1>DARWINFI</h1>
         <div class="tagline">Autonomous Self-Evolving Trading Agent</div>
+        <div class="tagline" style="margin-top: 2px; font-size: 10px; color: var(--text-dim); font-style: italic;">
+          An evolutionary protocol for discovering alpha -- every genome, every mutation, every promotion recorded immutably on-chain.
+        </div>
       </div>
     </div>
     <div class="connection" id="connection">
@@ -437,22 +597,22 @@
   <div class="overview-grid">
     <div class="overview-card">
       <div class="overview-label">Total P&L</div>
-      <div class="overview-value" id="total-pnl">$0.00</div>
+      <div class="overview-value" id="total-pnl"><span class="loading-text">Connecting to DarwinFi agent...</span></div>
       <div class="overview-sub" id="pnl-sub">--</div>
     </div>
     <div class="overview-card">
       <div class="overview-label">Live Strategy</div>
-      <div class="overview-value" id="live-strategy" style="font-size: 12px;">--</div>
+      <div class="overview-value" id="live-strategy" style="font-size: 12px;"><span class="loading-text">Connecting to DarwinFi agent...</span></div>
       <div class="overview-sub" id="live-sub">--</div>
     </div>
     <div class="overview-card">
       <div class="overview-label">Evolution Cycles</div>
-      <div class="overview-value" id="evo-count">0</div>
+      <div class="overview-value" id="evo-count"><span class="loading-text">Connecting to DarwinFi agent...</span></div>
       <div class="overview-sub" id="evo-sub">--</div>
     </div>
     <div class="overview-card">
       <div class="overview-label">Uptime</div>
-      <div class="overview-value" id="uptime">0:00:00</div>
+      <div class="overview-value" id="uptime"><span class="loading-text">Connecting to DarwinFi agent...</span></div>
       <div class="overview-sub" id="uptime-sub">--</div>
     </div>
   </div>
@@ -472,10 +632,19 @@
           <th>Win Rate</th>
           <th>Trades</th>
           <th>Gen</th>
+          <th>Health</th>
         </tr>
       </thead>
       <tbody id="strategy-tbody"></tbody>
     </table>
+  </div>
+
+  <!-- Live Event Feed -->
+  <div class="card">
+    <div class="card-header">Live Event Feed</div>
+    <div class="event-feed" id="event-feed">
+      <div class="empty-state">Waiting for events...</div>
+    </div>
   </div>
 
   <!-- Two Column: Trades + Evolution -->
@@ -508,19 +677,24 @@
   <script>
     let currentLogFilter = 'all';
     let lastLogData = [];
+    let lastState = null;
 
-    // Fetch state and conversation log
+    // Fetch state, conversation log, and events
     async function fetchAll() {
       try {
-        const [stateRes, logRes] = await Promise.all([
+        const [stateRes, logRes, eventsRes] = await Promise.all([
           fetch('api/state'),
           fetch('api/conversation-log'),
+          fetch('api/events'),
         ]);
         const state = await stateRes.json();
         const logData = await logRes.json();
+        const events = await eventsRes.json();
+        lastState = state;
         updateUI(state);
         lastLogData = logData;
         updateLogUI(logData);
+        updateEventFeed(events);
         setConnected(true);
       } catch (e) {
         setConnected(false);
@@ -550,8 +724,13 @@
       // Live Strategy
       const liveEl = document.getElementById('live-strategy');
       const liveStrat = data.strategies.find(s => s.status === 'live');
-      liveEl.textContent = liveStrat ? liveStrat.name : '--';
-      document.getElementById('live-sub').textContent = data.liveStrategy || '--';
+      if (data.qualificationMode) {
+        liveEl.textContent = liveStrat ? liveStrat.name : 'Qualifying...';
+        document.getElementById('live-sub').textContent = 'QUALIFICATION MODE';
+      } else {
+        liveEl.textContent = liveStrat ? liveStrat.name : '--';
+        document.getElementById('live-sub').textContent = data.liveStrategy || '--';
+      }
 
       // Evolution
       const evoEntries = data.evolutionHistory || [];
@@ -571,17 +750,28 @@
       document.getElementById('uptime-sub').textContent =
         data.strategies.filter(x => x.trades > 0).length + ' strategies with trades';
 
+      // Build circuit breaker lookup
+      const cbMap = {};
+      if (data.circuitBreakerStates) {
+        data.circuitBreakerStates.forEach(cb => { cbMap[cb.strategyId] = cb; });
+      }
+
       // Strategy Table
       const tbody = document.getElementById('strategy-tbody');
       const sorted = [...data.strategies].sort((a, b) => b.score - a.score);
       const maxScore = Math.max(...sorted.map(s => s.score), 0.001);
 
       tbody.innerHTML = sorted.map((s, idx) => {
-        const statusBadge = s.status === 'live'
-          ? '<span class="badge badge-live">LIVE</span>'
-          : s.status === 'sell_only'
-          ? '<span class="badge badge-sell-only">SELL ONLY</span>'
-          : '<span class="badge badge-paper">PAPER</span>';
+        let statusBadge;
+        if (data.qualificationMode && s.status === 'live') {
+          statusBadge = '<span class="badge badge-qualifying">QUALIFYING</span>';
+        } else if (s.status === 'live') {
+          statusBadge = '<span class="badge badge-live">LIVE</span>';
+        } else if (s.status === 'sell_only') {
+          statusBadge = '<span class="badge badge-sell-only">SELL ONLY</span>';
+        } else {
+          statusBadge = '<span class="badge badge-paper">PAPER</span>';
+        }
 
         const roleBadge = s.role
           ? ' <span class="badge badge-variation">' + s.role.substring(0, 3).toUpperCase() + '</span>'
@@ -590,7 +780,25 @@
         const scorePct = Math.round((s.score / maxScore) * 100);
         const pnlClass = s.pnl >= 0 ? 'pnl-positive' : 'pnl-negative';
 
-        return '<tr>' +
+        // Health bar
+        const cb = cbMap[s.id];
+        let healthCell;
+        if (cb && cb.isPaused) {
+          healthCell = '<span class="health-paused">PAUSED</span>';
+        } else if (cb) {
+          const maxDrawdown = 0.15; // 15% threshold
+          const health = Math.max(0, Math.min(1, 1 - (cb.currentDrawdown / maxDrawdown)));
+          const healthPct = Math.round(health * 100);
+          let barColor;
+          if (health > 0.5) barColor = 'var(--primary)';
+          else if (health > 0.25) barColor = '#FFD040';
+          else barColor = 'var(--danger)';
+          healthCell = '<div class="health-bar-container"><div class="health-bar-fill" style="width:' + healthPct + '%;background:' + barColor + '"></div></div>';
+        } else {
+          healthCell = '<div class="health-bar-container"><div class="health-bar-fill" style="width:100%;background:var(--primary)"></div></div>';
+        }
+
+        return '<tr data-strategy-id="' + escapeHtml(s.id) + '">' +
           '<td style="color:var(--primary);font-weight:700;">#' + (idx + 1) + '</td>' +
           '<td><span class="strategy-name">' + escapeHtml(s.name) + '</span></td>' +
           '<td>' + (s.role || s.type) + roleBadge + '</td>' +
@@ -600,8 +808,17 @@
           '<td>' + (s.winRate * 100).toFixed(0) + '%</td>' +
           '<td>' + s.trades + '</td>' +
           '<td>' + s.generation + '</td>' +
+          '<td>' + healthCell + '</td>' +
           '</tr>';
       }).join('');
+
+      // Add click handlers for genome modal
+      tbody.querySelectorAll('tr').forEach(row => {
+        row.addEventListener('click', () => {
+          const stratId = row.getAttribute('data-strategy-id');
+          if (stratId) showGenomeModal(stratId);
+        });
+      });
 
       // Recent Trades
       const tradesList = document.getElementById('trades-list');
@@ -634,6 +851,94 @@
             '</div>';
         }).join('');
       }
+    }
+
+    // Event Feed
+    function updateEventFeed(events) {
+      const feedEl = document.getElementById('event-feed');
+      if (!events || events.length === 0) {
+        feedEl.innerHTML = '<div class="empty-state">Waiting for events...</div>';
+        return;
+      }
+
+      const recent = events.slice(-20).reverse();
+      feedEl.innerHTML = recent.map(e => {
+        const time = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        return '<div class="event-entry">' +
+          '<span class="event-time">' + time + '</span>' +
+          '<span class="event-type-badge event-type-' + e.type + '">' + e.type.replace('_', ' ') + '</span>' +
+          '<span class="event-message">' + escapeHtml(e.message) + '</span>' +
+          '</div>';
+      }).join('');
+    }
+
+    // Genome Modal
+    async function showGenomeModal(strategyId) {
+      try {
+        const res = await fetch('api/strategy/' + encodeURIComponent(strategyId) + '/genome');
+        if (!res.ok) return;
+        const genome = await res.json();
+        renderGenomeModal(genome);
+      } catch (e) {
+        // Silently fail
+      }
+    }
+
+    function renderGenomeModal(genome) {
+      const overlay = document.createElement('div');
+      overlay.className = 'genome-modal-overlay';
+
+      const genomeFields = [
+        ['Name', genome.name],
+        ['ID', genome.id],
+        ['Generation', genome.generation],
+        ['Status', genome.status],
+        ['Role', genome.role || genome.type],
+        ['Score', genome.score != null ? genome.score.toFixed(4) : '--'],
+        ['P&L', genome.pnl != null ? '$' + genome.pnl.toFixed(2) : '--'],
+        ['Win Rate', genome.winRate != null ? (genome.winRate * 100).toFixed(1) + '%' : '--'],
+        ['Trades', genome.trades],
+        ['Entry Method', genome.entryMethod],
+        ['Entry Threshold', genome.entryThreshold],
+        ['Exit Method', genome.exitMethod],
+        ['Trailing Stop %', genome.trailingStopPct],
+        ['Take Profit %', genome.takeProfitPct],
+        ['Timeframe', genome.timeframe],
+        ['Indicators', genome.indicators ? JSON.stringify(genome.indicators) : '--'],
+        ['Risk Per Trade %', genome.riskPerTradePct],
+        ['Max Positions', genome.maxPositions],
+        ['Token Preferences', genome.tokenPreferences ? JSON.stringify(genome.tokenPreferences) : '--'],
+      ];
+
+      const paramsHtml = genomeFields
+        .filter(([, v]) => v != null && v !== undefined && v !== '--')
+        .map(([label, value]) => {
+          return '<div class="genome-param">' +
+            '<span class="genome-param-label">' + escapeHtml(label) + '</span>' +
+            '<span class="genome-param-value">' + escapeHtml(String(value)) + '</span>' +
+            '</div>';
+        }).join('');
+
+      overlay.innerHTML = '<div class="genome-modal">' +
+        '<div class="genome-modal-title">Strategy DNA - Gen ' + (genome.generation || 0) + '</div>' +
+        paramsHtml +
+        '</div>';
+
+      // Close on click outside
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+      });
+
+      document.body.appendChild(overlay);
+
+      // Close on Escape
+      const escHandler = (e) => {
+        if (e.key === 'Escape') {
+          overlay.remove();
+          document.removeEventListener('keydown', escHandler);
+        }
+      };
+      document.addEventListener('keydown', escHandler);
     }
 
     function updateLogUI(logData) {

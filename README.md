@@ -62,21 +62,24 @@ score = (rolling_24h_PnL * 0.30)
 
 ```
 darwinfi/
-  contracts/              # Solidity smart contracts (Base + Celo)
+  contracts/              # Solidity smart contracts (Base)
     DarwinVault.sol       # Fund management + per-strategy spending scopes
     StrategyExecutor.sol  # Uniswap V3 swap execution + trade logging
     PerformanceLog.sol    # On-chain performance + evolution event logging
   src/
     agent/
-      darwin-agent.ts     # Main orchestrator loop
-      strategy-manager.ts # 12-strategy lifecycle management
-      evolution-engine.ts # Claude API - strategy evolution
-      venice-engine.ts    # Venice AI - real-time execution decisions
-      performance.ts      # Composite scoring + rolling windows
+      darwin-agent.ts     # Main orchestrator loop (3 tick speeds)
+      strategy-manager.ts # 12-strategy lifecycle + proving ground gate
+      evolution-engine.ts # Venice AI - strategy evolution (3 persona roles)
+      claude-cli-engine.ts# Claude CLI - batch signal evaluation
+      performance.ts      # Composite scoring (sigmoid-normalized, Sharpe w/ Bessel)
+      circuit-breaker.ts  # Per-strategy + portfolio-wide safety limits
+      state-persistence.ts# JSON file-based state save/restore
+      conversation-log.ts # Full agent decision audit trail
     trading/
       paper-engine.ts     # Paper trading simulator (real price feeds)
       live-engine.ts      # On-chain Uniswap V3 execution
-      uniswap-client.ts   # Direct Uniswap V3 contract interaction
+      uniswap-client.ts   # Direct Uniswap V3 Quoter V2 interaction
       price-feed.ts       # Real-time price data from Uniswap pools
     chain/
       base-client.ts      # Base chain connection (ethers.js v6)
@@ -84,15 +87,27 @@ darwinfi/
       contract-client.ts  # Smart contract interaction layer
     integrations/
       ens.ts              # ENS/Basenames identity
-      filecoin.ts         # IPFS/Filecoin strategy storage
-      celo-client.ts      # Celo multi-chain deployment
+      filecoin.ts         # IPFS/Filecoin strategy genome storage
     dashboard/
-      server.ts           # Express API for monitoring
-      index.html          # Strategy tournament dashboard
+      server.ts           # Express API + event feed + genome endpoint
+      index.html          # Strategy tournament dashboard (live event feed, DNA diff, health bars)
+  test/
+    performance.test.ts   # 15 tests: Sharpe, PnL%, composite, drawdown
+    circuit-breaker.test.ts # 23 tests: drawdown, losses, halt, overrides
+    strategy-manager.test.ts # 10 tests: init, proving ground, promotion
+    paper-engine.test.ts  # 11 tests: slippage, VWAP, gas, PnL
   scripts/
     deploy.ts             # Contract deployment
-  hardhat.config.ts       # Hardhat config (Base + Celo)
+  hardhat.config.ts       # Hardhat config (Base)
 ```
+
+### Key Design Decisions
+
+- **Proving Ground**: No strategy trades real money until it has made at least one profitable paper trade
+- **Three-Tick Architecture**: Fast tick (30s, prices + rule-based stops), Signal tick (2min, Claude CLI batch), Evolution tick (4h, Venice AI mutations)
+- **Circuit Breakers**: Per-strategy drawdown limits (15%), portfolio-wide halt (25%), consecutive loss counter (5)
+- **Sigmoid-Normalized Scoring**: Consistent composite fitness scoring that doesn't shift when cohort composition changes (replaced min-max which had a shifting-scale bug)
+- **Parallel Price Fetches**: All token prices fetched via Promise.allSettled instead of sequential awaits (5x faster)
 
 ---
 
@@ -161,6 +176,23 @@ npm start
 
 ---
 
+## Testing
+
+59 tests across 4 modules, all passing:
+
+```bash
+npm test
+```
+
+| Module | Tests | Coverage |
+|--------|-------|----------|
+| PerformanceTracker | 15 | Sharpe (Bessel), PnL% (fees), composite, drawdown, win rate |
+| CircuitBreaker | 23 | Drawdown, losses, portfolio halt, overrides, price validation |
+| StrategyManager | 10 | Initialization, proving ground, promotion, serialization |
+| PaperEngine | 11 | Slippage, VWAP, gas costs, PnL calculations |
+
+---
+
 ## Live Demo
 
 **Dashboard**: [https://corduroycloud.com/darwinfi/](https://corduroycloud.com/darwinfi/)
@@ -183,12 +215,11 @@ npm start
 
 ## Built With
 
-- **Claude** (Anthropic) - Strategy evolution + code generation
-- **Venice AI** - Real-time execution decisions
-- **Uniswap V3** - On-chain swap execution
-- **Base** - Primary L2 chain
-- **Celo** - Secondary chain deployment
-- **Hardhat** - Smart contract development
+- **Claude** (Anthropic) - Batch signal evaluation via Claude CLI (Haiku 4.5)
+- **Venice AI** - Strategy evolution via 3 AI personas (Llama 3.3 70B)
+- **Uniswap V3** - On-chain swap execution + Quoter V2 price feeds
+- **Base** - Primary L2 chain (Coinbase)
+- **Hardhat** - Smart contract development + test runner
 - **ethers.js v6** - Chain interaction
 - **Claude Code** - Agent harness
 

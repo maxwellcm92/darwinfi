@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { ContractClient } from "../chain/contract-client";
 import { ethers } from "ethers";
+import { StateWriter } from "../instinct/nerves/state-writer";
 
 export interface DashboardState {
   strategies: Array<{
@@ -205,6 +206,15 @@ export function startDashboard(port: number = 3500): void {
       const msg = err instanceof Error ? err.message : String(err);
       res.status(500).json({ error: msg });
     }
+  });
+
+  // Instinct state endpoint (reads predictions-live.json from disk)
+  app.get("/api/instinct/state", (_req, res) => {
+    const instinctState = StateWriter.readState();
+    if (!instinctState) {
+      return res.json({ generatedAt: 0, tokens: {}, health: null, message: "Instinct not yet initialized" });
+    }
+    res.json(instinctState);
   });
 
   // SPA catch-all: serve index.html for all non-API routes (client-side routing)

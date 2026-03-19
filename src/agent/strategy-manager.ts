@@ -35,6 +35,7 @@ export interface StrategyGenome {
     riskPerTradePct: number;
     maxPositions: number;
     tokenPreferences: string[];
+    instinctWeight?: number;           // 0.0-1.0: how much to trust Instinct predictions
   };
   status: StrategyStatus;
   generation: number;

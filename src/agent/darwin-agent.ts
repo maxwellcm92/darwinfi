@@ -33,6 +33,8 @@ import { ConversationLog } from './conversation-log';
 import { startDashboard, updateDashboardState, updateConversationLog, DashboardState } from '../dashboard/server';
 import { ContractClient } from '../chain/contract-client';
 import { FilecoinStore } from '../integrations/filecoin';
+import { InstinctState } from '../instinct/types';
+import { StateWriter } from '../instinct/nerves/state-writer';
 
 // ---------------------------------------------------------------------------
 // Strategy ID -> uint256 mapping for on-chain logging
@@ -292,6 +294,14 @@ class DarwinAgent {
       await this.evaluateRuleBasedExits(liveStrategy, snapshots);
     }
 
+    // === INSTINCT: Load predictions from Instinct layer (if available) ===
+    let instinctState: InstinctState | null = null;
+    try {
+      instinctState = StateWriter.readState();
+    } catch {
+      // Instinct not running yet -- that's fine
+    }
+
     // === SIGNAL TICK (every ~2min): Claude CLI batch evaluation for entries/exits ===
     const now = new Date();
     const msSinceLastSignal = now.getTime() - this.lastSignalTime.getTime();
@@ -304,8 +314,8 @@ class DarwinAgent {
           // AI-powered exit evaluation (batch)
           await this.evaluateAiExits(liveStrategy, snapshots);
 
-          // AI-powered entry evaluation (batch)
-          await this.evaluateEntries(liveStrategy, snapshots);
+          // AI-powered entry evaluation (batch, with Instinct predictions if available)
+          await this.evaluateEntries(liveStrategy, snapshots, instinctState);
         }
 
         // Paper trading for non-live strategies (always runs, crucial during qualification)
@@ -538,7 +548,27 @@ class DarwinAgent {
   private async evaluateEntries(
     liveStrategy: StrategyGenome,
     snapshots: MarketSnapshot[],
+    instinctState?: InstinctState | null,
   ): Promise<void> {
+    // Enrich snapshots with Instinct predictions (if available and strategy trusts them)
+    if (instinctState && (liveStrategy.parameters.instinctWeight ?? 0) > 0) {
+      for (const snapshot of snapshots) {
+        const tokenInstinct = instinctState.tokens[snapshot.token];
+        if (!tokenInstinct) continue;
+
+        // Inject instinct context into snapshot metadata for the Claude CLI prompt
+        const pred5m = tokenInstinct.predictions['5m'];
+        const sentiment = tokenInstinct.sentiment;
+        if (pred5m) {
+          // @ts-expect-error Extending MarketSnapshot with instinct data
+          snapshot.instinctPrediction = `${pred5m.direction} (conf: ${pred5m.confidence}%, close: $${pred5m.predictedClose.toFixed(4)})`;
+          // @ts-expect-error
+          snapshot.instinctSentiment = `${sentiment.score.toFixed(2)} (${sentiment.topEvents.slice(0, 2).join('; ')})`;
+        }
+      }
+      this.conversationLog.system('instinct', `Instinct predictions injected for ${Object.keys(instinctState.tokens).length} tokens (weight: ${liveStrategy.parameters.instinctWeight})`);
+    }
+
     // Filter to tokens the live strategy cares about
     const relevantSnapshots = snapshots.filter(
       s => liveStrategy.parameters.tokenPreferences.includes(s.token)

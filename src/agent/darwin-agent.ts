@@ -27,6 +27,7 @@ import { MarketSnapshot, EntrySignal } from './venice-engine';
 import { PriceFeed, TOKEN_UNIVERSE } from '../trading/price-feed';
 import { UniswapClient } from '../trading/uniswap-client';
 import { LiveEngine } from '../trading/live-engine';
+import { computeAllIndicators, PricePoint } from '../trading/indicators';
 import { StatePersistence, PersistedState } from './state-persistence';
 import { ConversationLog } from './conversation-log';
 import { startDashboard, updateDashboardState, updateConversationLog, DashboardState } from '../dashboard/server';
@@ -113,6 +114,8 @@ class DarwinAgent {
   private loopCount: number = 0;
   private startTime: Date = new Date();
   private latestSnapshots: MarketSnapshot[] = [];
+  private dexScreenerCache: Map<string, { volume24h: number; priceChange24h: number; timestamp: number }> = new Map();
+  private readonly DEXSCREENER_CACHE_TTL = 60_000; // 60s cache
 
   constructor(config: AgentConfig) {
     this.config = config;
@@ -121,7 +124,7 @@ class DarwinAgent {
     this.evolutionEngine = new EvolutionEngine(config.veniceApiKey);
     this.signalEngine = new ClaudeCliEngine();
 
-    // Trading infrastructure
+    // Trading infrastructure (RPC health check happens at start())
     const uniswap = new UniswapClient();
     this.priceFeed = new PriceFeed(uniswap);
     this.liveEngine = new LiveEngine(undefined, { uniswap, priceFeed: this.priceFeed });
@@ -198,6 +201,16 @@ class DarwinAgent {
 
     // Register shutdown handlers
     this.registerShutdownHandlers();
+
+    // RPC health check with fallback rotation
+    const { getBaseClient } = await import('../chain/base-client');
+    const baseClient = getBaseClient();
+    const rpcOk = await baseClient.healthCheck();
+    if (rpcOk) {
+      console.log('[DarwinFi] RPC health check passed');
+    } else {
+      console.error('[DarwinFi] WARNING: All RPC endpoints failed health check. Will retry on first price fetch.');
+    }
 
     // Main loop
     console.log('[DarwinFi] Entering main loop...');
@@ -365,25 +378,153 @@ class DarwinAgent {
         priceChange24h = ((priceData.priceUsd - entry24h.price) / entry24h.price) * 100;
       }
 
+      // Compute technical indicators from price history buffer
+      const indicators = computeAllIndicators(history as PricePoint[]);
+
+      // Fetch DexScreener volume data
+      const tokenDef = TOKEN_UNIVERSE[symbol];
+      const dexData = await this.fetchDexScreenerData(tokenDef?.address || '');
+
       snapshots.push({
         token: symbol,
         price: priceData.priceUsd,
         priceChange1h,
         priceChange24h,
-        volume24h: 0,
+        volume24h: dexData?.volume24h || 0,
         volumeChange: 0,
         high24h: 0,
         low24h: 0,
+        rsi: indicators.rsi,
+        ema9: indicators.ema9,
+        ema21: indicators.ema21,
+        macd: indicators.macd,
+        macdSignal: indicators.macdSignal,
+        bollingerUpper: indicators.bollingerUpper,
+        bollingerLower: indicators.bollingerLower,
       });
     }
 
     if (snapshots.length > 0 && this.loopCount % 10 === 1) {
       console.log(
-        `[DarwinFi] Prices: ${snapshots.map(s => `${s.token}=$${s.price.toFixed(2)}`).join(' | ')}`
+        `[DarwinFi] Prices: ${snapshots.map(s => {
+          let line = `${s.token}=$${s.price.toFixed(4)}`;
+          if (s.rsi !== undefined) line += ` RSI:${s.rsi.toFixed(0)}`;
+          if (s.macd !== undefined) line += ` MACD:${s.macd.toFixed(4)}`;
+          return line;
+        }).join(' | ')}`
       );
     }
 
     return snapshots;
+  }
+
+  /**
+   * Fetch volume and price change from DexScreener API (free, no key).
+   * Cached for 60s to avoid rate limiting.
+   */
+  private async fetchDexScreenerData(tokenAddress: string): Promise<{ volume24h: number; priceChange24h: number } | null> {
+    if (!tokenAddress) return null;
+
+    const cached = this.dexScreenerCache.get(tokenAddress);
+    if (cached && Date.now() - cached.timestamp < this.DEXSCREENER_CACHE_TTL) {
+      return { volume24h: cached.volume24h, priceChange24h: cached.priceChange24h };
+    }
+
+    try {
+      const resp = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!resp.ok) return null;
+
+      const data = await resp.json() as any;
+      const pairs = data?.pairs;
+      if (!pairs || pairs.length === 0) return null;
+
+      // Use the highest-liquidity pair
+      const best = pairs.sort((a: any, b: any) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))[0];
+      const result = {
+        volume24h: best.volume?.h24 || 0,
+        priceChange24h: best.priceChange?.h24 || 0,
+        timestamp: Date.now(),
+      };
+
+      this.dexScreenerCache.set(tokenAddress, result);
+      return result;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Rule-based entry bypass: fire paper trades when mathematical conditions
+   * are met without waiting for AI. Breaks the bootstrap deadlock.
+   */
+  private evaluateRuleBasedEntries(
+    strategy: StrategyGenome,
+    snapshots: MarketSnapshot[],
+  ): EntrySignal[] {
+    const signals: EntrySignal[] = [];
+    const relevantSnapshots = snapshots.filter(
+      s => strategy.parameters.tokenPreferences.includes(s.token) && s.price > 0
+    );
+
+    for (const snapshot of relevantSnapshots) {
+      let triggered = false;
+      let reasoning = '';
+
+      switch (strategy.parameters.entryMethod) {
+        case 'rsi_oversold':
+          if (snapshot.rsi !== undefined && snapshot.rsi < strategy.parameters.entryThreshold) {
+            triggered = true;
+            reasoning = `RSI ${snapshot.rsi.toFixed(1)} < threshold ${strategy.parameters.entryThreshold}`;
+          }
+          break;
+
+        case 'ema_crossover':
+          if (snapshot.ema9 !== undefined && snapshot.ema21 !== undefined) {
+            const crossoverPct = ((snapshot.ema9 - snapshot.ema21) / snapshot.ema21) * 100;
+            if (crossoverPct > strategy.parameters.entryThreshold) {
+              triggered = true;
+              reasoning = `EMA9/21 crossover ${crossoverPct.toFixed(2)}% > threshold ${strategy.parameters.entryThreshold}%`;
+            }
+          }
+          break;
+
+        case 'bollinger_bounce':
+          if (snapshot.bollingerLower !== undefined && snapshot.price > 0) {
+            const distanceBelowBand = (snapshot.bollingerLower - snapshot.price) / snapshot.price;
+            if (snapshot.price < snapshot.bollingerLower) {
+              triggered = true;
+              reasoning = `Price $${snapshot.price.toFixed(4)} below Bollinger lower $${snapshot.bollingerLower.toFixed(4)}`;
+            }
+          }
+          break;
+
+        case 'macd_signal':
+          if (snapshot.macd !== undefined && snapshot.macdSignal !== undefined) {
+            if (snapshot.macd > snapshot.macdSignal && snapshot.macd < 0) {
+              triggered = true;
+              reasoning = `MACD ${snapshot.macd.toFixed(4)} crossed above signal ${snapshot.macdSignal.toFixed(4)} from negative`;
+            }
+          }
+          break;
+      }
+
+      if (triggered) {
+        signals.push({
+          token: snapshot.token,
+          action: 'buy',
+          confidence: 70, // Rule-based = mathematically met
+          reasoning: `[RULE-BASED] ${reasoning}`,
+          suggestedSize: strategy.parameters.riskPerTradePct * 10,
+          suggestedEntry: snapshot.price,
+          suggestedStop: snapshot.price * (1 - strategy.parameters.trailingStopPct / 100),
+          suggestedTarget: snapshot.price * (1 + strategy.parameters.takeProfitPct / 100),
+        });
+      }
+    }
+
+    return signals;
   }
 
   // -------------------------------------------------------------------------
@@ -794,26 +935,42 @@ class DarwinAgent {
         // AI exits for paper strategies
         await this.evaluateAiExits(strategy, snapshots);
 
-        // Then entries (batch)
+        // Then entries
+        const openPositions = this.performanceTracker.getOpenPositions(strategy.id);
+        if (openPositions.length >= strategy.parameters.maxPositions) continue;
+
+        // === RULE-BASED ENTRY BYPASS (fast path, no AI needed) ===
+        const ruleSignals = this.evaluateRuleBasedEntries(strategy, snapshots);
+        for (const signal of ruleSignals) {
+          if (openPositions.length >= strategy.parameters.maxPositions) break;
+          if (openPositions.some(p => p.token === signal.token)) continue;
+          const snapshot = snapshots.find(s => s.token === signal.token);
+          if (snapshot) {
+            console.log(`[DarwinFi] RULE-BASED paper entry: ${signal.token} (${signal.reasoning})`);
+            await this.executeBuy(strategy, signal, snapshot);
+          }
+        }
+
+        // === AI-BASED ENTRIES (lower threshold for paper: 45 vs 60 for live) ===
         const relevantSnapshots = snapshots.filter(
           s => strategy.parameters.tokenPreferences.includes(s.token)
         );
-        const openPositions = this.performanceTracker.getOpenPositions(strategy.id);
-
-        if (openPositions.length >= strategy.parameters.maxPositions) continue;
         if (relevantSnapshots.length === 0) continue;
 
-        // Filter to tokens we don't already hold
+        // Filter to tokens we don't already hold (including any just opened by rule-based)
+        const currentPositions = this.performanceTracker.getOpenPositions(strategy.id);
         const candidates = relevantSnapshots.filter(
-          s => s.price > 0 && !openPositions.some(p => p.token === s.token)
+          s => s.price > 0 && !currentPositions.some(p => p.token === s.token)
         );
         if (candidates.length === 0) continue;
+        if (currentPositions.length >= strategy.parameters.maxPositions) continue;
 
         // Batch evaluate entries via Claude CLI
         const signals = await this.signalEngine.evaluateEntry(strategy, candidates);
         for (const signal of signals) {
-          if (signal.action === 'buy' && signal.confidence >= 60) {
-            if (openPositions.length >= strategy.parameters.maxPositions) break;
+          // Paper mode uses confidence >= 45 (vs 60 for live)
+          if (signal.action === 'buy' && signal.confidence >= 45) {
+            if (currentPositions.length >= strategy.parameters.maxPositions) break;
             const snapshot = snapshots.find(s => s.token === signal.token);
             if (snapshot) {
               await this.executeBuy(strategy, signal, snapshot);
@@ -839,7 +996,11 @@ class DarwinAgent {
     const totalTrades = this.performanceTracker.getTotalCompletedTrades();
     const tradessinceLastEvolution = totalTrades - this.tradesAtLastEvolution;
 
-    const timeTriggered = msSinceLastEvolution >= this.config.evolutionIntervalMs;
+    // Accelerate evolution to 1h during qualification mode (no live strategy yet)
+    const evolutionInterval = this.strategyManager.qualificationMode
+      ? Math.min(this.config.evolutionIntervalMs, 60 * 60 * 1000) // 1h max during qualification
+      : this.config.evolutionIntervalMs;
+    const timeTriggered = msSinceLastEvolution >= evolutionInterval;
     const tradeTriggered = tradessinceLastEvolution >= this.config.minTradesForEvolution;
 
     if (timeTriggered || tradeTriggered) {

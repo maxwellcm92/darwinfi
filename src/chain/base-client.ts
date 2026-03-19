@@ -17,7 +17,11 @@ dotenv.config();
 export const BASE_MAINNET_CHAIN_ID = 8453;
 export const BASE_TESTNET_CHAIN_ID = 84532;
 
-const DEFAULT_MAINNET_RPC = 'https://mainnet.base.org';
+const MAINNET_RPC_ENDPOINTS = [
+  'https://base.llamarpc.com',
+  'https://mainnet.base.org',
+  'https://1rpc.io/base',
+];
 const DEFAULT_TESTNET_RPC = 'https://sepolia.base.org';
 
 // -------------------------------------------------------------------
@@ -47,33 +51,81 @@ export interface GasEstimate {
 // -------------------------------------------------------------------
 
 export class BaseClient {
-  public readonly provider: JsonRpcProvider;
-  public readonly signer: Wallet;
+  public provider: JsonRpcProvider;
+  public signer: Wallet;
   public readonly expectedChainId: number;
   public readonly maxGasPriceGwei: number;
 
   private nonceTracker: number | null = null;
   private nonceLock = false;
+  private rpcEndpoints: string[];
+  private currentRpcIndex: number = 0;
+  private privateKey: string;
 
   constructor(config: BaseClientConfig = {}) {
     const testnet = config.testnet ?? false;
     this.expectedChainId = testnet ? BASE_TESTNET_CHAIN_ID : BASE_MAINNET_CHAIN_ID;
     this.maxGasPriceGwei = config.maxGasPriceGwei ?? 5; // Base L2 gas is cheap
 
-    const rpcUrl = config.rpcUrl
-      ?? (testnet ? process.env.BASE_TESTNET_RPC_URL : process.env.BASE_RPC_URL)
-      ?? (testnet ? DEFAULT_TESTNET_RPC : DEFAULT_MAINNET_RPC);
-
     const privateKey = config.privateKey ?? process.env.PRIVATE_KEY;
     if (!privateKey) {
       throw new Error('PRIVATE_KEY is required. Set it in .env or pass via config.');
     }
+    this.privateKey = privateKey;
 
-    this.provider = new JsonRpcProvider(rpcUrl, this.expectedChainId, {
+    // Build RPC endpoint list
+    if (config.rpcUrl) {
+      this.rpcEndpoints = [config.rpcUrl];
+    } else if (testnet) {
+      this.rpcEndpoints = [process.env.BASE_TESTNET_RPC_URL ?? DEFAULT_TESTNET_RPC];
+    } else {
+      const envRpc = process.env.BASE_RPC_URL;
+      this.rpcEndpoints = envRpc ? [envRpc, ...MAINNET_RPC_ENDPOINTS] : [...MAINNET_RPC_ENDPOINTS];
+    }
+
+    this.provider = new JsonRpcProvider(this.rpcEndpoints[0], this.expectedChainId, {
       staticNetwork: true,
     });
-
     this.signer = new Wallet(privateKey, this.provider);
+
+    console.log(`[BaseClient] Initialized with RPC: ${this.rpcEndpoints[0]} (${this.rpcEndpoints.length} endpoints available)`);
+  }
+
+  /**
+   * Rotate to the next RPC endpoint. Returns true if rotated, false if exhausted all options.
+   */
+  rotateRpc(): boolean {
+    if (this.rpcEndpoints.length <= 1) return false;
+
+    this.currentRpcIndex = (this.currentRpcIndex + 1) % this.rpcEndpoints.length;
+    const newRpc = this.rpcEndpoints[this.currentRpcIndex];
+
+    this.provider = new JsonRpcProvider(newRpc, this.expectedChainId, {
+      staticNetwork: true,
+    });
+    this.signer = new Wallet(this.privateKey, this.provider);
+    this.nonceTracker = null; // Reset nonce on provider change
+
+    console.log(`[BaseClient] Rotated to RPC: ${newRpc}`);
+    return true;
+  }
+
+  /**
+   * Health check: try getBlockNumber on current provider. If it fails, rotate.
+   */
+  async healthCheck(): Promise<boolean> {
+    const startIdx = this.currentRpcIndex;
+    do {
+      try {
+        await this.provider.getBlockNumber();
+        return true;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[BaseClient] RPC health check failed (${this.rpcEndpoints[this.currentRpcIndex]}): ${msg}`);
+        if (!this.rotateRpc()) return false;
+      }
+    } while (this.currentRpcIndex !== startIdx);
+    return false;
   }
 
   // ---------------------------------------------------------------

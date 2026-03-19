@@ -437,22 +437,77 @@ Wired contract authorizations (`setStrategyExecutor`, `setLogger`) after deploym
 
 ---
 
+## Session 10: Profitability Audit & Optimization (2026-03-19)
+
+**Objective:** Diagnose and fix why zero trades executed after 1,401 loop iterations. Complete bootstrap deadlock: no prices (RPC 503), no indicators (not computed), no volume (hardcoded 0), tiny stable token universe.
+
+### Root Cause Analysis
+
+The cascade: No prices (RPC 503) -> no snapshots -> Haiku gets empty/useless data -> recommendation scores 8-35 -> entry confidence never hits 60 -> zero buy signals -> zero trades -> evolution engine has no data -> no improvement. Complete bootstrap deadlock.
+
+| # | Issue | Impact | Root Cause |
+|---|-------|--------|------------|
+| 1 | RPC 503 | Total block | Single endpoint `base.llamarpc.com`, no fallback |
+| 2 | No indicator data | Haiku gets no RSI/MACD/Bollinger | Snapshots pushed with no computed indicators |
+| 3 | Empty volume | Volume always 0 | Hardcoded `volume24h: 0` |
+| 4 | Tiny token universe | 5 tokens, all low-volatility | ETH/wstETH/UNI rarely trigger RSI<30 on 5m-1h |
+
+### What Claude Code Built
+
+**Sprint 1 -- Unblock Trading (6 items, all complete):**
+
+- **1a. RPC Fallback Chain** (`base-client.ts`) -- 3 endpoints (llamarpc, mainnet.base.org, 1rpc.io) with auto-rotation on 503/timeout and health check at startup. Provider + signer rebuild on rotation.
+
+- **1b. Technical Indicators** (`indicators.ts` NEW, 210 lines) -- Pure functions computing RSI-14, MACD(12,26,9), Bollinger Bands(20,2), EMA-9, EMA-21 from the price history buffer. `computeAllIndicators()` attaches whatever is computable given data length. Wired into `fetchMarketSnapshots()` in darwin-agent.ts. Log output now shows `RSI:XX | MACD:X.XXXX` per token.
+
+- **1c. Volume via DexScreener** (`darwin-agent.ts`) -- Real 24h volume from `https://api.dexscreener.com/latest/dex/tokens/{address}` (free, no key). 60s cache to avoid rate limiting. Replaces hardcoded 0.
+
+- **1d. Signal Prompt Scoring Rubric** (`claude-cli-engine.ts`) -- Added explicit rubric to Haiku's system prompt: "If strategy entry condition is mathematically met, confidence SHOULD be 60+. If close (within 15%), 40-59. If not close, below 40." Paper-mode confidence threshold lowered from 60 to 45 in darwin-agent.ts.
+
+- **1e. Token Universe Expansion** (`uniswap-client.ts`, `price-feed.ts`, `strategy-manager.ts`) -- Added 4 high-volatility Base-native tokens: DEGEN (1% fee), BRETT (1% fee), VIRTUAL (0.3% fee), HIGHER (1% fee). These move 20-50% in an hour vs ETH's 1-2%. Each strategy's `tokenPreferences` updated with 2 volatile tokens.
+
+- **1f. Rule-Based Entry Bypass** (`darwin-agent.ts`) -- Fast path fires paper trades when mathematical conditions are met without waiting for AI: RSI < threshold, EMA crossover > threshold%, price below Bollinger lower band, MACD crosses above signal from negative. Haiku evaluation runs async for learning but doesn't gate paper trades.
+
+**Sprint 2 -- Strategic Improvements (partial):**
+
+- **2a. Evolution Acceleration** -- Evolution interval reduced from 4h to 1h during qualification mode (no live strategy yet). Returns to 4h after first promotion.
+
+- **2c. Shorter Timeframe** -- 1m timeframe already supported in the type system; evolution engine can discover it through mutation.
+
+### Key Decision
+
+**Rule-based bypass is the most important change.** The AI-gated entry was a Catch-22: Haiku needs good data to make good calls, but good data only comes from trades flowing. The bypass breaks this by letting math-verified conditions execute immediately. Haiku still evaluates every trade for learning, so the evolution engine gets data even though it's not the gatekeeper.
+
+### Verification
+
+| Check | Result |
+|-------|--------|
+| TypeScript compilation | 0 errors |
+| Files changed | 7 (1 new, 6 modified) |
+| Token universe | 9 tokens (was 5) |
+| Expected first paper trades | Within 30 min of deployment |
+| Expected first live promotion | Within 2-4h of paper trades closing |
+
+**Code Impact:** 7 files modified, 1 file created (`indicators.ts`), ~400 lines added.
+
+---
+
 ## Technical Summary
 
 | Metric | Value |
 |--------|-------|
-| Source files | 32 |
-| Lines of code | ~11,100 |
+| Source files | 33 |
+| Lines of code | ~11,500 |
 | Test coverage | 59 tests (4 modules) |
 | Smart contracts | 3 (Solidity) |
-| TypeScript modules | 18 |
+| TypeScript modules | 19 |
 | Trading strategies | 12 (3 main + 9 variations) |
-| Token pairs | 5 (ETH, USDC, UNI, wstETH, AERO) |
+| Token pairs | 9 (ETH, USDC, UNI, wstETH, AERO, DEGEN, BRETT, VIRTUAL, HIGHER) |
 | Chains supported | 2 (Base, Celo) |
 | AI models integrated | 3 (Claude CLI for signals, Venice AI for evolution, Claude Haiku for batch eval) |
 | Sponsor integrations | 6 (Base, Uniswap, Venice AI, Filecoin, ENS, Lido) |
-| Git commits | 17+ |
-| Build time | ~3.5 hours |
+| Git commits | 20+ |
+| Build time | ~4.5 hours |
 
 ---
 

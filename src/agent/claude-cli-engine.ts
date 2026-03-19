@@ -40,6 +40,13 @@ export class ClaudeCliEngine {
 
     const systemPrompt = `You are a crypto trading signal engine. Analyze market data and decide whether to enter trades based on the strategy parameters. Be decisive and quantitative.
 
+SCORING RUBRIC (follow this strictly):
+- If the strategy's entry condition is mathematically met (e.g., RSI below threshold, price below Bollinger lower band, EMA crossover detected), confidence SHOULD be 60-85.
+- If close to threshold (within 15% of triggering), confidence should be 40-59.
+- If not close to threshold, confidence should be below 40.
+- Volume above average and price momentum aligned with entry = add 10 to confidence.
+- For volatile tokens (DEGEN, BRETT, VIRTUAL, HIGHER), be MORE aggressive -- these tokens move fast and opportunities are short-lived.
+
 RESPOND WITH ONLY a JSON array of objects, one per token:
 [
   {

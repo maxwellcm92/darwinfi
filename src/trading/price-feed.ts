@@ -76,6 +76,30 @@ export const TOKEN_UNIVERSE: Record<string, TokenDefinition> = {
     ethFeeTier: 3000,
     usdcFeeTier: 3000,
   },
+  DEGEN: {
+    address: BASE_TOKENS.DEGEN,
+    symbol: 'DEGEN',
+    decimals: 18,
+    ethFeeTier: 10000, // 1% fee tier for memecoins
+  },
+  BRETT: {
+    address: BASE_TOKENS.BRETT,
+    symbol: 'BRETT',
+    decimals: 18,
+    ethFeeTier: 10000,
+  },
+  VIRTUAL: {
+    address: BASE_TOKENS.VIRTUAL,
+    symbol: 'VIRTUAL',
+    decimals: 18,
+    ethFeeTier: 3000,
+  },
+  HIGHER: {
+    address: BASE_TOKENS.HIGHER,
+    symbol: 'HIGHER',
+    decimals: 18,
+    ethFeeTier: 10000,
+  },
 };
 
 // -------------------------------------------------------------------

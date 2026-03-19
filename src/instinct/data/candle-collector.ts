@@ -16,9 +16,9 @@ import { CandleStore } from './candle-store';
 import { POOL_REGISTRY, ALL_TOKENS, buildOhlcvUrl } from './pool-registry';
 import { Candle } from '../types';
 
-const LIVE_INTERVAL_MS = 60_000;
+const LIVE_INTERVAL_MS = 90_000;       // 90s between cycles (8 tokens * 4s delay = 32s per cycle)
 const BACKFILL_MONTHS = 6;
-const REQUEST_DELAY_MS = 2200;         // ~27 req/min, under 30 limit
+const REQUEST_DELAY_MS = 4000;         // ~15 req/min, safe margin under 30 limit
 const MAX_CANDLES_PER_REQUEST = 1000;
 
 const store = new CandleStore();

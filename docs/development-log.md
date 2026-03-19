@@ -1,7 +1,7 @@
 # DarwinFi Development Log
 
 > Built with [Claude Code](https://claude.com/claude-code) (`claude-opus-4-6`) as the agent harness.
-> Sessions: March 18-19, 2026. Total: 72 source files, ~16,700 lines of code, 165 tests.
+> Sessions: March 18-19, 2026 (15 sessions). Total: 268 source files, ~47,500 lines of code, 293 tests.
 
 ---
 
@@ -491,40 +491,6 @@ The cascade: No prices (RPC 503) -> no snapshots -> Haiku gets empty/useless dat
 **Code Impact:** 7 files modified, 1 file created (`indicators.ts`), ~400 lines added.
 
 ---
-
-## Technical Summary
-
-| Metric | Value |
-|--------|-------|
-| Source files | 33 |
-| Lines of code | ~11,500 |
-| Test coverage | 59 tests (4 modules) |
-| Smart contracts | 3 (Solidity) |
-| TypeScript modules | 19 |
-| Trading strategies | 12 (3 main + 9 variations) |
-| Token pairs | 9 (ETH, USDC, UNI, wstETH, AERO, DEGEN, BRETT, VIRTUAL, HIGHER) |
-| Chains supported | 2 (Base, Celo) |
-| AI models integrated | 3 (Claude CLI for signals, Venice AI for evolution, Claude Haiku for batch eval) |
-| Sponsor integrations | 6 (Base, Uniswap, Venice AI, Filecoin, ENS, Lido) |
-| Git commits | 20+ |
-| Build time | ~4.5 hours |
-
----
-
-## Architecture Decisions Log
-
-| Decision | Chosen | Alternatives Considered | Rationale |
-|----------|--------|------------------------|-----------|
-| Strategy competition model | 12-strategy Darwinian tournament | Single adaptive strategy, ensemble voting | Natural selection produces robust strategies without manual tuning. The 12-strategy population balances diversity with computational feasibility. |
-| AI role separation | Claude for evolution, Venice for execution | Single model for both, no AI | Claude excels at strategic reasoning (what parameters to change); Venice AI adds sponsor alignment and fast inference for real-time decisions. |
-| State persistence | JSON files with atomic writes | SQLite, Redis, on-chain storage | Debuggable, portable, zero dependencies. Atomic writes prevent corruption. Sufficient for single-node hackathon deployment. |
-| Performance scoring | Weighted composite (5 factors) | Raw PnL ranking, Sharpe-only, ELO rating | Multi-factor scoring prevents gaming (one lucky trade) and rewards consistency. Rolling 24h window keeps evaluation current. |
-| Fund isolation | Per-strategy budgets in DarwinVault | Shared pool, off-chain accounting | On-chain enforcement means a rogue strategy literally cannot overspend. Trustless by design. |
-| Token universe | 6 tokens (sponsor-aligned) | Top-20 by volume, stablecoins only | Balances liquidity with sponsor integration requirements. All tokens have deep Uniswap V3 pools on Base. |
-| Dashboard UX | Dark theme + retro gaming aesthetic | Minimal charts, no dashboard | The tournament visualization makes the Darwinian competition tangible and engaging for judges reviewing the demo. |
-
----
-
 ## Session 11: Immune System -- Autonomous IT Department (2026-03-19)
 
 **Objective:** Build a fully autonomous monitoring, self-healing, and self-evolving system modeled on biological immune defense. Zero runtime monitoring existed prior -- if something broke, nobody knew until a user reported it.
@@ -582,6 +548,153 @@ The cascade: No prices (RPC 503) -> no snapshots -> Haiku gets empty/useless dat
 - Patrol correctly detects real issues (missing predictions-live.json, npm vulnerabilities)
 - Membrane successfully reads on-chain vault state via Base L2 RPC
 - Self-healing attempted PM2 restart and state rebuild on first run
+
+
+## Session 12: Instinct -- Self-Evolving Prediction Intelligence (2026-03-19)
+
+**Objective:** Build a biologically-modeled prediction system that combines multiple data sources, generates multi-timeframe price predictions, and self-tunes its own parameters based on accuracy feedback. The trading agent had AI-generated signals but no persistent prediction layer that learns from its own mistakes.
+
+### Architecture: Seven Biological Subsystems
+
+| Subsystem | Analogy | Purpose |
+|-----------|---------|---------|
+| **Senses** | Eyes, ears | Price feeds, on-chain data, order book depth, social sentiment |
+| **Cortex** | Brain | Multi-model ensemble: weighted average of all sense inputs per token/timeframe |
+| **Reflexes** | Spinal cord | Fast-path rules: circuit breaker integration, flash crash detection, stale data rejection |
+| **Nerves** | Nervous system | Signal routing between senses and cortex, data normalization, conflict resolution |
+| **Marrow** | Bone marrow | Self-evolution: track prediction accuracy, tune instinctWeights via EMA, promote/demote models |
+| **Backtest** | Memory | Historical accuracy tracking, rolling accuracy windows, prediction journaling |
+| **Data** | Circulatory system | Candle aggregation (1m/5m/15m/1h), ring buffers, snapshot management |
+
+### Key Decisions
+
+- **instinctWeight self-tuning.** Each prediction model starts with weight 1.0. The Marrow evaluates accuracy every cycle: correct predictions increase weight by EMA(alpha=0.2), incorrect predictions decrease it. Bounded at [0.1, 5.0] to prevent any single model from dominating or being silenced completely.
+
+- **Multi-timeframe predictions.** Every token gets predictions at 1m, 5m, 15m, and 1h resolution simultaneously. The cortex generates a composite sentiment score (-1 to +1) per token by weighted-averaging across timeframes. This lets the trading agent match signal timeframe to strategy timeframe.
+
+- **Rate-limited API integration.** External data sources (DexScreener, on-chain reads) are rate-limited with per-source cooldowns to avoid API bans. Stale data (>5min for prices, >1h for sentiment) is flagged and down-weighted rather than rejected outright.
+
+### Implementation Stats
+
+| Metric | Value |
+|--------|-------|
+| New source files | 23 (under `src/instinct/`) |
+| Lines of code | 5,121 |
+| Subsystem modules | 7 (senses, cortex, reflexes, nerves, marrow, backtest, data) |
+| Prediction timeframes | 4 (1m, 5m, 15m, 1h) |
+| Token coverage | 8 (ETH, UNI, wstETH, AERO, DEGEN, BRETT, VIRTUAL, HIGHER) |
+
+---
+
+## Session 13: DApp UI/UX Overhaul -- React SPA (2026-03-19)
+
+**Objective:** Replace the single-page `index.html` dashboard (730 lines of vanilla HTML/JS) with a production-quality React SPA using Vite, TypeScript, Tailwind CSS, and RainbowKit wallet connection. The old dashboard was functional but looked like a monitoring tool, not a DeFi application.
+
+### Architecture
+
+- **Vite + React 18 + TypeScript** -- Fast builds, HMR in dev, optimized production bundles
+- **Tailwind CSS** with custom `darwin-*` design tokens (accent teal, purple, danger red, card/border/bg colors)
+- **RainbowKit + wagmi + viem** -- Wallet connection (MetaMask, Coinbase, WalletConnect) with Base chain config
+- **React Router** -- Client-side routing for multi-page SPA (Home, Portfolio, Tournament, Instinct, Frontier)
+- **WebGL shader hero** -- Real-time simplex noise shader (teal/purple palette) rendered to canvas behind hero text
+
+### DarwinVaultV2 (ERC-4626)
+
+Deployed a new ERC-4626 compliant vault (`0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3`) to replace the original custom vault. ERC-4626 is the standard tokenized vault interface, enabling:
+- `deposit(assets, receiver)` / `withdraw(assets, receiver, owner)` -- standard DeFi vault operations
+- `convertToShares()` / `convertToAssets()` -- transparent share price calculation
+- Composability with any DeFi protocol that supports ERC-4626 vaults
+
+### What Claude Code Built
+
+**DApp Frontend (35 source files, 4,284 lines):**
+- 5 pages: Home (vault stats + deposit/withdraw), Portfolio (user positions), Tournament (strategy leaderboard), Instinct (prediction dashboard), Frontier (cross-chain competition)
+- 17 components: ShaderHero, Navbar, VaultOverview, DepositCard, WithdrawCard, Leaderboard, TradesFeed, AgentStatus, PortfolioCard, InstinctChart, InstinctSummary, BotCard, ChainStatusBar, ChampionshipStandings, CrossChainTradeFlow, WhaleActivityFeed, VolatilityHeatmap
+- 6 hooks: useVaultStats, useVaultDeposit, useVaultWithdraw, useDarwinFiAPI, useInstinctAPI, useFrontierAPI
+- Custom CSS: scanline overlay, skeleton loaders, glow animations, gradient borders, pulse effects
+
+**Smart Contract (354 lines Solidity):**
+- `DarwinVaultV2.sol` -- ERC-4626 vault with agent borrowing, max capacity, pause, and performance fee
+
+**Design System:**
+- Dark background (#0B0B1A) with teal (#00F0C0) and purple (#8040DD) accents
+- Monospace `JetBrains Mono` throughout for the terminal/hacker aesthetic
+- Glassmorphism cards (backdrop-blur + semi-transparent backgrounds)
+- Responsive breakpoints: mobile-first with sm/md/lg overrides
+
+---
+
+## Session 14: Frontier -- Cross-Chain Competition Layer (2026-03-19)
+
+**Objective:** Add the Frontier tab -- a cross-chain expansion view showing multi-chain bot deployment, whale activity tracking, volatility heatmaps, and championship standings. This extends the Darwinian competition metaphor from "strategies competing within a vault" to "vaults competing across chains."
+
+### What Claude Code Built
+
+- **Frontier page** (139 lines) -- Aggregates data from 5 new components
+- **BotCard** -- Per-strategy card showing chain, score, PnL, and live/paper status
+- **ChainStatusBar** -- Multi-chain health indicators (Base, Arbitrum, Optimism, Polygon)
+- **CrossChainTradeFlow** -- Visualizes capital movement between chains
+- **WhaleActivityFeed** -- Large transaction monitoring for market impact awareness
+- **VolatilityHeatmap** -- Token x timeframe grid showing volatility intensity
+- **ChampionshipStandings** -- Cross-chain tournament rankings with season tracking
+- **useFrontierAPI hook** -- Data fetching layer for all Frontier components
+
+---
+
+## Session 15: UI Polish & Favicon (2026-03-19)
+
+**Objective:** Fix content hugging browser edges and replace the unrecognizable favicon crop with a purpose-built icon.
+
+### Changes
+
+- **Favicon replacement.** Generated all sizes (16, 32, 180, 192px + .ico) from a new 1024x1024 diagonal DNA helix source image. The previous favicon was a horizontal crop of the full wordmark logo -- barely recognizable at 16px.
+- **Page-level padding.** Increased horizontal padding across all breakpoints: mobile 16px->24px, tablet 24px->32px, desktop 32px->48px. Applied to both the main content area (`App.tsx`) and navbar (`Navbar.tsx`) for alignment.
+- **Hero internal spacing.** ShaderHero overlay text padding widened to prevent cramped feel against the shader canvas edges.
+- **Stat card consistency.** Normalized the VaultOverview utilization bar from `p-5` to `p-6` to match all other stat cards.
+
+---
+
+## Updated Technical Summary
+
+| Metric | Value |
+|--------|-------|
+| Total source files | 268 |
+| Total lines of code | ~47,500 |
+| Smart contracts | 4 (DarwinVault, VaultV2, StrategyExecutor, PerformanceLog) |
+| DApp frontend files | 35 (React + TypeScript) |
+| DApp components | 17 |
+| Backend TypeScript modules | 50+ |
+| Test coverage | 293 tests |
+| Trading strategies | 12 (3 main + 9 variations) |
+| Token pairs | 9 (ETH, USDC, UNI, wstETH, AERO, DEGEN, BRETT, VIRTUAL, HIGHER) |
+| Prediction timeframes | 4 (1m, 5m, 15m, 1h) |
+| Immune system divisions | 7 |
+| Instinct subsystems | 7 |
+| Chains supported | 2 (Base, Celo) |
+| AI models integrated | 3 (Claude CLI, Venice AI, Claude Haiku) |
+| Sponsor integrations | 6 (Base, Uniswap, Venice AI, Filecoin, ENS, Lido) |
+| PM2 processes | 3 (darwinfi, darwinfi-immune, darwinfi-candles) |
+| Live DApp | [corduroycloud.com/darwinfi](https://corduroycloud.com/darwinfi/) |
+| Git commits | 30+ |
+| Sessions | 15 |
+
+---
+
+## Updated Architecture Decisions Log
+
+| Decision | Chosen | Alternatives Considered | Rationale |
+|----------|--------|------------------------|-----------|
+| Strategy competition model | 12-strategy Darwinian tournament | Single adaptive strategy, ensemble voting | Natural selection produces robust strategies without manual tuning. The 12-strategy population balances diversity with computational feasibility. |
+| AI role separation | Claude for evolution, Venice for execution | Single model for both, no AI | Claude excels at strategic reasoning (what parameters to change); Venice AI adds sponsor alignment and fast inference for real-time decisions. |
+| State persistence | JSON files with atomic writes | SQLite, Redis, on-chain storage | Debuggable, portable, zero dependencies. Atomic writes prevent corruption. Sufficient for single-node hackathon deployment. |
+| Performance scoring | Weighted composite (5 factors) | Raw PnL ranking, Sharpe-only, ELO rating | Multi-factor scoring prevents gaming (one lucky trade) and rewards consistency. Rolling 24h window keeps evaluation current. |
+| Fund isolation | Per-strategy budgets in DarwinVault | Shared pool, off-chain accounting | On-chain enforcement means a rogue strategy literally cannot overspend. Trustless by design. |
+| Token universe | 9 tokens (5 major + 4 volatile) | Top-20 by volume, stablecoins only | Major tokens provide stability; volatile Base-native tokens (DEGEN, BRETT, VIRTUAL, HIGHER) create trading opportunities for paper strategies to qualify. |
+| Vault standard | ERC-4626 (VaultV2) | Custom vault, no standard | ERC-4626 is the DeFi vault standard. Enables composability with any protocol, standardized deposit/withdraw/share-price interface. |
+| DApp framework | Vite + React + Tailwind + RainbowKit | Next.js, vanilla HTML, Svelte | Vite for fast builds, React for component ecosystem, Tailwind for rapid styling, RainbowKit for one-line wallet connection. Standard DeFi stack. |
+| Prediction architecture | Biological subsystem model (7 modules) | Single ML model, simple moving averages | Multi-model ensemble with self-tuning weights adapts to changing market conditions. Biological metaphor aligns with the Darwinian theme. |
+| Monitoring approach | Autonomous immune system (separate process) | Manual monitoring, external APM | Self-healing reduces operational burden to zero. Separate process ensures the monitor survives agent crashes. Biological model (7 divisions) mirrors the prediction system's evolutionary approach. |
+| Dashboard UX | Dark glassmorphism + WebGL shader hero | Minimal charts, Material UI, no dashboard | The immersive visual design makes DarwinFi feel like a real DeFi product, not a hackathon prototype. WebGL shader reinforces the "living system" theme. |
 
 ---
 

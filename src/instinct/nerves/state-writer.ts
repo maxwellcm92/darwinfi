@@ -20,7 +20,7 @@ import { EventStore } from '../data/event-store';
 import { CandleStore } from '../data/candle-store';
 import { ALL_TOKENS } from '../data/pool-registry';
 
-const STATE_PATH = path.resolve(__dirname, '../../../data/instinct/nerves/predictions-live.json');
+const STATE_PATH = path.resolve(process.cwd(), 'data/instinct/nerves/predictions-live.json');
 const WRITE_INTERVAL_MS = 30_000;
 
 function ensureDir(dir: string): void {

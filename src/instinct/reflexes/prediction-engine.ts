@@ -20,8 +20,8 @@ import { PatternMatcher } from './pattern-matcher';
 import { GradingEngine } from './grading-engine';
 import { ALL_TOKENS } from '../data/pool-registry';
 
-const PREDICTIONS_DIR = path.resolve(__dirname, '../../../data/instinct/reflexes/predictions');
-const STRATEGIES_PATH = path.resolve(__dirname, '../../../data/instinct/reflexes/strategies.json');
+const PREDICTIONS_DIR = path.resolve(process.cwd(), 'data/instinct/reflexes/predictions');
+const STRATEGIES_PATH = path.resolve(process.cwd(), 'data/instinct/reflexes/strategies.json');
 
 function ensureDir(dir: string): void {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });

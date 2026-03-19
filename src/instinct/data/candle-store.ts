@@ -12,7 +12,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Candle, Resolution, RESOLUTION_MS } from '../types';
 
-const DATA_DIR = path.resolve(__dirname, '../../../data/candles');
+const DATA_DIR = path.resolve(process.cwd(), 'data/candles');
 
 interface CompactCandle {
   t: number;  // timestamp (unix seconds)

@@ -17,7 +17,7 @@ import {
 } from '../types';
 import { Scorer } from './scorer';
 
-const CORTEX_DIR = path.resolve(__dirname, '../../../data/instinct/cortex');
+const CORTEX_DIR = path.resolve(process.cwd(), 'data/instinct/cortex');
 const SOURCE_WEIGHTS_PATH = path.join(CORTEX_DIR, 'source-weights.json');
 const PREDICTION_WEIGHTS_PATH = path.join(CORTEX_DIR, 'prediction-weights.json');
 const WEIGHT_HISTORY_PATH = path.join(CORTEX_DIR, 'weight-history.jsonl');

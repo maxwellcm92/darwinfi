@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { WorldEvent } from '../types';
 
-const EVENTS_DIR = path.resolve(__dirname, '../../../data/instinct/senses/events');
+const EVENTS_DIR = path.resolve(process.cwd(), 'data/instinct/senses/events');
 
 function ensureDir(dir: string): void {
   if (!fs.existsSync(dir)) {

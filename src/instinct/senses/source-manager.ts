@@ -15,7 +15,7 @@ import { SourceConfig, SourceFitness, SourceStatus, WorldEvent } from '../types'
 import { CandleStore } from '../data/candle-store';
 import { EventStore } from '../data/event-store';
 
-const SOURCES_PATH = path.resolve(__dirname, '../../../data/instinct/senses/sources.json');
+const SOURCES_PATH = path.resolve(process.cwd(), 'data/instinct/senses/sources.json');
 const EVALUATION_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4h
 
 interface SourceAgent {

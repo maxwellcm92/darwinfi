@@ -18,7 +18,7 @@ import { StatisticalPredictor } from '../reflexes/statistical-predictor';
 import { PatternMatcher } from '../reflexes/pattern-matcher';
 import { GradingEngine } from '../reflexes/grading-engine';
 
-const BACKTEST_DIR = path.resolve(__dirname, '../../../data/instinct/backtest');
+const BACKTEST_DIR = path.resolve(process.cwd(), 'data/instinct/backtest');
 const RUNS_DIR = path.join(BACKTEST_DIR, 'runs');
 const SUMMARY_PATH = path.join(BACKTEST_DIR, 'summaries/strategy-backtest-summary.json');
 

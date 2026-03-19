@@ -10,7 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DetectedPattern } from '../types';
 
-const SUGGESTIONS_PATH = path.resolve(__dirname, '../../../data/instinct/marrow-suggestions.json');
+const SUGGESTIONS_PATH = path.resolve(process.cwd(), 'data/instinct/marrow-suggestions.json');
 
 export interface WorkflowSuggestion {
   patternId: string;

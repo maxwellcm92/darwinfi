@@ -11,7 +11,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DetectedPattern } from '../types';
 
-const PATTERNS_PATH = path.resolve(__dirname, '../../../data/instinct/marrow-patterns.json');
+const PATTERNS_PATH = path.resolve(process.cwd(), 'data/instinct/marrow-patterns.json');
 
 interface OperationLog {
   timestamp: number;

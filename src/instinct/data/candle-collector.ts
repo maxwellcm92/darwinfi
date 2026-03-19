@@ -16,25 +16,35 @@ import { CandleStore } from './candle-store';
 import { POOL_REGISTRY, ALL_TOKENS, buildOhlcvUrl } from './pool-registry';
 import { Candle } from '../types';
 
-const LIVE_INTERVAL_MS = 90_000;       // 90s between cycles (8 tokens * 4s delay = 32s per cycle)
+const LIVE_INTERVAL_MS = 100_000;      // 100s between cycles (8 tokens * 8s delay = 64s per cycle + margin)
 const BACKFILL_MONTHS = 6;
-const REQUEST_DELAY_MS = 4000;         // ~15 req/min, safe margin under 30 limit
+const REQUEST_DELAY_MS = 8000;         // 8s between requests (~7.5 req/min)
+const BACKFILL_DELAY_MS = 6000;        // 6s for backfill (slightly faster since sequential)
 const MAX_CANDLES_PER_REQUEST = 1000;
 
 const store = new CandleStore();
 
 // -------------------------------------------------------------------
-// HTTP fetch (Node 18+ built-in fetch)
+// HTTP fetch with 429 retry (Node 18+ built-in fetch)
 // -------------------------------------------------------------------
 
-async function fetchJson(url: string): Promise<unknown> {
-  const response = await fetch(url, {
-    headers: { 'Accept': 'application/json' },
-  });
-  if (!response.ok) {
-    throw new Error(`GeckoTerminal ${response.status}: ${response.statusText} -- ${url}`);
+async function fetchJson(url: string, retries = 2): Promise<unknown> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const response = await fetch(url, {
+      headers: { 'Accept': 'application/json' },
+    });
+    if (response.status === 429 && attempt < retries) {
+      const backoff = (attempt + 1) * 15_000; // 15s, 30s
+      console.warn(`[Candles] 429 rate limited, backing off ${backoff / 1000}s...`);
+      await sleep(backoff);
+      continue;
+    }
+    if (!response.ok) {
+      throw new Error(`GeckoTerminal ${response.status}: ${response.statusText} -- ${url}`);
+    }
+    return response.json();
   }
-  return response.json();
+  throw new Error(`GeckoTerminal: max retries exceeded for ${url}`);
 }
 
 function sleep(ms: number): Promise<void> {
@@ -133,10 +143,10 @@ async function backfillToken(token: string): Promise<void> {
         console.log(`[Backfill] ${token}: ${totalCandles} candles, reached ${date} (${requests} requests)`);
       }
 
-      await sleep(REQUEST_DELAY_MS);
+      await sleep(BACKFILL_DELAY_MS);
     } catch (err) {
       console.error(`[Backfill] ${token} error:`, (err as Error).message);
-      await sleep(5000); // Longer delay on error
+      await sleep(15000); // 15s on error
     }
   }
 

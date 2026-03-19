@@ -14,7 +14,7 @@ Built for the [Synthesis Hackathon](https://synthesis.md/) -- "Agents that Pay" 
 
 1. **Self-Evolving Strategies** -- AI generates, mutates, and promotes trading strategies through Darwinian competition. No manual parameter tuning.
 2. **ERC-4626 Multi-User Vault** -- Standard tokenized vault. Deposit USDC, receive dvUSDC shares. As the pool grows from trading profits, shares appreciate automatically.
-3. **Lit Protocol Guardrails** -- A Programmable Key Pair (PKP) signs every transaction. An IPFS-hosted Lit Action enforces a strict trading policy: whitelisted contracts, whitelisted tokens, size limits. The agent provably cannot steal funds.
+3. **Lit Protocol Guardrails** -- A Programmable Key Pair (PKP) signs every transaction. An IPFS-hosted Lit Action enforces a strict trading policy: whitelisted contracts, whitelisted tokens, per-trade size limits (max 1000 USDC). The agent provably cannot steal funds.
 4. **Multi-AI Architecture** -- Claude (Anthropic) evaluates trade signals. Venice AI (Llama 3.3 70B) evolves strategy parameters. Two independent AI systems with different strengths.
 
 ---
@@ -118,9 +118,11 @@ The vault is the core financial primitive. Users deposit USDC and receive `dvUSD
 
 **Safety features:**
 - 1-hour minimum lock (anti-flash-loan)
+- `maxWithdraw`/`maxRedeem` return 0 during lock (ERC-4626 compliant)
 - 10,000 USDC max TVL cap
+- 1,000 USDC per-trade size limit (enforced in Lit Action)
 - Pausable deposits (owner emergency control)
-- Emergency withdrawal always available
+- Emergency withdrawal always available (emits standard `Withdraw` event)
 - 10% performance fee above high water mark
 
 ### StrategyExecutor & PerformanceLog
@@ -290,14 +292,14 @@ npm start
 
 ## On-Chain Artifacts
 
-| Contract | Base Address |
-|----------|-------------|
-| DarwinVault (v1) | Deployed |
-| DarwinVaultV2 (ERC-4626) | Ready to deploy |
-| StrategyExecutor | Deployed |
-| PerformanceLog | Deployed |
+| Contract | Base Address | Status |
+|----------|-------------|--------|
+| DarwinVaultV2 (ERC-4626) | [`0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3`](https://basescan.org/address/0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3) | Live |
+| DarwinVault (v1) | [`0x02649973e13c5bb6aFFCD2d9d870bcd3BF8f446B`](https://basescan.org/address/0x02649973e13c5bb6aFFCD2d9d870bcd3BF8f446B) | Deprecated |
+| StrategyExecutor | Deployed | Live |
+| PerformanceLog | Deployed | Live |
 
-**DarwinFi Wallet**: `0xb2db53Db9a2349186F0214BC3e1bF08a195570e3` (Base)
+**DarwinFi Wallet**: [`0xb2db53Db9a2349186F0214BC3e1bF08a195570e3`](https://basescan.org/address/0xb2db53Db9a2349186F0214BC3e1bF08a195570e3) (Base)
 
 **ENS**: darwinfi.base.eth
 
@@ -323,6 +325,17 @@ npm start
 ## License
 
 MIT License -- see [LICENSE](LICENSE)
+
+---
+
+## Operational Costs
+
+| Component | Daily Cost | Notes |
+|-----------|-----------|-------|
+| Venice AI (Llama 3.3 70B) | ~$0.30 | Strategy evolution, 15m/1h predictions |
+| Claude Haiku | ~$0.00 | 1m/5m predictions (included in subscription) |
+| Base L2 gas | ~$0.10 | Swaps + vault interactions |
+| **Total** | **~$0.40/day** | vs projected 10% performance fee on profits |
 
 ---
 

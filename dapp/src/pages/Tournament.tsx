@@ -1,6 +1,8 @@
 import { Leaderboard } from "../components/Leaderboard";
 import { useDarwinFiAPI } from "../hooks/useDarwinFiAPI";
 import type { EvolutionEntry } from "../hooks/useDarwinFiAPI";
+import { ChampionshipStandings } from "../components/ChampionshipStandings";
+import { useFrontierAPI } from "../hooks/useFrontierAPI";
 
 function formatTimestamp(timestamp: string): string {
   try {
@@ -20,10 +22,19 @@ function formatTimestamp(timestamp: string): string {
 function EvolutionTimeline({ entries, loading }: { entries: EvolutionEntry[]; loading: boolean }) {
   if (loading && entries.length === 0) {
     return (
-      <div className="bg-darwin-card border border-darwin-border rounded-lg p-8 text-center">
-        <p className="font-mono text-darwin-text-dim animate-pulse-glow">
-          Loading evolution history...
-        </p>
+      <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6">
+        <div className="section-header text-darwin-text-bright mb-4">EVOLUTION TIMELINE</div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="skeleton w-10 h-10 rounded-lg" />
+              <div className="flex-1">
+                <div className="skeleton-text w-40 mb-2" />
+                <div className="skeleton-text w-24" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -32,9 +43,9 @@ function EvolutionTimeline({ entries, loading }: { entries: EvolutionEntry[]; lo
   const sorted = [...entries].sort((a, b) => b.cycle - a.cycle);
 
   return (
-    <div className="bg-darwin-card border border-darwin-border rounded-lg overflow-hidden">
-      <div className="p-4 border-b border-darwin-border">
-        <h3 className="font-arcade text-xs text-darwin-purple tracking-wider text-glow-purple">
+    <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl overflow-hidden transition-all duration-300 hover:border-darwin-border/80 hover:shadow-lg hover:shadow-black/20">
+      <div className="p-5 border-b border-darwin-border/50">
+        <h3 className="section-header text-darwin-text-bright">
           EVOLUTION TIMELINE
         </h3>
       </div>
@@ -46,16 +57,16 @@ function EvolutionTimeline({ entries, loading }: { entries: EvolutionEntry[]; lo
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-darwin-border/50 max-h-96 overflow-y-auto">
+        <div className="divide-y divide-darwin-border/30 max-h-96 overflow-y-auto">
           {sorted.map((entry) => (
             <div
               key={entry.cycle}
-              className="px-4 py-3 hover:bg-darwin-card-hover transition-colors"
+              className="px-5 py-3 hover:bg-darwin-card-hover transition-colors"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
                   {/* Cycle number */}
-                  <div className="w-10 h-10 rounded bg-darwin-purple/20 border border-darwin-purple/30 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-darwin-purple/20 border border-darwin-purple/30 flex items-center justify-center flex-shrink-0">
                     <span className="text-xs font-mono text-darwin-purple font-bold">
                       {entry.cycle}
                     </span>
@@ -95,11 +106,12 @@ function EvolutionTimeline({ entries, loading }: { entries: EvolutionEntry[]; lo
 export function Tournament() {
   const { strategies, strategiesLoading, evolution, evolutionLoading } =
     useDarwinFiAPI();
+  const { championship, championshipLoading } = useFrontierAPI();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="font-arcade text-sm text-darwin-text-bright tracking-wide">
+        <h1 className="section-header text-darwin-text-bright text-sm">
           TOURNAMENT
         </h1>
         <div className="flex items-center gap-2 text-xs font-mono text-darwin-text-dim">
@@ -110,6 +122,9 @@ export function Tournament() {
 
       {/* Leaderboard */}
       <Leaderboard strategies={strategies} loading={strategiesLoading} />
+
+      {/* Championship Standings (all 4 teams) */}
+      <ChampionshipStandings data={championship} loading={championshipLoading} />
 
       {/* Evolution Timeline */}
       <EvolutionTimeline entries={evolution} loading={evolutionLoading} />

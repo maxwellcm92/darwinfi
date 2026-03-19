@@ -9,7 +9,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { StrategyGenome } from './strategy-manager';
+import { FrontierGenome } from './frontier-genome';
 import { PerformanceMetrics } from './performance';
+import { WhaleWallet } from '../frontier/whale/whale-tracker';
+import { BreakerState } from './circuit-breaker';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,6 +32,16 @@ export interface PersistedState {
   strategies: StrategyGenome[];
   performance: Record<string, PerformanceMetrics>;
   conversationLog?: unknown[];
+  /** Team 4 Frontier state */
+  frontier?: {
+    bots: FrontierGenome[];
+    whaleRegistry?: WhaleWallet[];
+    circuitBreakers?: Record<string, BreakerState>;
+    championship?: {
+      evaluationCount: number;
+      lastStandings?: unknown;
+    };
+  };
 }
 
 export interface StatePersistenceConfig {

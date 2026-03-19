@@ -14,8 +14,8 @@ export function PortfolioCard() {
 
   if (!isConnected) {
     return (
-      <div className="bg-darwin-card border border-darwin-border rounded-lg p-8 text-center">
-        <p className="font-arcade text-xs text-darwin-text-dim mb-2">
+      <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-8 text-center">
+        <p className="section-header text-darwin-text-dim mb-2">
           CONNECT YOUR WALLET
         </p>
         <p className="text-sm font-mono text-darwin-text-dim">
@@ -29,11 +29,7 @@ export function PortfolioCard() {
   const valueNum = userShareValue ? parseFloat(userShareValue) : 0;
   const sharePriceNum = sharePrice ? parseFloat(sharePrice) : 1;
 
-  // Estimated PnL: (current value - cost basis)
-  // Cost basis approximation: shares * 1.0 (initial price)
-  // In reality, this would track actual deposit amounts, but for the frontend
-  // we approximate using the difference from 1.0 share price
-  const costBasis = sharesNum * 1.0; // Assumes deposited at 1:1
+  const costBasis = sharesNum * 1.0;
   const estimatedPnl = valueNum - costBasis;
   const pnlPct = costBasis > 0 ? (estimatedPnl / costBasis) * 100 : 0;
 
@@ -45,9 +41,9 @@ export function PortfolioCard() {
     now < userDepositTimestamp + lockSeconds;
 
   return (
-    <div className="bg-darwin-card border border-darwin-border rounded-lg p-5">
+    <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 transition-all duration-300 hover:border-darwin-border/80 hover:shadow-lg hover:shadow-black/20">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-arcade text-xs text-darwin-accent tracking-wider">
+        <h3 className="section-header text-darwin-text-bright">
           YOUR POSITION
         </h3>
         {isLocked && (
@@ -59,7 +55,7 @@ export function PortfolioCard() {
 
       <div className="space-y-4">
         {/* Address */}
-        <div className="bg-darwin-bg rounded p-3">
+        <div className="bg-darwin-bg rounded-lg p-4">
           <p className="text-xs font-mono text-darwin-text-dim mb-1">Connected Address</p>
           <p className="text-sm font-mono text-darwin-text-bright break-all">
             {address}
@@ -67,26 +63,26 @@ export function PortfolioCard() {
         </div>
 
         {/* Position Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-darwin-bg rounded p-3">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-darwin-bg rounded-lg p-4">
             <p className="text-xs font-mono text-darwin-text-dim mb-1">dvUSDC Shares</p>
             <p className="text-lg font-mono text-darwin-text-bright font-bold">
               {sharesNum.toLocaleString("en-US", { maximumFractionDigits: 6 })}
             </p>
           </div>
-          <div className="bg-darwin-bg rounded p-3">
+          <div className="bg-darwin-bg rounded-lg p-4">
             <p className="text-xs font-mono text-darwin-text-dim mb-1">Current Value</p>
             <p className="text-lg font-mono text-darwin-accent font-bold">
               ${valueNum.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
-          <div className="bg-darwin-bg rounded p-3">
+          <div className="bg-darwin-bg rounded-lg p-4">
             <p className="text-xs font-mono text-darwin-text-dim mb-1">Share Price</p>
             <p className="text-lg font-mono text-darwin-text-bright font-bold">
               ${sharePriceNum.toFixed(6)}
             </p>
           </div>
-          <div className="bg-darwin-bg rounded p-3">
+          <div className="bg-darwin-bg rounded-lg p-4">
             <p className="text-xs font-mono text-darwin-text-dim mb-1">Est. PnL</p>
             <p
               className={`text-lg font-mono font-bold ${
@@ -103,7 +99,7 @@ export function PortfolioCard() {
         </div>
 
         {/* Wallet USDC balance */}
-        <div className="flex items-center justify-between bg-darwin-bg rounded p-3">
+        <div className="flex items-center justify-between bg-darwin-bg rounded-lg p-4">
           <span className="text-xs font-mono text-darwin-text-dim">Wallet USDC Balance</span>
           <span className="text-sm font-mono text-darwin-text-bright">
             ${userUsdc ? parseFloat(userUsdc).toLocaleString("en-US", { maximumFractionDigits: 2 }) : "0.00"}

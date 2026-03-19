@@ -33,6 +33,7 @@ import { ConversationLog } from './conversation-log';
 import { startDashboard, updateDashboardState, updateConversationLog, DashboardState } from '../dashboard/server';
 import { ContractClient } from '../chain/contract-client';
 import { FilecoinStore } from '../integrations/filecoin';
+import { Championship } from './championship';
 import { InstinctState } from '../instinct/types';
 import { StateWriter } from '../instinct/nerves/state-writer';
 
@@ -53,6 +54,11 @@ const STRATEGY_ID_MAP: Record<string, bigint> = {
   'main-gamma-exp': 9n,
   'main-gamma-opt': 10n,
   'main-gamma-syn': 11n,
+  // Team 4 Frontier bots
+  'frontier-abiogenesis': 12n,
+  'frontier-mitosis': 13n,
+  'frontier-cambrian': 14n,
+  'frontier-symbiont': 15n,
 };
 
 // ---------------------------------------------------------------------------
@@ -106,6 +112,7 @@ class DarwinAgent {
   private conversationLog: ConversationLog;
   private contractClient: ContractClient | null = null;
   private filecoinStore: FilecoinStore | null = null;
+  private championship: Championship;
 
   private priceHistory: Map<string, Array<{price: number, timestamp: number}>> = new Map();
   private running: boolean = false;
@@ -138,6 +145,9 @@ class DarwinAgent {
     // Persistence
     this.statePersistence = new StatePersistence();
     this.conversationLog = new ConversationLog();
+
+    // Championship (cross-team competition -- Team 4 added when frontier agent runs)
+    this.championship = new Championship(this.performanceTracker, this.strategyManager);
 
     // On-chain logging (optional -- only if contract deployed)
     if (process.env.PERFORMANCE_LOG_ADDRESS) {
@@ -1223,6 +1233,9 @@ class DarwinAgent {
     const liveId = report.live;
     const liveMetrics = liveId ? this.performanceTracker.getMetrics(liveId) : null;
 
+    // Championship evaluation (runs with dashboard update, hourly check)
+    const championshipStandings = this.championship.evaluateChampionship();
+
     updateDashboardState({
       strategies,
       liveStrategy: report.live,
@@ -1231,6 +1244,16 @@ class DarwinAgent {
       uptime: uptimeSeconds,
       recentTrades: recentTrades.slice(0, 20),
       evolutionHistory,
+      championshipStandings: {
+        champions: championshipStandings.champions,
+        overallChampion: championshipStandings.overallChampion ? {
+          teamId: championshipStandings.overallChampion.teamId,
+          teamName: championshipStandings.overallChampion.teamName,
+          strategyId: championshipStandings.overallChampion.strategyId,
+          strategyName: championshipStandings.overallChampion.strategyName,
+          compositeScore: championshipStandings.overallChampion.compositeScore,
+        } : null,
+      },
     });
 
     // Push conversation log entries to the dashboard server

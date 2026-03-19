@@ -144,6 +144,8 @@ export class StrategyManager {
   private performanceTracker: PerformanceTracker;
   private consecutiveOutperformCycles: number;
   private _qualificationMode: boolean = true;
+  private qualificationProfitCount: Map<string, number> = new Map();
+  private static readonly MIN_QUALIFICATION_TRADES = 3;
 
   get qualificationMode(): boolean {
     return this._qualificationMode;
@@ -337,19 +339,30 @@ export class StrategyManager {
     const strategy = this.strategies.get(tradeRecord.strategyId);
     if (!strategy) return null;
 
+    // Track profitable trades per strategy -- require MIN_QUALIFICATION_TRADES before promotion
+    const currentCount = (this.qualificationProfitCount.get(strategy.id) ?? 0) + 1;
+    this.qualificationProfitCount.set(strategy.id, currentCount);
+
+    if (currentCount < StrategyManager.MIN_QUALIFICATION_TRADES) {
+      console.log(
+        `[DarwinFi] Qualification progress: ${strategy.id} has ${currentCount}/${StrategyManager.MIN_QUALIFICATION_TRADES} profitable trades`
+      );
+      return null;
+    }
+
     strategy.status = 'live';
     this._qualificationMode = false;
 
     console.log(
       `[DarwinFi] QUALIFICATION PASSED: ${strategy.id} promoted to live ` +
-      `after profitable trade (PnL=$${tradeRecord.pnl.toFixed(4)})`
+      `after ${currentCount} profitable trades (latest PnL=$${tradeRecord.pnl.toFixed(4)})`
     );
 
     this.promotionHistory.push({
       timestamp: new Date(),
       type: 'main_to_live',
       fromId: strategy.id,
-      reason: `Qualification mode: first profitable trade (PnL=$${tradeRecord.pnl.toFixed(4)})`,
+      reason: `Qualification mode: ${currentCount} profitable trades (latest PnL=$${tradeRecord.pnl.toFixed(4)})`,
     });
 
     return strategy.id;

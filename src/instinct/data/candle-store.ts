@@ -189,4 +189,50 @@ export class CandleStore {
     this.aggregate(token, '15m', fromTs);
     this.aggregate(token, '1h', fromTs);
   }
+
+  /**
+   * Prune old candles, keeping only the last `maxAgeSec` seconds of data.
+   * Default: 7 days (604800 seconds).
+   */
+  prune(token: string, resolution: Resolution, maxAgeSec: number = 7 * 24 * 3600): number {
+    const filePath = getFilePath(token, resolution);
+    if (!fs.existsSync(filePath)) return 0;
+
+    const cutoff = Math.floor(Date.now() / 1000) - maxAgeSec;
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const lines = content.trim().split('\n');
+    let pruned = 0;
+
+    const kept: string[] = [];
+    for (const line of lines) {
+      if (!line) continue;
+      try {
+        const compact: CompactCandle = JSON.parse(line);
+        if (compact.t < cutoff) {
+          pruned++;
+        } else {
+          kept.push(line);
+        }
+      } catch {
+        // Drop malformed lines
+        pruned++;
+      }
+    }
+
+    if (pruned > 0) {
+      fs.writeFileSync(filePath, kept.join('\n') + (kept.length > 0 ? '\n' : ''), 'utf-8');
+    }
+
+    return pruned;
+  }
+
+  /**
+   * Prune all resolutions for a token.
+   */
+  pruneAll(token: string, maxAgeSec: number = 7 * 24 * 3600): void {
+    const resolutions: Resolution[] = ['1m', '5m', '15m', '1h'];
+    for (const res of resolutions) {
+      this.prune(token, res, maxAgeSec);
+    }
+  }
 }

@@ -43,10 +43,20 @@ interface LeaderboardProps {
 export function Leaderboard({ strategies, loading }: LeaderboardProps) {
   if (loading && strategies.length === 0) {
     return (
-      <div className="bg-darwin-card border border-darwin-border rounded-lg p-8 text-center">
-        <p className="font-mono text-darwin-text-dim animate-pulse-glow">
-          Loading strategies...
-        </p>
+      <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6">
+        <div className="section-header text-darwin-text-bright mb-4">STRATEGY TOURNAMENT</div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-4">
+              <div className="skeleton w-8 h-8 rounded-lg" />
+              <div className="flex-1">
+                <div className="skeleton-text w-32 mb-2" />
+                <div className="skeleton-text w-full h-2" />
+              </div>
+              <div className="skeleton-text w-16" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -56,9 +66,9 @@ export function Leaderboard({ strategies, loading }: LeaderboardProps) {
   const maxScore = sorted.length > 0 ? Math.max(...sorted.map((s) => s.score), 1) : 1;
 
   return (
-    <div className="bg-darwin-card border border-darwin-border rounded-lg overflow-hidden">
-      <div className="p-4 border-b border-darwin-border">
-        <h3 className="font-arcade text-xs text-darwin-accent tracking-wider">
+    <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl overflow-hidden transition-all duration-300 hover:border-darwin-border/80 hover:shadow-lg hover:shadow-black/20">
+      <div className="p-5 border-b border-darwin-border/50">
+        <h3 className="section-header text-darwin-text-bright">
           STRATEGY TOURNAMENT
         </h3>
       </div>
@@ -73,7 +83,7 @@ export function Leaderboard({ strategies, loading }: LeaderboardProps) {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-darwin-border">
+              <tr className="border-b border-darwin-border/50">
                 <th className="px-4 py-3 text-left text-xs font-mono text-darwin-text-dim uppercase">#</th>
                 <th className="px-4 py-3 text-left text-xs font-mono text-darwin-text-dim uppercase">Strategy</th>
                 <th className="px-4 py-3 text-left text-xs font-mono text-darwin-text-dim uppercase">Role</th>
@@ -88,7 +98,7 @@ export function Leaderboard({ strategies, loading }: LeaderboardProps) {
               {sorted.map((strategy, index) => (
                 <tr
                   key={strategy.name}
-                  className={`border-b border-darwin-border/50 hover:bg-darwin-card-hover transition-colors ${
+                  className={`border-b border-darwin-border/30 hover:bg-darwin-card-hover transition-colors ${
                     index === 0 ? "bg-darwin-accent/5" : ""
                   }`}
                 >

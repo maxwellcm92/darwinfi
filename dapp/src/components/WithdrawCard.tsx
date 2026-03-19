@@ -44,13 +44,13 @@ export function WithdrawCard() {
   const isSuccess = isRedeemConfirmed;
 
   return (
-    <div className="bg-darwin-card border border-darwin-border rounded-lg p-5">
-      <h3 className="font-arcade text-xs text-darwin-purple tracking-wider mb-4 text-glow-purple">
+    <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 transition-all duration-300 hover:border-darwin-border/80 hover:shadow-lg hover:shadow-black/20">
+      <h3 className="section-header text-darwin-purple text-glow-purple mb-4">
         WITHDRAW
       </h3>
 
       {/* User position summary */}
-      <div className="bg-darwin-bg rounded p-3 mb-4 space-y-2">
+      <div className="bg-darwin-bg rounded-lg p-4 mb-4 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs font-mono text-darwin-text-dim">Your dvUSDC</span>
           <span className="text-sm font-mono text-darwin-text-bright">
@@ -67,7 +67,7 @@ export function WithdrawCard() {
 
       {/* Lock warning */}
       {isLocked && unlockTime && (
-        <div className="mb-4 p-3 bg-darwin-warning/10 border border-darwin-warning/30 rounded">
+        <div className="mb-4 p-3 bg-darwin-warning/10 border border-darwin-warning/30 rounded-lg">
           <p className="text-xs font-mono text-darwin-warning">
             Funds locked until {unlockTime.toLocaleString()}
           </p>
@@ -87,7 +87,7 @@ export function WithdrawCard() {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               disabled={isRedeeming || isSuccess}
-              className="w-full bg-darwin-bg border border-darwin-border rounded px-3 py-3 text-darwin-text-bright font-mono text-lg
+              className="w-full bg-darwin-bg border border-darwin-border rounded-lg px-3 py-3 text-darwin-text-bright font-mono text-lg
                 focus:border-darwin-purple focus:outline-none focus:ring-1 focus:ring-darwin-purple/30
                 disabled:opacity-50 disabled:cursor-not-allowed
                 placeholder:text-darwin-text-dim/40"
@@ -99,9 +99,9 @@ export function WithdrawCard() {
           <button
             onClick={handleMax}
             disabled={isRedeeming || isSuccess || !userShares}
-            className="px-3 py-3 bg-darwin-purple/10 text-darwin-purple border border-darwin-purple/30 rounded
+            className="px-3 py-3 bg-darwin-purple/10 text-darwin-purple border border-darwin-purple/30 rounded-lg
               text-xs font-mono uppercase tracking-wider
-              hover:bg-darwin-purple/20 transition-colors
+              hover:bg-darwin-purple/20 transition-all active:scale-[0.97]
               disabled:opacity-30 disabled:cursor-not-allowed"
           >
             MAX
@@ -116,7 +116,7 @@ export function WithdrawCard() {
         </div>
       ) : isSuccess ? (
         <div className="space-y-3">
-          <div className="text-center py-3 text-darwin-accent font-mono text-sm glow-accent rounded border border-darwin-accent/30 bg-darwin-accent/5">
+          <div className="text-center py-3 text-darwin-accent font-mono text-sm glow-accent rounded-lg border border-darwin-accent/30 bg-darwin-accent/5">
             Withdrawal successful!
           </div>
           {redeemTxHash && (
@@ -131,8 +131,8 @@ export function WithdrawCard() {
           )}
           <button
             onClick={handleReset}
-            className="w-full py-3 bg-darwin-card-hover text-darwin-text border border-darwin-border rounded
-              font-mono text-sm hover:border-darwin-purple/30 transition-colors"
+            className="w-full py-3 bg-darwin-card-hover text-darwin-text border border-darwin-border rounded-lg
+              font-mono text-sm hover:border-darwin-purple/30 transition-all active:scale-[0.97]"
           >
             New Withdrawal
           </button>
@@ -147,9 +147,10 @@ export function WithdrawCard() {
             parseFloat(amount) <= 0 ||
             (userShares != null && parseFloat(amount) > parseFloat(userShares))
           }
-          className="w-full py-3 rounded font-mono text-sm font-bold uppercase tracking-wider transition-all duration-200
+          className="w-full py-3 rounded-lg font-mono text-sm font-bold uppercase tracking-wider transition-all duration-200
             bg-darwin-purple text-darwin-text-bright
             hover:shadow-lg hover:shadow-darwin-purple/20
+            active:scale-[0.97]
             disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-none"
         >
           {isRedeeming
@@ -162,7 +163,7 @@ export function WithdrawCard() {
 
       {/* Error display */}
       {error && (
-        <div className="mt-3 p-3 bg-darwin-danger/10 border border-darwin-danger/30 rounded">
+        <div className="mt-3 p-3 bg-darwin-danger/10 border border-darwin-danger/30 rounded-lg">
           <p className="text-darwin-danger text-xs font-mono break-all">
             {error.length > 200 ? error.substring(0, 200) + "..." : error}
           </p>

@@ -22,7 +22,7 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="bg-darwin-card border border-darwin-border rounded-lg p-5 hover:border-darwin-accent/30 transition-colors">
+    <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 transition-all duration-300 hover:border-darwin-border/80 hover:shadow-lg hover:shadow-black/20">
       <p className="text-darwin-text-dim text-xs font-mono uppercase tracking-wider mb-2">
         {label}
       </p>
@@ -40,6 +40,15 @@ function StatCard({
   );
 }
 
+function StatSkeleton() {
+  return (
+    <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6">
+      <div className="skeleton-text w-24 mb-3" />
+      <div className="skeleton-value w-32" />
+    </div>
+  );
+}
+
 export function VaultOverview() {
   const {
     tvl,
@@ -50,6 +59,8 @@ export function VaultOverview() {
     paused,
     feeBps,
   } = useVaultStats();
+
+  const isLoading = tvl == null && sharePrice == null;
 
   const utilizationPct =
     tvl && borrowed && parseFloat(tvl) > 0
@@ -62,9 +73,9 @@ export function VaultOverview() {
       : null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-arcade text-sm text-darwin-text-bright tracking-wide">
+        <h2 className="section-header text-darwin-text-bright">
           VAULT STATUS
         </h2>
         {paused && (
@@ -74,32 +85,44 @@ export function VaultOverview() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatCard
-          label="Total Value Locked"
-          value={`$${formatUSD(tvl)}`}
-          accent
-        />
-        <StatCard
-          label="Share Price"
-          value={sharePrice ? `$${parseFloat(sharePrice).toFixed(6)}` : "--"}
-        />
-        <StatCard
-          label="Available USDC"
-          value={`$${formatUSD(available)}`}
-        />
-        <StatCard
-          label="Agent Borrowed"
-          value={`$${formatUSD(borrowed)}`}
-        />
-        <StatCard
-          label="Max Capacity"
-          value={`$${formatUSD(maxCapacity)}`}
-        />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {isLoading ? (
+          <>
+            <StatSkeleton />
+            <StatSkeleton />
+            <StatSkeleton />
+            <StatSkeleton />
+            <StatSkeleton />
+          </>
+        ) : (
+          <>
+            <StatCard
+              label="Total Value Locked"
+              value={`$${formatUSD(tvl)}`}
+              accent
+            />
+            <StatCard
+              label="Share Price"
+              value={sharePrice ? `$${parseFloat(sharePrice).toFixed(6)}` : "--"}
+            />
+            <StatCard
+              label="Available USDC"
+              value={`$${formatUSD(available)}`}
+            />
+            <StatCard
+              label="Agent Borrowed"
+              value={`$${formatUSD(borrowed)}`}
+            />
+            <StatCard
+              label="Max Capacity"
+              value={`$${formatUSD(maxCapacity)}`}
+            />
+          </>
+        )}
       </div>
 
       {/* Utilization bar */}
-      <div className="bg-darwin-card border border-darwin-border rounded-lg p-4">
+      <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 transition-all duration-300 hover:border-darwin-border/80">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-mono text-darwin-text-dim uppercase">
             Vault Utilization

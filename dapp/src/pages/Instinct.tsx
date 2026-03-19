@@ -29,10 +29,10 @@ export function Instinct() {
   const allTokens = instinctState?.tokens ?? {};
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="font-arcade text-sm text-darwin-text-bright tracking-wide">
+        <h1 className="section-header text-darwin-text-bright text-sm">
           INSTINCT
         </h1>
         {health && (
@@ -55,10 +55,10 @@ export function Instinct() {
             <button
               key={token}
               onClick={() => setSelectedToken(token)}
-              className={`px-3 py-1.5 rounded text-xs font-mono transition-all ${
+              className={`px-3 py-1.5 rounded-full text-xs font-mono transition-all border active:scale-[0.97] ${
                 selectedToken === token
-                  ? "bg-darwin-accent/20 text-darwin-accent border border-darwin-accent/40"
-                  : "bg-darwin-card text-darwin-text hover:text-darwin-text-bright border border-darwin-border hover:border-darwin-accent/20"
+                  ? "bg-darwin-accent/20 text-darwin-accent border-darwin-accent/40 nav-pill-active"
+                  : "bg-darwin-card/70 text-darwin-text hover:text-darwin-text-bright border-darwin-border/50 hover:border-darwin-accent/20"
               }`}
             >
               {token}
@@ -86,10 +86,10 @@ export function Instinct() {
           <button
             key={res}
             onClick={() => setSelectedResolution(res)}
-            className={`px-4 py-2 rounded text-xs font-mono transition-all ${
+            className={`px-4 py-2 rounded-full text-xs font-mono transition-all border active:scale-[0.97] ${
               selectedResolution === res
-                ? "bg-darwin-purple/20 text-darwin-purple border border-darwin-purple/40"
-                : "text-darwin-text-dim hover:text-darwin-text border border-transparent"
+                ? "bg-darwin-purple/20 text-darwin-purple border-darwin-purple/40 nav-pill-active"
+                : "text-darwin-text-dim hover:text-darwin-text border-transparent"
             }`}
           >
             {res.toUpperCase()}
@@ -107,10 +107,10 @@ export function Instinct() {
       />
 
       {/* Token Details Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Predictions Card */}
-        <div className="bg-darwin-card border border-darwin-border rounded-lg p-5">
-          <h3 className="font-arcade text-xs text-darwin-purple tracking-wider mb-4">
+        <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 transition-all duration-300 hover:border-darwin-border/80 hover:shadow-lg hover:shadow-black/20">
+          <h3 className="section-header text-darwin-text-bright mb-4">
             PREDICTIONS - {selectedToken}
           </h3>
           <div className="space-y-3">
@@ -149,8 +149,8 @@ export function Instinct() {
         </div>
 
         {/* Sentiment Card */}
-        <div className="bg-darwin-card border border-darwin-border rounded-lg p-5">
-          <h3 className="font-arcade text-xs text-darwin-accent tracking-wider mb-4">
+        <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 transition-all duration-300 hover:border-darwin-border/80 hover:shadow-lg hover:shadow-black/20">
+          <h3 className="section-header text-darwin-text-bright mb-4">
             SENTIMENT
           </h3>
           <div className="space-y-3">
@@ -183,7 +183,7 @@ export function Instinct() {
 
           {/* Top Events */}
           {tokenInstinct?.sentiment?.topEvents && tokenInstinct.sentiment.topEvents.length > 0 && (
-            <div className="mt-4 pt-3 border-t border-darwin-border">
+            <div className="mt-4 pt-3 border-t border-darwin-border/50">
               <p className="text-xs font-mono text-darwin-text-dim mb-2">Recent Events</p>
               {tokenInstinct.sentiment.topEvents.slice(0, 3).map((event, i) => (
                 <p key={i} className="text-xs font-mono text-darwin-text truncate mb-1">
@@ -197,8 +197,8 @@ export function Instinct() {
 
       {/* Key Levels */}
       {tokenInstinct?.keyLevels && (
-        <div className="bg-darwin-card border border-darwin-border rounded-lg p-5">
-          <h3 className="font-arcade text-xs text-darwin-accent tracking-wider mb-4">
+        <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 transition-all duration-300 hover:border-darwin-border/80 hover:shadow-lg hover:shadow-black/20">
+          <h3 className="section-header text-darwin-text-bright mb-4">
             KEY LEVELS - {selectedToken}
           </h3>
           <div className="grid grid-cols-2 gap-4">

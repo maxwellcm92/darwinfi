@@ -1,3 +1,4 @@
+import { ShaderHero } from "../components/ShaderHero";
 import { VaultOverview } from "../components/VaultOverview";
 import { DepositCard } from "../components/DepositCard";
 import { WithdrawCard } from "../components/WithdrawCard";
@@ -12,12 +13,15 @@ export function Home() {
   const { instinctState, instinctLoading } = useInstinctAPI();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Hero Banner */}
+      <ShaderHero />
+
       {/* Vault Overview */}
       <VaultOverview />
 
       {/* Deposit + Withdraw side by side */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <DepositCard />
         <WithdrawCard />
       </div>

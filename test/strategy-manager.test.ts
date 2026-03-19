@@ -47,13 +47,29 @@ describe('StrategyManager', () => {
   // ---------- promoteFirstQualified ----------
 
   describe('promoteFirstQualified', () => {
-    it('should promote strategy with profitable trade and exit qualification mode', () => {
-      const result = manager.promoteFirstQualified({
+    it('should require 3 profitable trades before promotion', () => {
+      // First profitable trade -- not yet promoted
+      const result1 = manager.promoteFirstQualified({
         strategyId: 'main-alpha',
         pnl: 5.0,
       });
+      expect(result1).to.be.null;
+      expect(manager.qualificationMode).to.be.true;
 
-      expect(result).to.equal('main-alpha');
+      // Second profitable trade -- still not promoted
+      const result2 = manager.promoteFirstQualified({
+        strategyId: 'main-alpha',
+        pnl: 3.0,
+      });
+      expect(result2).to.be.null;
+      expect(manager.qualificationMode).to.be.true;
+
+      // Third profitable trade -- NOW promoted
+      const result3 = manager.promoteFirstQualified({
+        strategyId: 'main-alpha',
+        pnl: 7.0,
+      });
+      expect(result3).to.equal('main-alpha');
       expect(manager.qualificationMode).to.be.false;
 
       const live = manager.getLiveStrategy();
@@ -81,7 +97,9 @@ describe('StrategyManager', () => {
     });
 
     it('should not promote when already out of qualification mode', () => {
-      // Promote first
+      // Promote first (3 profitable trades)
+      manager.promoteFirstQualified({ strategyId: 'main-alpha', pnl: 1 });
+      manager.promoteFirstQualified({ strategyId: 'main-alpha', pnl: 1 });
       manager.promoteFirstQualified({ strategyId: 'main-alpha', pnl: 1 });
 
       // Try again with a different strategy

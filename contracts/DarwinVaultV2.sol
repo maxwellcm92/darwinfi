@@ -159,6 +159,24 @@ contract DarwinVaultV2 is ERC4626, Ownable, ReentrancyGuard, Pausable {
         return super.mint(shares, receiver);
     }
 
+    /// @notice Returns 0 if the owner's lock time hasn't elapsed, otherwise delegates to ERC-4626 default.
+    function maxWithdraw(address owner_) public view override returns (uint256) {
+        uint256 depTime = depositTimestamp[owner_];
+        if (depTime > 0 && block.timestamp < depTime + minLockTime) {
+            return 0;
+        }
+        return super.maxWithdraw(owner_);
+    }
+
+    /// @notice Returns 0 if the owner's lock time hasn't elapsed, otherwise delegates to ERC-4626 default.
+    function maxRedeem(address owner_) public view override returns (uint256) {
+        uint256 depTime = depositTimestamp[owner_];
+        if (depTime > 0 && block.timestamp < depTime + minLockTime) {
+            return 0;
+        }
+        return super.maxRedeem(owner_);
+    }
+
     /// @dev Override withdraw to enforce lock time
     function withdraw(uint256 assets, address receiver, address owner_)
         public
@@ -243,6 +261,8 @@ contract DarwinVaultV2 is ERC4626, Ownable, ReentrancyGuard, Pausable {
         _burn(msg.sender, shares);
         IERC20(asset()).safeTransfer(msg.sender, assets);
 
+        // Emit standard ERC-4626 Withdraw event for integrator compatibility
+        emit Withdraw(msg.sender, msg.sender, msg.sender, assets, shares);
         emit EmergencyWithdrawal(msg.sender, shares, assets);
     }
 

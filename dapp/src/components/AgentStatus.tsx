@@ -18,10 +18,16 @@ interface AgentStatusProps {
 export function AgentStatus({ agentState, loading }: AgentStatusProps) {
   if (loading && !agentState) {
     return (
-      <div className="bg-darwin-card border border-darwin-border rounded-lg p-6 text-center">
-        <p className="font-mono text-darwin-text-dim animate-pulse-glow">
-          Connecting to agent...
-        </p>
+      <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6">
+        <div className="section-header text-darwin-text-bright mb-4">AGENT STATUS</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-darwin-bg rounded-lg p-4">
+              <div className="skeleton-text w-20 mb-2" />
+              <div className="skeleton-value w-24" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -29,9 +35,9 @@ export function AgentStatus({ agentState, loading }: AgentStatusProps) {
   const isOnline = agentState?.status === "running" || agentState?.status === "active";
 
   return (
-    <div className="bg-darwin-card border border-darwin-border rounded-lg p-5">
+    <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 transition-all duration-300 hover:border-darwin-border/80 hover:shadow-lg hover:shadow-black/20">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-arcade text-xs text-darwin-accent tracking-wider">
+        <h3 className="section-header text-darwin-text-bright">
           AGENT STATUS
         </h3>
         <div className="flex items-center gap-2">
@@ -50,29 +56,29 @@ export function AgentStatus({ agentState, loading }: AgentStatusProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-darwin-bg rounded p-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-darwin-bg rounded-lg p-4">
           <p className="text-xs font-mono text-darwin-text-dim mb-1">Uptime</p>
           <p className="text-sm font-mono text-darwin-text-bright font-medium">
             {agentState?.uptimeFormatted ?? formatUptime(agentState?.uptime)}
           </p>
         </div>
 
-        <div className="bg-darwin-bg rounded p-3">
+        <div className="bg-darwin-bg rounded-lg p-4">
           <p className="text-xs font-mono text-darwin-text-dim mb-1">Champion Strategy</p>
           <p className="text-sm font-mono text-darwin-accent font-medium truncate">
             {agentState?.championStrategy ?? "--"}
           </p>
         </div>
 
-        <div className="bg-darwin-bg rounded p-3">
+        <div className="bg-darwin-bg rounded-lg p-4">
           <p className="text-xs font-mono text-darwin-text-dim mb-1">Evolution Cycle</p>
           <p className="text-sm font-mono text-darwin-purple font-medium text-glow-purple">
             {agentState?.evolutionCycle ?? "--"}
           </p>
         </div>
 
-        <div className="bg-darwin-bg rounded p-3">
+        <div className="bg-darwin-bg rounded-lg p-4">
           <p className="text-xs font-mono text-darwin-text-dim mb-1">Total PnL</p>
           <p
             className={`text-sm font-mono font-medium ${

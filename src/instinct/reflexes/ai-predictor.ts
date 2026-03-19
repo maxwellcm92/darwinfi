@@ -5,9 +5,30 @@
  * Uses Venice Llama 3.3 70B for 15m/1h predictions (~$0.30/day)
  */
 
-import { execSync } from 'child_process';
+import { spawn } from 'child_process';
 import OpenAI from 'openai';
 import { randomUUID } from 'crypto';
+
+function spawnAsync(cmd: string, args: string[], input: string, opts: { timeout: number; env: NodeJS.ProcessEnv }): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(cmd, args, {
+      timeout: opts.timeout,
+      env: opts.env,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    proc.stdout.on('data', (d) => { stdout += d; });
+    proc.stderr.on('data', (d) => { stderr += d; });
+    proc.on('close', (code) => {
+      if (code !== 0) reject(new Error(`${cmd} exited ${code}: ${stderr}`));
+      else resolve(stdout);
+    });
+    proc.on('error', reject);
+    proc.stdin.write(input);
+    proc.stdin.end();
+  });
+}
 import { Prediction, Resolution, Candle, WorldEvent, PredictionStrategyConfig } from '../types';
 
 const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
@@ -17,10 +38,6 @@ const CLI_TIMEOUT_MS = 45_000;
 
 interface AIPredictorConfig {
   veniceApiKey: string;
-}
-
-function shellEscape(str: string): string {
-  return "'" + str.replace(/'/g, "'\\''") + "'";
 }
 
 function parseAIResponse(raw: string): Record<string, unknown> | null {
@@ -67,13 +84,13 @@ export class AIPredictor {
   /**
    * Claude CLI prediction (Haiku) for fast 1m/5m timeframes.
    */
-  private predictWithClaude(
+  private async predictWithClaude(
     token: string,
     resolution: Resolution,
     candles: Candle[],
     events: WorldEvent[],
     indicators: Record<string, number | undefined>,
-  ): Prediction | null {
+  ): Promise<Prediction | null> {
     const currentPrice = candles.length > 0 ? candles[candles.length - 1].close : 0;
     if (currentPrice === 0) return null;
 
@@ -123,13 +140,13 @@ ${eventSummary || 'none'}
 Predict the next ${resolution} candle.`;
 
     try {
-      const result = execSync(
-        `echo ${shellEscape(userPrompt)} | claude -p --model ${CLAUDE_MODEL} --output-format json --system-prompt ${shellEscape(systemPrompt)}`,
+      const result = await spawnAsync(
+        'claude',
+        ['-p', '--model', CLAUDE_MODEL, '--output-format', 'json', '--system-prompt', systemPrompt],
+        userPrompt,
         {
           timeout: CLI_TIMEOUT_MS,
-          encoding: 'utf-8',
-          maxBuffer: 1024 * 1024,
-          env: { ...process.env, HOME: process.env.HOME || '/home/maxwell', CLAUDECODE: '' },
+          env: { ...process.env, HOME: process.env.HOME || '/home/maxwell', CLAUDECODE: '' } as NodeJS.ProcessEnv,
         },
       );
 

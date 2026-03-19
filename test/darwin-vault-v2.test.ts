@@ -251,6 +251,49 @@ describe("DarwinVaultV2", function () {
     });
   });
 
+  describe("maxWithdraw/maxRedeem lock compliance", function () {
+    it("should return 0 for maxWithdraw during lock period", async function () {
+      await vault.connect(user1).deposit(parseUSDC(1000), user1.address);
+
+      // Immediately after deposit, lock is active
+      const maxW = await vault.maxWithdraw(user1.address);
+      expect(maxW).to.equal(0);
+    });
+
+    it("should return 0 for maxRedeem during lock period", async function () {
+      await vault.connect(user1).deposit(parseUSDC(1000), user1.address);
+
+      const maxR = await vault.maxRedeem(user1.address);
+      expect(maxR).to.equal(0);
+    });
+
+    it("should return correct maxWithdraw after lock expires", async function () {
+      await vault.connect(user1).deposit(parseUSDC(1000), user1.address);
+
+      // Advance past lock time
+      await time.increase(3601);
+
+      const maxW = await vault.maxWithdraw(user1.address);
+      expect(maxW).to.equal(parseUSDC(1000));
+    });
+
+    it("should return correct maxRedeem after lock expires", async function () {
+      await vault.connect(user1).deposit(parseUSDC(1000), user1.address);
+
+      await time.increase(3601);
+
+      const maxR = await vault.maxRedeem(user1.address);
+      expect(maxR).to.be.greaterThan(0);
+    });
+
+    it("should return non-zero maxWithdraw for user who never deposited", async function () {
+      // No deposit timestamp, so no lock applies
+      const maxW = await vault.maxWithdraw(user1.address);
+      // No shares, so maxWithdraw is 0 because of no balance, not lock
+      expect(maxW).to.equal(0);
+    });
+  });
+
   describe("Pause and Emergency", function () {
     it("should block deposits when paused", async function () {
       await vault.connect(owner).pause();

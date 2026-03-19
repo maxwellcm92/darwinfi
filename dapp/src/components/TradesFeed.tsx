@@ -36,9 +36,9 @@ export function TradesFeed({ trades, loading, maxItems = 20 }: TradesFeedProps) 
   const displayed = trades.slice(0, maxItems);
 
   return (
-    <div className="bg-darwin-card border border-darwin-border rounded-lg overflow-hidden">
-      <div className="p-4 border-b border-darwin-border flex items-center justify-between">
-        <h3 className="font-arcade text-xs text-darwin-accent tracking-wider">
+    <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl overflow-hidden transition-all duration-300 hover:border-darwin-border/80 hover:shadow-lg hover:shadow-black/20">
+      <div className="p-5 border-b border-darwin-border/50 flex items-center justify-between">
+        <h3 className="section-header text-darwin-text-bright">
           RECENT TRADES
         </h3>
         <div className="flex items-center gap-2">
@@ -48,10 +48,22 @@ export function TradesFeed({ trades, loading, maxItems = 20 }: TradesFeedProps) 
       </div>
 
       {loading && trades.length === 0 ? (
-        <div className="p-8 text-center">
-          <p className="font-mono text-darwin-text-dim text-sm animate-pulse-glow">
-            Loading trades...
-          </p>
+        <div className="p-5 space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="skeleton w-12 h-6 rounded" />
+                <div>
+                  <div className="skeleton-text w-16 mb-1" />
+                  <div className="skeleton-text w-24" />
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="skeleton-text w-16 mb-1 ml-auto" />
+                <div className="skeleton-text w-20 ml-auto" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : displayed.length === 0 ? (
         <div className="p-8 text-center">
@@ -64,7 +76,7 @@ export function TradesFeed({ trades, loading, maxItems = 20 }: TradesFeedProps) 
           {displayed.map((trade) => (
             <div
               key={trade.id}
-              className="px-4 py-3 hover:bg-darwin-card-hover transition-colors"
+              className="px-5 py-3 hover:bg-darwin-card-hover transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">

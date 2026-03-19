@@ -45,6 +45,37 @@ export interface DashboardState {
     manualOverride: boolean;
   }>;
   qualificationMode?: boolean;
+  /** Team 4 Frontier strategies */
+  frontierStrategies?: Array<{
+    id: string;
+    name: string;
+    archetype: string;
+    status: string;
+    score: number;
+    pnl: number;
+    winRate: number;
+    trades: number;
+  }>;
+  /** Championship standings across all 4 teams */
+  championshipStandings?: {
+    champions: Array<{
+      teamId: number;
+      teamName: string;
+      strategyId: string;
+      strategyName: string;
+      compositeScore: number;
+      trades: number;
+      pnl: number;
+      winRate: number;
+    }>;
+    overallChampion: {
+      teamId: number;
+      teamName: string;
+      strategyId: string;
+      strategyName: string;
+      compositeScore: number;
+    } | null;
+  };
 }
 
 let state: DashboardState = {
@@ -232,6 +263,19 @@ export function startDashboard(port: number = 3500): void {
       const msg = err instanceof Error ? err.message : String(err);
       res.status(500).json({ error: msg });
     }
+  });
+
+  // Championship endpoint (cross-team competition)
+  app.get("/api/championship", (_req, res) => {
+    res.json(state.championshipStandings ?? {
+      champions: [],
+      overallChampion: null,
+    });
+  });
+
+  // Frontier strategies endpoint (Team 4)
+  app.get("/api/frontier-strategies", (_req, res) => {
+    res.json(state.frontierStrategies ?? []);
   });
 
   // Immune system dashboard routes (must be before SPA catch-all)

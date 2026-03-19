@@ -410,6 +410,79 @@ Create a strategy that would rank #1 on the composite score by cherry-picking wi
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Frontier-specific evolution (Team 4 bots)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Get archetype-specific evolution prompt for frontier bots.
+   */
+  getFrontierRolePrompt(archetype: string): string {
+    switch (archetype) {
+      case 'abiogenesis':
+        return `ROLE: Abiogenesis -- Micro-Cap Moonshot Hunter
+You optimize for finding tokens at near-zero market cap with explosive potential.
+Focus on: minSafetyScore (rug detection sensitivity), pumpExitMultiplier (when to take profit),
+maxMarketCapUsd (size filter), maxHoldTimeMs (time limit). Think about asymmetric returns --
+occasional 100x+ gains should outweigh frequent small losses. Be aggressive with entry,
+disciplined with exit.`;
+
+      case 'mitosis':
+        return `ROLE: Mitosis -- Ultra-High-Frequency Micro-Scalper
+You optimize for win rate and consistency. Hundreds of tiny trades per day.
+Focus on: maxTradesPerHour, minSpreadBps (minimum profitable spread), targetProfitBps
+(target per trade), maxPositionSizeUsd. Each trade should be tiny but positive.
+Win rate >60% is the primary objective. Reduce gas cost by choosing cheapest chains.`;
+
+      case 'cambrian':
+        return `ROLE: Cambrian -- Volatility Hunter
+You hunt moments of rapid change, not specific tokens. Deploy capital where the
+ecosystem is experiencing maximum volatility.
+Focus on: volThresholdMultiplier (sensitivity to vol spikes), volWindowMinutes
+(measurement window), catalystWeight (importance of external catalysts),
+maxExposurePerEvent. Be chain-agnostic -- trade wherever the heat is.`;
+
+      case 'symbiont':
+        return `ROLE: Symbiont -- Smart Money Tracker
+You mirror proven whale wallets with smaller positions and tighter stops.
+Focus on: mirrorDelayMs (how fast to copy), minWhaleScore (quality filter),
+stopLossPct (tighter than whales), maxCopyPositions. Win rate should inherit
+from whale accuracy minus slippage from entry delay.`;
+
+      default:
+        return `ROLE: Frontier Bot -- Cross-Chain Trader
+Optimize for cross-chain opportunities. Balance risk, entry timing, and exit discipline.`;
+    }
+  }
+
+  /**
+   * Build frontier-specific parameter constraints for the system prompt.
+   */
+  getFrontierConstraints(): string {
+    return `
+FRONTIER BOT CONSTRAINTS:
+- entryMethod: pair_created, rug_screened, micro_spread, mean_reversion, volatility_breakout, vol_compression, whale_mirror, whale_front_run
+- exitMethod: pump_exit, micro_target, vol_decay, whale_exit_mirror
+- chainSelectionMode: fixed, cheapest_gas, deepest_liquidity, highest_volume
+- dexRouting: 1inch, uniswap_direct, auto
+- riskPerTradePct: 0.1-5.0
+- maxPositions: 1-20
+- trailingStopPct: 0.5-30
+- takeProfitPct: 0.5-200
+
+BOT-SPECIFIC PARAM RANGES:
+- abiogenesis.minSafetyScore: 30-90
+- abiogenesis.maxMarketCapUsd: 100000-10000000
+- abiogenesis.pumpExitMultiplier: 2-50
+- mitosis.maxTradesPerHour: 10-200
+- mitosis.minSpreadBps: 1-50
+- mitosis.targetProfitBps: 1-20
+- cambrian.volThresholdMultiplier: 1.2-5.0
+- cambrian.volWindowMinutes: 5-240
+- symbiont.mirrorDelayMs: 100-10000
+- symbiont.minWhaleScore: 40-95`;
+  }
+
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }

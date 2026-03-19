@@ -22,6 +22,10 @@
 
   const UNISWAP_V3_SWAP_ROUTER = "0x2626664c2603336E57B271c5C0b26F421741e481";
 
+  // Maximum trade size in USDC (6 decimals). 1000 USDC = 1,000,000,000
+  const MAX_TRADE_USDC = 1000n * 1000000n; // 1000 USDC
+  const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"; // lowercase
+
   const ALLOWED_TOKENS = {
     "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "USDC",
     "0x4200000000000000000000000000000000000006": "WETH",
@@ -154,6 +158,25 @@
     errors.push(
       "Native ETH transfers only allowed to SwapRouter. Target: " + to
     );
+  }
+
+  // Check 6: Trade size limit for exactInputSingle swaps
+  if (to === normalizeAddress(UNISWAP_V3_SWAP_ROUTER)) {
+    const selector = getFunctionSelector(data);
+    if (selector === "0x414bf389" && data.length >= 330) {
+      // exactInputSingle: tokenIn is word 0, amountIn is word 4 after selector
+      const tokenInWord = data.slice(10, 74);
+      const tokenIn = "0x" + tokenInWord.slice(24).toLowerCase();
+      const amountInHex = data.slice(266, 330);
+      const amountIn = BigInt("0x" + amountInHex);
+
+      if (tokenIn === USDC_ADDRESS && amountIn > MAX_TRADE_USDC) {
+        errors.push(
+          "Trade size exceeds maximum: " + amountIn.toString() +
+          " > " + MAX_TRADE_USDC.toString() + " (max 1000 USDC)"
+        );
+      }
+    }
   }
 
   // -----------------------------------------------------------------

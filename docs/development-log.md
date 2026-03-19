@@ -1,7 +1,7 @@
 # DarwinFi Development Log
 
 > Built with [Claude Code](https://claude.com/claude-code) (`claude-opus-4-6`) as the agent harness.
-> Sessions: March 18-19, 2026. Total: 32 source files, ~11,100 lines of code, 59 tests.
+> Sessions: March 18-19, 2026. Total: 72 source files, ~16,700 lines of code, 165 tests.
 
 ---
 
@@ -522,6 +522,66 @@ The cascade: No prices (RPC 503) -> no snapshots -> Haiku gets empty/useless dat
 | Fund isolation | Per-strategy budgets in DarwinVault | Shared pool, off-chain accounting | On-chain enforcement means a rogue strategy literally cannot overspend. Trustless by design. |
 | Token universe | 6 tokens (sponsor-aligned) | Top-20 by volume, stablecoins only | Balances liquidity with sponsor integration requirements. All tokens have deep Uniswap V3 pools on Base. |
 | Dashboard UX | Dark theme + retro gaming aesthetic | Minimal charts, no dashboard | The tournament visualization makes the Darwinian competition tangible and engaging for judges reviewing the demo. |
+
+---
+
+## Session 11: Immune System -- Autonomous IT Department (2026-03-19)
+
+**Objective:** Build a fully autonomous monitoring, self-healing, and self-evolving system modeled on biological immune defense. Zero runtime monitoring existed prior -- if something broke, nobody knew until a user reported it.
+
+### Architecture: Seven Biological Divisions
+
+| Division | Analogy | Job |
+|----------|---------|-----|
+| **Patrol** | White blood cells | Scheduled health checks (process, API, chain, state, instinct) every 30s-5min |
+| **Antibodies** | Antibody library | Unit tests, math verification against stored values, state invariant enforcement |
+| **Thymus** | T-cell training | Security scanning (npm audit, private key detection, contract static analysis, API exposure) |
+| **Platelets** | Wound healing | Self-healing loop: detect -> diagnose -> fix -> verify -> rollback if needed |
+| **Membrane** | Cell membrane | UI truth: compare DApp/API data against on-chain contract reads |
+| **Lymph** | Lymphatic system | Structured logging, alert dedup/routing, dashboard REST endpoints |
+| **Genome** | DNA repair | Self-evolution: EMA threshold tuning, pattern-based check generation |
+
+### Key Decisions
+
+- **Separate PM2 process (`darwinfi-immune`).** Runs independently so it can monitor and restart the main `darwinfi` agent. If the main process crashes, the immune system detects it in 30 seconds and auto-restarts it via PM2.
+
+- **Safe vs risky fix classification.** Only "safe" fixes auto-apply (PM2 restart, RPC rotation, state rebuild from backup, cache clear). Anything touching .env, contracts, strategy parameters, or trading is classified "risky" or "manual" and only logged -- never auto-applied. Rate-limited to max 3 attempts per incident, 10 fixes/hour, 30min cooldown per fix.
+
+- **Self-evolution every 12 hours.** The Genome division analyzes all incidents, computes false positive rates, and uses EMA (alpha=0.3) to adjust thresholds. If PM2 restarts happen >3x/24h, it generates a new "memory growth rate" check to catch the root cause. Thresholds are bounded at 0.5x-2x of defaults to prevent runaway tuning.
+
+- **Math verification as independent re-implementation.** The Antibodies math-verifier doesn't call performance.ts -- it re-implements every formula (sigmoid, Sharpe, composite score, drawdown) from scratch and compares results. Any drift >0.001 is flagged. This catches state corruption, rounding bugs, and formula changes that weren't propagated.
+
+- **On-chain truth via read-only contract calls.** The Membrane compares every DApp-visible value (TVL, share price, total borrowed) against direct `ethers.js` contract reads on Base L2. Zero gas cost. Catches stale caches, API formatting bugs, and contract state changes the API layer missed.
+
+### Implementation Stats
+
+| Metric | Value |
+|--------|-------|
+| New source files | 31 (all under `src/immune/`) |
+| New test files | 8 |
+| New tests | 79 (bringing total from 86 to 165) |
+| Lines of code added | 5,609 |
+| Dashboard API routes | 5 (`/api/immune/{status,alerts,fixes,test-results,genome}`) |
+| Check schedule entries | 15 (from 30s to 24h intervals) |
+| Build approach | 6-agent parallel team build using Claude Code worktrees |
+
+### Fixes Applied During Deployment
+
+1. **`__dirname` path resolution.** Compiled JS runs from `dist/src/immune/`, so `path.resolve(__dirname, '..', '..', '..')` resolves to `dist/` instead of project root. Fixed by creating a `resolveProjectRoot()` that walks up to find `package.json`.
+
+2. **PM2 restart rate tracking.** PM2's `restart_time` is a lifetime counter, not per-hour. Process patrol was reporting 52 restarts/hr when the process had 52 total lifetime restarts. Fixed by tracking restart count deltas over time.
+
+3. **Hardhat artifacts path.** Same `__dirname` issue caused ContractClient to look in `dist/artifacts/` instead of project root `artifacts/`. Fixed with the same `findProjectRoot()` pattern.
+
+### Verification
+
+- `npm run build` -- clean compile, zero errors
+- `npm test` -- 160 passing, 5 pending (integration tests that require running server), 0 failing
+- PM2 process online, all 7 divisions active
+- `/api/immune/status` returns health summary
+- Patrol correctly detects real issues (missing predictions-live.json, npm vulnerabilities)
+- Membrane successfully reads on-chain vault state via Base L2 RPC
+- Self-healing attempted PM2 restart and state rebuild on first run
 
 ---
 

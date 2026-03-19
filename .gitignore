@@ -7,4 +7,5 @@ typechain-types/
 coverage/
 *.log
 .DS_Store
-data/
+/data/
+!src/instinct/data/

@@ -3,6 +3,7 @@ import { Navbar } from "./components/Navbar";
 import { Home } from "./pages/Home";
 import { Portfolio } from "./pages/Portfolio";
 import { Tournament } from "./pages/Tournament";
+import { Instinct } from "./pages/Instinct";
 
 export function App() {
   return (
@@ -13,6 +14,7 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/tournament" element={<Tournament />} />
+          <Route path="/instinct" element={<Instinct />} />
         </Routes>
       </main>
     </div>

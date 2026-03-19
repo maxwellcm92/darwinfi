@@ -19,7 +19,7 @@ import { Candle } from '../types';
 const LIVE_INTERVAL_MS = 100_000;      // 100s between cycles (8 tokens * 8s delay = 64s per cycle + margin)
 const BACKFILL_MONTHS = 6;
 const REQUEST_DELAY_MS = 8000;         // 8s between requests (~7.5 req/min)
-const BACKFILL_DELAY_MS = 6000;        // 6s for backfill (slightly faster since sequential)
+const BACKFILL_DELAY_MS = 12000;       // 12s for backfill (~5 req/min, avoids most 429s)
 const MAX_CANDLES_PER_REQUEST = 1000;
 
 const store = new CandleStore();

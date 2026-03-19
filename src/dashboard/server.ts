@@ -217,6 +217,22 @@ export function startDashboard(port: number = 3500): void {
     res.json(instinctState);
   });
 
+  // Instinct candles endpoint (reads JSONL candle files)
+  app.get("/api/instinct/candles/:token", (req, res) => {
+    try {
+      const { CandleStore } = require("../instinct/data/candle-store");
+      const store = new CandleStore();
+      const token = String(req.params.token);
+      const resolution = String(req.query.resolution || "5m") as "1m" | "5m" | "15m" | "1h";
+      const limit = Math.min(500, parseInt(String(req.query.limit || "200")));
+      const candles = store.getLatest(token, resolution, limit);
+      res.json({ token, resolution, count: candles.length, candles });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: msg });
+    }
+  });
+
   // SPA catch-all: serve index.html for all non-API routes (client-side routing)
   app.get('*', (_req, res) => {
     res.sendFile(path.join(dappDistPath, 'index.html'));

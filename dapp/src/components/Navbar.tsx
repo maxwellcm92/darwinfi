@@ -5,6 +5,7 @@ const navLinks = [
   { to: "/", label: "Home" },
   { to: "/portfolio", label: "Portfolio" },
   { to: "/tournament", label: "Tournament" },
+  { to: "/instinct", label: "Instinct" },
 ];
 
 export function Navbar() {

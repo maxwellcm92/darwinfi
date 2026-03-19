@@ -7,7 +7,6 @@
  * simulation and gas estimation.
  */
 
-import { ethers } from 'ethers';
 import { PriceFeed, PriceData, TOKEN_UNIVERSE } from './price-feed';
 import { UniswapClient } from './uniswap-client';
 

@@ -8,9 +8,9 @@
 
 import { ethers } from 'ethers';
 import { UniswapClient, SwapResult, BASE_TOKENS } from './uniswap-client';
-import { PriceFeed, PriceData, TOKEN_UNIVERSE, TokenDefinition } from './price-feed';
+import { PriceFeed, TOKEN_UNIVERSE, TokenDefinition } from './price-feed';
 import { BaseClient, getBaseClient } from '../chain/base-client';
-import { WalletManager, TxResult } from '../chain/wallet-manager';
+import { WalletManager } from '../chain/wallet-manager';
 
 // -------------------------------------------------------------------
 // Types
@@ -221,9 +221,9 @@ export class LiveEngine {
 
     // If the token does not have a direct USDC pool, route through WETH
     // For simplicity, try direct USDC swap first
-    let tokenIn = BASE_TOKENS.USDC;
-    let tokenOut = tokenDef.address;
-    let amountIn = usdcAmount;
+    const tokenIn = BASE_TOKENS.USDC;
+    const tokenOut = tokenDef.address;
+    const amountIn = usdcAmount;
 
     // Check if we need to go through WETH (no direct USDC pool)
     const effectiveFee = fee;

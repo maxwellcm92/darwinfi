@@ -9,7 +9,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { StrategyGenome } from './strategy-manager';
-import { PerformanceMetrics, TradeRecord } from './performance';
+import { PerformanceMetrics } from './performance';
 
 // ---------------------------------------------------------------------------
 // Types

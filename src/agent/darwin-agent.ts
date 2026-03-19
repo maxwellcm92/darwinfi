@@ -23,7 +23,7 @@ import { PerformanceTracker, TradeRecord } from './performance';
 import { StrategyManager, StrategyGenome } from './strategy-manager';
 import { EvolutionEngine } from './evolution-engine';
 import { ClaudeCliEngine } from './claude-cli-engine';
-import { MarketSnapshot, EntrySignal, ExitSignal } from './venice-engine';
+import { MarketSnapshot, EntrySignal } from './venice-engine';
 import { PriceFeed, TOKEN_UNIVERSE } from '../trading/price-feed';
 import { UniswapClient } from '../trading/uniswap-client';
 import { LiveEngine } from '../trading/live-engine';

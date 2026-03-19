@@ -31,13 +31,11 @@ export interface StrategyRecord {
 }
 
 export interface PerformanceEntry {
-  strategyId: string;
-  timestamp: bigint;
-  action: string;
-  token: string;
-  amount: bigint;
-  price: bigint;
-  pnl: bigint;
+  tradeCount: bigint;
+  winCount: bigint;
+  cumulativePnL: bigint;
+  winRate: bigint;
+  active: boolean;
 }
 
 // -------------------------------------------------------------------
@@ -99,10 +97,19 @@ const STRATEGY_EXECUTOR_ABI: InterfaceAbi = [
 ];
 
 const PERFORMANCE_LOG_ABI: InterfaceAbi = [
-  'function logTrade(bytes32 strategyId, string action, address token, uint256 amount, uint256 price, int256 pnl) external',
-  'function getTradeHistory(bytes32 strategyId, uint256 offset, uint256 limit) external view returns (tuple(bytes32 strategyId, uint256 timestamp, string action, address token, uint256 amount, uint256 price, int256 pnl)[])',
-  'function getStrategyStats(bytes32 strategyId) external view returns (uint256 totalTrades, int256 totalPnl, uint256 winCount, uint256 lossCount, int256 bestTrade, int256 worstTrade)',
-  'event TradeLogged(bytes32 indexed strategyId, string action, address token, uint256 amount, int256 pnl)',
+  'function logTradeResult(uint256 strategyId, int256 pnl, bool win) external',
+  'function logPromotion(uint256 strategyId, string reason) external',
+  'function logDemotion(uint256 strategyId, string reason) external',
+  'function advanceGeneration() external',
+  'function recordGenomeHash(uint256 strategyId, bytes32 genomeHash, string ipfsCid) external',
+  'function getStrategyStats(uint256 strategyId) external view returns (uint256 tradeCount, uint256 winCount, int256 cumulativePnL, uint256 winRate, bool active)',
+  'function currentGeneration() external view returns (uint256)',
+  'function setLogger(address logger, bool authorized) external',
+  'event TradeResultLogged(uint256 indexed strategyId, int256 pnl, bool win, uint256 indexed generation, uint256 timestamp)',
+  'event StrategyPromoted(uint256 indexed strategyId, uint256 indexed generation, string reason, uint256 timestamp)',
+  'event StrategyDemoted(uint256 indexed strategyId, uint256 indexed generation, string reason, uint256 timestamp)',
+  'event GenerationAdvanced(uint256 indexed oldGeneration, uint256 indexed newGeneration, uint256 timestamp)',
+  'event GenomeHashRecorded(uint256 indexed strategyId, bytes32 indexed genomeHash, string ipfsCid, uint256 indexed generation, uint256 timestamp)',
 ];
 
 // -------------------------------------------------------------------
@@ -251,54 +258,52 @@ export class ContractClient {
   // Type-safe wrappers: PerformanceLog
   // ---------------------------------------------------------------
 
-  async logTrade(
-    strategyId: string,
-    action: string,
-    token: string,
-    amount: bigint,
-    price: bigint,
-    pnl: bigint
+  async logTradeResult(
+    strategyId: bigint,
+    pnl: bigint,
+    win: boolean,
   ): Promise<string> {
-    const tx = await this.performanceLog.logTrade(
-      strategyId, action, token, amount, price, pnl
-    );
+    const tx = await this.performanceLog.logTradeResult(strategyId, pnl, win);
     const receipt = await tx.wait();
     return receipt.hash;
   }
 
-  async getTradeHistory(
-    strategyId: string,
-    offset: number = 0,
-    limit: number = 50
-  ): Promise<PerformanceEntry[]> {
-    const raw = await this.performanceLog.getTradeHistory(strategyId, offset, limit);
-    return raw.map((entry: any) => ({
-      strategyId: entry.strategyId,
-      timestamp: entry.timestamp,
-      action: entry.action,
-      token: entry.token,
-      amount: entry.amount,
-      price: entry.price,
-      pnl: entry.pnl,
-    }));
+  async logPromotion(strategyId: bigint, reason: string): Promise<string> {
+    const tx = await this.performanceLog.logPromotion(strategyId, reason);
+    const receipt = await tx.wait();
+    return receipt.hash;
   }
 
-  async getStrategyStats(strategyId: string): Promise<{
-    totalTrades: bigint;
-    totalPnl: bigint;
-    winCount: bigint;
-    lossCount: bigint;
-    bestTrade: bigint;
-    worstTrade: bigint;
-  }> {
+  async logDemotion(strategyId: bigint, reason: string): Promise<string> {
+    const tx = await this.performanceLog.logDemotion(strategyId, reason);
+    const receipt = await tx.wait();
+    return receipt.hash;
+  }
+
+  async advanceGeneration(): Promise<string> {
+    const tx = await this.performanceLog.advanceGeneration();
+    const receipt = await tx.wait();
+    return receipt.hash;
+  }
+
+  async recordGenomeHash(
+    strategyId: bigint,
+    genomeHash: string,
+    ipfsCid: string,
+  ): Promise<string> {
+    const tx = await this.performanceLog.recordGenomeHash(strategyId, genomeHash, ipfsCid);
+    const receipt = await tx.wait();
+    return receipt.hash;
+  }
+
+  async getStrategyStats(strategyId: bigint): Promise<PerformanceEntry> {
     const raw = await this.performanceLog.getStrategyStats(strategyId);
     return {
-      totalTrades: raw[0],
-      totalPnl: raw[1],
-      winCount: raw[2],
-      lossCount: raw[3],
-      bestTrade: raw[4],
-      worstTrade: raw[5],
+      tradeCount: raw[0],
+      winCount: raw[1],
+      cumulativePnL: raw[2],
+      winRate: raw[3],
+      active: raw[4],
     };
   }
 

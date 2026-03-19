@@ -1,7 +1,7 @@
 # DarwinFi Development Log
 
 > Built with [Claude Code](https://claude.com/claude-code) (`claude-opus-4-6`) as the agent harness.
-> Sessions: March 18-19, 2026. Total: 30 source files, ~10,500 lines of code, 59 tests.
+> Sessions: March 18-19, 2026. Total: 32 source files, ~11,100 lines of code, 59 tests.
 
 ---
 
@@ -316,12 +316,53 @@ Used 4 Claude Code agents working in parallel on isolated worktrees:
 
 ---
 
+## Session 7: Unblock Trades, Wire On-Chain Logging, Fund Wallet
+
+**Objective:** Unblock the trade pipeline (signal threshold was too high), wire on-chain performance logging to PerformanceLog.sol, and fund the agent wallet via Kraken.
+
+### Challenges & Solutions
+
+- **Signal threshold blocking all trades.** Claude CLI scores range 8-15, but the `actionableRecs` filter was set to `>= 15` (carried over from Session 5's reduction from 50). Lowered to `>= 8`. The downstream confidence check (`>= 60`) still gates real trade execution, so this change lets signals flow without reducing safety.
+
+- **ContractClient ABI mismatch.** The PerformanceLog fallback ABI still referenced a stale `logTrade(bytes32, ...)` signature from the original scaffold. The deployed PerformanceLog.sol uses `uint256` strategy IDs and different function names. Rewrote the entire `PERFORMANCE_LOG_ABI` to match the actual contract: `logTradeResult(uint256,int256,bool)`, `logPromotion`, `logDemotion`, `advanceGeneration`, `recordGenomeHash`, `getStrategyStats`, plus all events.
+
+- **No strategy ID mapping for on-chain calls.** The agent used string strategy IDs (`main-alpha`, `main-beta-exp`, etc.) but the contract expects `uint256`. Created `STRATEGY_ID_MAP` mapping all 12 strategies to `0n`-`11n`.
+
+### What Claude Code Built
+
+**Signal Threshold Fix (1 file):**
+- `darwin-agent.ts:423` -- Changed `score >= 15` to `score >= 8`. Unblocks entry evaluation for real-world Claude CLI score ranges.
+
+**ContractClient ABI Rewrite (1 file, ~90 lines):**
+- `contract-client.ts` -- Replaced stale `PERFORMANCE_LOG_ABI` with full alignment to deployed PerformanceLog.sol. Added typed wrappers: `logTradeResult()`, `logPromotion()`, `logDemotion()`, `advanceGeneration()`, `recordGenomeHash()`, `getStrategyStats()`. All accept `bigint` strategy IDs matching the contract's `uint256` type.
+
+**On-Chain Logging Wiring (1 file, ~60 lines):**
+- `darwin-agent.ts` -- Added `STRATEGY_ID_MAP` (12 entries) mapping string IDs to `uint256`.
+- ContractClient auto-initializes from `PERFORMANCE_LOG_ADDRESS` env var at agent startup.
+- After every trade close: `logTradeResult(stratId, pnlBigInt, win)` fires non-fatally (`.catch()` prevents on-chain failures from killing the agent loop).
+- After every evolution cycle: `advanceGeneration()` increments the on-chain generation counter, `recordGenomeHash()` pins the promoted strategy's genome hash, `logPromotion()`/`logDemotion()` record strategy changes. All non-fatal.
+
+**Wallet Funding:**
+- 0.005 ETH + 75 USDC purchased via Kraken market orders for Base wallet funding.
+
+### Verification
+
+| Check | Result |
+|-------|--------|
+| TypeScript compilation | 0 errors |
+| Test suite | 59/59 passing |
+| PM2 restart | Clean startup, no runtime errors |
+
+**Code Impact:** 2 files modified, ~150 lines added/changed.
+
+---
+
 ## Technical Summary
 
 | Metric | Value |
 |--------|-------|
-| Source files | 30 |
-| Lines of code | ~10,500 |
+| Source files | 32 |
+| Lines of code | ~11,100 |
 | Test coverage | 59 tests (4 modules) |
 | Smart contracts | 3 (Solidity) |
 | TypeScript modules | 18 |
@@ -330,7 +371,7 @@ Used 4 Claude Code agents working in parallel on isolated worktrees:
 | Chains supported | 2 (Base, Celo) |
 | AI models integrated | 3 (Claude CLI for signals, Venice AI for evolution, Claude Haiku for batch eval) |
 | Sponsor integrations | 6 (Base, Uniswap, Venice AI, Celo, ENS, Filecoin) |
-| Git commits | 14 |
+| Git commits | 16 |
 | Build time | ~3.5 hours |
 
 ---

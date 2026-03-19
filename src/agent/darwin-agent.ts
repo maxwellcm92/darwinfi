@@ -30,6 +30,26 @@ import { LiveEngine } from '../trading/live-engine';
 import { StatePersistence, PersistedState } from './state-persistence';
 import { ConversationLog } from './conversation-log';
 import { startDashboard, updateDashboardState, updateConversationLog, DashboardState } from '../dashboard/server';
+import { ContractClient } from '../chain/contract-client';
+
+// ---------------------------------------------------------------------------
+// Strategy ID -> uint256 mapping for on-chain logging
+// ---------------------------------------------------------------------------
+
+const STRATEGY_ID_MAP: Record<string, bigint> = {
+  'main-alpha': 0n,
+  'main-alpha-exp': 1n,
+  'main-alpha-opt': 2n,
+  'main-alpha-syn': 3n,
+  'main-beta': 4n,
+  'main-beta-exp': 5n,
+  'main-beta-opt': 6n,
+  'main-beta-syn': 7n,
+  'main-gamma': 8n,
+  'main-gamma-exp': 9n,
+  'main-gamma-opt': 10n,
+  'main-gamma-syn': 11n,
+};
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -80,6 +100,7 @@ class DarwinAgent {
   private liveEngine: LiveEngine;
   private statePersistence: StatePersistence;
   private conversationLog: ConversationLog;
+  private contractClient: ContractClient | null = null;
 
   private priceHistory: Map<string, Array<{price: number, timestamp: number}>> = new Map();
   private running: boolean = false;
@@ -106,6 +127,16 @@ class DarwinAgent {
     // Persistence
     this.statePersistence = new StatePersistence();
     this.conversationLog = new ConversationLog();
+
+    // On-chain logging (optional -- only if contract deployed)
+    if (process.env.PERFORMANCE_LOG_ADDRESS) {
+      try {
+        this.contractClient = new ContractClient();
+        console.log('[DarwinFi] ContractClient initialized for on-chain logging');
+      } catch (err) {
+        console.warn('[DarwinFi] ContractClient init failed, on-chain logging disabled:', err);
+      }
+    }
   }
 
   /**
@@ -389,7 +420,7 @@ class DarwinAgent {
     }
 
     // Filter to actionable recommendations
-    const actionableRecs = recommendations.filter(r => r.score >= 15);
+    const actionableRecs = recommendations.filter(r => r.score >= 8);
     const recsToEvaluate = actionableRecs.filter(rec => {
       const snapshot = snapshots.find(s => s.token === rec.token);
       return snapshot && snapshot.price > 0 && !openPositions.some(p => p.token === rec.token);
@@ -709,6 +740,18 @@ class DarwinAgent {
         },
       );
 
+      // On-chain trade logging (non-fatal)
+      if (this.contractClient) {
+        const stratId = STRATEGY_ID_MAP[strategy.id];
+        if (stratId !== undefined) {
+          const pnlBigInt = BigInt(Math.round((closedTrade.pnl ?? 0) * 1e6)); // 6 decimal places
+          const win = (closedTrade.pnl ?? 0) > 0;
+          this.contractClient.logTradeResult(stratId, pnlBigInt, win)
+            .then(hash => console.log(`[DarwinFi] On-chain trade log: ${hash}`))
+            .catch(err => console.error(`[DarwinFi] On-chain trade log failed: ${err.message}`));
+        }
+      }
+
       // During qualification mode, promote the first strategy with a profitable trade
       if (!this.strategyManager.getLiveStrategy()) {
         const promoted = this.strategyManager.promoteFirstQualified(closedTrade);
@@ -834,6 +877,48 @@ class DarwinAgent {
         // Log promotions individually
         for (const promo of report.promotionEvents) {
           this.conversationLog.promotion('strategy-manager', promo);
+        }
+
+        // On-chain evolution logging (non-fatal)
+        if (this.contractClient) {
+          this.contractClient.advanceGeneration()
+            .then(hash => console.log(`[DarwinFi] On-chain generation advanced: ${hash}`))
+            .catch(err => console.error(`[DarwinFi] On-chain advanceGeneration failed: ${err.message}`));
+
+          // Log the live strategy's genome hash
+          const liveStrategy = this.strategyManager.getLiveStrategy();
+          if (liveStrategy) {
+            const stratId = STRATEGY_ID_MAP[liveStrategy.id];
+            if (stratId !== undefined) {
+              const genomeJson = JSON.stringify(liveStrategy.parameters);
+              const { keccak256, toUtf8Bytes } = require('ethers');
+              const genomeHash = keccak256(toUtf8Bytes(genomeJson));
+              this.contractClient.recordGenomeHash(stratId, genomeHash, '')
+                .then(hash => console.log(`[DarwinFi] On-chain genome hash recorded: ${hash}`))
+                .catch(err => console.error(`[DarwinFi] On-chain genome hash failed: ${err.message}`));
+            }
+          }
+
+          // Log promotions/demotions on-chain
+          for (const promo of report.promotionEvents) {
+            // Parse promotion event string for strategy info
+            const promoMatch = promo.match(/(\S+)\s+promoted/i);
+            const demoMatch = promo.match(/(\S+)\s+demoted/i);
+            if (promoMatch) {
+              const sid = STRATEGY_ID_MAP[promoMatch[1]];
+              if (sid !== undefined) {
+                this.contractClient.logPromotion(sid, promo)
+                  .catch(err => console.error(`[DarwinFi] On-chain promotion log failed: ${err.message}`));
+              }
+            }
+            if (demoMatch) {
+              const sid = STRATEGY_ID_MAP[demoMatch[1]];
+              if (sid !== undefined) {
+                this.contractClient.logDemotion(sid, promo)
+                  .catch(err => console.error(`[DarwinFi] On-chain demotion log failed: ${err.message}`));
+              }
+            }
+          }
         }
       } catch (err) {
         console.error(

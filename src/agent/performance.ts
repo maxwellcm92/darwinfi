@@ -172,10 +172,10 @@ export class PerformanceTracker {
 
     if (trade.side === 'buy') {
       trade.pnl = (exitPrice - trade.entryPrice) * trade.quantity - trade.fees;
-      trade.pnlPct = ((exitPrice - trade.entryPrice) / trade.entryPrice) * 100;
+      trade.pnlPct = (trade.pnl / (trade.entryPrice * trade.quantity)) * 100;
     } else {
       trade.pnl = (trade.entryPrice - exitPrice) * trade.quantity - trade.fees;
-      trade.pnlPct = ((trade.entryPrice - exitPrice) / trade.entryPrice) * 100;
+      trade.pnlPct = (trade.pnl / (trade.entryPrice * trade.quantity)) * 100;
     }
 
     // Now re-record as closed to update metrics
@@ -345,7 +345,7 @@ export class PerformanceTracker {
 
     const values = filtered.map(r => r.returnPct / 100); // Convert to decimal
     const mean = values.reduce((a, b) => a + b, 0) / values.length;
-    const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
+    const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / (values.length - 1);
     const stdDev = Math.sqrt(variance);
 
     if (stdDev === 0) return 0;
@@ -384,43 +384,37 @@ export class PerformanceTracker {
 
     if (allMetrics.length === 0) return 0;
 
-    // Normalize rolling 24h PnL (min-max across strategies)
-    const rolling24hPnLs = allMetrics.map(x => x.rolling24hPnL);
-    const normalizedRolling24hPnL = this.minMaxNormalize(m.rolling24hPnL, rolling24hPnLs);
+    // Sigmoid normalization constants
+    const PNL_SCALE = 10; // Scale for dollar-denominated PnL values
+    const DRAWDOWN_SCALE = 5; // Scale for drawdown (0-1 range, so amplify)
 
-    // Rolling 24h Sharpe -- already a ratio, just clamp to [0, 1] via sigmoid-like
+    // Normalize rolling 24h PnL via sigmoid (center=0, positive PnL -> higher score)
+    const normalizedRolling24hPnL = this.sigmoidNormalize(m.rolling24hPnL, 0, PNL_SCALE);
+
+    // Rolling 24h Sharpe via sigmoid (center=0)
     const normalizedRollingSharpe = this.sigmoidNormalize(m.rolling24hSharpe);
 
-    // Rolling 24h Win Rate -- already [0, 1]
+    // Rolling 24h Win Rate -- already [0, 1], keep as-is
     const normalizedRollingWinRate = m.rolling24hWinRate;
 
-    // Normalize total PnL
-    const totalPnLs = allMetrics.map(x => x.totalPnL);
-    const normalizedTotalPnL = this.minMaxNormalize(m.totalPnL, totalPnLs);
+    // Normalize total PnL via sigmoid (center=0)
+    const normalizedTotalPnL = this.sigmoidNormalize(m.totalPnL, 0, PNL_SCALE);
 
-    // Normalize max drawdown (lower is better, so we invert)
-    const drawdowns = allMetrics.map(x => x.maxDrawdown);
-    const normalizedDrawdown = this.minMaxNormalize(m.maxDrawdown, drawdowns);
+    // Normalize max drawdown via sigmoid (invert: lower drawdown is better)
+    const normalizedDrawdown = 1 - this.sigmoidNormalize(m.maxDrawdown, 0, DRAWDOWN_SCALE);
 
     const score =
       normalizedRolling24hPnL * W_ROLLING_PNL +
       normalizedRollingSharpe * W_ROLLING_SHARPE +
       normalizedRollingWinRate * W_ROLLING_WINRATE +
       normalizedTotalPnL * W_TOTAL_PNL +
-      (1 - normalizedDrawdown) * W_DRAWDOWN;
+      normalizedDrawdown * W_DRAWDOWN;
 
     return Math.max(0, Math.min(1, score)); // Clamp [0, 1]
   }
 
-  private minMaxNormalize(value: number, allValues: number[]): number {
-    const min = Math.min(...allValues);
-    const max = Math.max(...allValues);
-    if (max === min) return 0.5; // All equal
-    return (value - min) / (max - min);
-  }
-
-  private sigmoidNormalize(value: number): number {
-    // Maps any real number to (0, 1), centered at 0.5 for value=0
-    return 1 / (1 + Math.exp(-value));
+  private sigmoidNormalize(value: number, center: number = 0, scale: number = 1): number {
+    // Maps any real number to (0, 1), centered at 0.5 for value=center
+    return 1 / (1 + Math.exp(-(value - center) / scale));
   }
 }

@@ -81,6 +81,7 @@ class DarwinAgent {
   private statePersistence: StatePersistence;
   private conversationLog: ConversationLog;
 
+  private priceHistory: Map<string, Array<{price: number, timestamp: number}>> = new Map();
   private running: boolean = false;
   private lastEvolutionTime: Date = new Date();
   private lastSignalTime: Date = new Date(0); // Force signal eval on first eligible tick
@@ -227,15 +228,13 @@ class DarwinAgent {
     }
     this.latestSnapshots = snapshots;
 
-    // Step 2: Get the live strategy
+    // Step 2: Get the live strategy (may be undefined during qualification phase)
     const liveStrategy = this.strategyManager.getLiveStrategy();
-    if (!liveStrategy) {
-      console.error('[DarwinFi] No live strategy found -- this should not happen');
-      return;
-    }
 
     // Step 3: Rule-based exits (hard stops, take profits) -- no AI needed
-    await this.evaluateRuleBasedExits(liveStrategy, snapshots);
+    if (liveStrategy) {
+      await this.evaluateRuleBasedExits(liveStrategy, snapshots);
+    }
 
     // === SIGNAL TICK (every ~2min): Claude CLI batch evaluation for entries/exits ===
     const now = new Date();
@@ -245,13 +244,15 @@ class DarwinAgent {
       this.lastSignalTime = now;
 
       try {
-        // AI-powered exit evaluation (batch)
-        await this.evaluateAiExits(liveStrategy, snapshots);
+        if (liveStrategy) {
+          // AI-powered exit evaluation (batch)
+          await this.evaluateAiExits(liveStrategy, snapshots);
 
-        // AI-powered entry evaluation (batch)
-        await this.evaluateEntries(liveStrategy, snapshots);
+          // AI-powered entry evaluation (batch)
+          await this.evaluateEntries(liveStrategy, snapshots);
+        }
 
-        // Paper trading for non-live strategies
+        // Paper trading for non-live strategies (always runs, crucial during qualification)
         await this.runPaperTradingCycle(snapshots);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -280,27 +281,61 @@ class DarwinAgent {
     const snapshots: MarketSnapshot[] = [];
     const symbols = Object.keys(TOKEN_UNIVERSE).filter(s => s !== 'USDC'); // Skip USDC as a trading target
 
-    for (const symbol of symbols) {
-      try {
-        const priceData = await this.priceFeed.getPrice(symbol);
-        if (priceData && priceData.priceUsd > 0) {
-          snapshots.push({
-            token: symbol,
-            price: priceData.priceUsd,
-            priceChange1h: 0,
-            priceChange24h: 0,
-            volume24h: 0,
-            volumeChange: 0,
-            high24h: 0,
-            low24h: 0,
-          });
-        }
-      } catch (err) {
-        console.warn(
-          `[DarwinFi] Failed to fetch price for ${symbol}:`,
-          err instanceof Error ? err.message : err,
-        );
+    // Fetch all prices in parallel
+    const results = await Promise.allSettled(
+      symbols.map(symbol => this.priceFeed.getPrice(symbol).then(data => ({ symbol, data })))
+    );
+
+    const now = Date.now();
+    const ONE_HOUR = 60 * 60 * 1000;
+    const TWENTY_FOUR_HOURS = 24 * ONE_HOUR;
+    const MAX_HISTORY = 100;
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        console.warn(`[DarwinFi] Failed to fetch price:`, result.reason);
+        continue;
       }
+      const { symbol, data: priceData } = result.value;
+      if (!priceData || priceData.priceUsd <= 0) continue;
+
+      // Update price history buffer
+      const history = this.priceHistory.get(symbol) || [];
+      history.push({ price: priceData.priceUsd, timestamp: now });
+      // Keep last MAX_HISTORY entries
+      if (history.length > MAX_HISTORY) {
+        history.splice(0, history.length - MAX_HISTORY);
+      }
+      this.priceHistory.set(symbol, history);
+
+      // Compute price changes from history buffer
+      let priceChange1h = 0;
+      let priceChange24h = 0;
+
+      // Find the closest entry to 1h ago
+      const target1h = now - ONE_HOUR;
+      const entry1h = history.find(h => h.timestamp <= target1h);
+      if (entry1h) {
+        priceChange1h = ((priceData.priceUsd - entry1h.price) / entry1h.price) * 100;
+      }
+
+      // Find the closest entry to 24h ago
+      const target24h = now - TWENTY_FOUR_HOURS;
+      const entry24h = history.find(h => h.timestamp <= target24h);
+      if (entry24h) {
+        priceChange24h = ((priceData.priceUsd - entry24h.price) / entry24h.price) * 100;
+      }
+
+      snapshots.push({
+        token: symbol,
+        price: priceData.priceUsd,
+        priceChange1h,
+        priceChange24h,
+        volume24h: 0,
+        volumeChange: 0,
+        high24h: 0,
+        low24h: 0,
+      });
     }
 
     if (snapshots.length > 0 && this.loopCount % 10 === 1) {
@@ -642,13 +677,16 @@ class DarwinAgent {
       }
     }
 
+    // Estimate Uniswap V3 fees (0.3% fee tier on both entry and exit)
+    const estimatedFees = position.entryPrice * position.quantity * 0.003;
+
     // Close the trade in the tracker
     const closedTrade = this.performanceTracker.closeTrade(
       strategy.id,
       position.id,
       currentPrice,
       new Date(),
-      0, // fees placeholder
+      estimatedFees,
     );
 
     if (closedTrade) {
@@ -670,6 +708,16 @@ class DarwinAgent {
           reason,
         },
       );
+
+      // During qualification mode, promote the first strategy with a profitable trade
+      if (!this.strategyManager.getLiveStrategy()) {
+        const promoted = this.strategyManager.promoteFirstQualified(closedTrade);
+        if (promoted) {
+          this.conversationLog.promotion('strategy-manager',
+            `Qualification: ${promoted} promoted to live after first profitable trade`
+          );
+        }
+      }
     }
   }
 

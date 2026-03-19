@@ -69,7 +69,7 @@ function createSeedStrategies(): StrategyGenome[] {
       maxPositions: 3,
       tokenPreferences: ['ETH', 'wstETH'],
     },
-    status: 'live', // First strategy starts as live
+    status: 'paper', // Starts as paper -- must prove itself in qualification mode
     generation: 0,
   };
 
@@ -142,6 +142,11 @@ export class StrategyManager {
   private promotionHistory: PromotionEvent[] = [];
   private performanceTracker: PerformanceTracker;
   private consecutiveOutperformCycles: number;
+  private _qualificationMode: boolean = true;
+
+  get qualificationMode(): boolean {
+    return this._qualificationMode;
+  }
 
   constructor(performanceTracker: PerformanceTracker) {
     this.performanceTracker = performanceTracker;
@@ -305,6 +310,36 @@ export class StrategyManager {
         trades: e.metrics.tradesCompleted,
       })),
     };
+  }
+
+  /**
+   * Promote the first strategy that completes a profitable trade during qualification mode.
+   * Returns the promoted strategy ID, or null if no promotion occurred.
+   */
+  promoteFirstQualified(tradeRecord: { strategyId: string; pnl?: number }): string | null {
+    if (!this._qualificationMode) return null;
+    if (this.getLiveStrategy()) return null;
+    if (!tradeRecord.pnl || tradeRecord.pnl <= 0) return null;
+
+    const strategy = this.strategies.get(tradeRecord.strategyId);
+    if (!strategy) return null;
+
+    strategy.status = 'live';
+    this._qualificationMode = false;
+
+    console.log(
+      `[DarwinFi] QUALIFICATION PASSED: ${strategy.id} promoted to live ` +
+      `after profitable trade (PnL=$${tradeRecord.pnl.toFixed(4)})`
+    );
+
+    this.promotionHistory.push({
+      timestamp: new Date(),
+      type: 'main_to_live',
+      fromId: strategy.id,
+      reason: `Qualification mode: first profitable trade (PnL=$${tradeRecord.pnl.toFixed(4)})`,
+    });
+
+    return strategy.id;
   }
 
   /**

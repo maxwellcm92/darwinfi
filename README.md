@@ -2,7 +2,7 @@
 
 **Autonomous, self-evolving crypto trading agent powered by Darwinian competition.**
 
-12 concurrent trading strategies compete on Uniswap V3 (Base + Celo). The top performer trades live on-chain; the rest paper trade and evolve to dethrone it. Strategy evolution is driven by AI (Claude + Venice AI), creating a system that continuously improves its own trading performance.
+12 concurrent trading strategies compete on Uniswap V3 (Base). The top performer trades live on-chain; the rest paper trade and evolve to dethrone it. Strategy evolution is driven by AI (Claude + Venice AI), creating a system that continuously improves its own trading performance.
 
 Built for the [Synthesis Hackathon](https://synthesis.md/) - "Agents that Pay" track.
 
@@ -116,10 +116,9 @@ darwinfi/
 | **Base** | Native deployment, all contracts | Core |
 | **Uniswap** | V3 Router for all swaps | Core |
 | **Venice AI** | Strategy evolution + execution signals | Core |
-| **Celo** | Multi-chain contract deployment | Tier 1 |
 | **ENS/Basenames** | Agent identity (darwinfi.base.eth) | Tier 1 |
-| **Filecoin/IPFS** | Immutable strategy genome storage | Tier 2 |
-| **Locus** | Agentic payment layer | Tier 2 |
+| **Filecoin/IPFS** | Immutable strategy genome storage | Tier 1 |
+| **Celo** | Multi-chain contract deployment (ready) | Tier 2 |
 
 ---
 
@@ -141,7 +140,6 @@ npm install
 cp .env.example .env
 # Edit .env with your keys:
 # - PRIVATE_KEY (wallet)
-# - ANTHROPIC_API_KEY (Claude)
 # - VENICE_API_KEY (Venice AI)
 # - BASE_RPC_URL (optional, defaults to public RPC)
 ```

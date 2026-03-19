@@ -55,7 +55,7 @@ export interface PromotionEvent {
 function createSeedStrategies(): StrategyGenome[] {
   const mainA: StrategyGenome = {
     id: 'main-alpha',
-    name: 'Alpha Momentum',
+    name: 'Apex',
     type: 'main',
     parameters: {
       entryMethod: 'rsi_oversold',
@@ -75,7 +75,7 @@ function createSeedStrategies(): StrategyGenome[] {
 
   const mainB: StrategyGenome = {
     id: 'main-beta',
-    name: 'Beta Mean-Revert',
+    name: 'Viper',
     type: 'main',
     parameters: {
       entryMethod: 'bollinger_bounce',
@@ -95,7 +95,7 @@ function createSeedStrategies(): StrategyGenome[] {
 
   const mainC: StrategyGenome = {
     id: 'main-gamma',
-    name: 'Gamma Trend',
+    name: 'Blitz',
     type: 'main',
     parameters: {
       entryMethod: 'ema_crossover',
@@ -119,7 +119,7 @@ function createSeedStrategies(): StrategyGenome[] {
 function createVariations(main: StrategyGenome): StrategyGenome[] {
   const roles: VariationRole[] = ['experimental', 'optimizer', 'synthesizer'];
   const suffixes = ['exp', 'opt', 'syn'];
-  const names = ['Mad Scientist', 'Optimizer', 'Synthesizer'];
+  const names = ['Mutant', 'Tuner', 'Hybrid'];
 
   return roles.map((role, i) => ({
     id: `${main.id}-${suffixes[i]}`,

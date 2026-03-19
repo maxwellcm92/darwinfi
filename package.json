@@ -4,8 +4,9 @@
   "description": "Autonomous self-evolving trading agent with Darwinian strategy competition",
   "main": "dist/agent/darwin-agent.js",
   "scripts": {
-    "build": "hardhat compile && tsc",
+    "build": "hardhat compile && tsc && cp src/dashboard/index.html dist/src/dashboard/",
     "start": "ts-node src/agent/darwin-agent.ts",
+    "dashboard": "ts-node -e \"require('dotenv').config(); require('./src/dashboard/server').startDashboard(Number(process.env.DASHBOARD_PORT) || 3502)\"",
     "deploy:base-testnet": "hardhat run scripts/deploy.ts --network baseTestnet",
     "deploy:base": "hardhat run scripts/deploy.ts --network base",
     "deploy:celo": "hardhat run scripts/deploy.ts --network celo",

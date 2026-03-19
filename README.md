@@ -27,17 +27,19 @@ Built for the [Synthesis Hackathon](https://synthesis.md/) - "Agents that Pay" t
            |              |              |
      +--+--+--+     +--+--+--+     +--+--+--+
      |A  |B  |C     |A  |B  |C     |A  |B  |C
-     Mad Opt Syn    Mad Opt Syn    Mad Opt Syn
+     Mut Tun Hyb    Mut Tun Hyb    Mut Tun Hyb
 ```
 
 **3 Main Strategies** - Each with $25 USDC budget on Base
-- One trades LIVE on Uniswap V3
-- Others paper trade with real price feeds
+- **Apex** (Momentum) - RSI oversold + trailing stop
+- **Viper** (Mean-Revert) - Bollinger bounce + fixed target
+- **Blitz** (Breakout) - EMA crossover + trailing stop
+- One trades LIVE on Uniswap V3; others paper trade with real price feeds
 
 **9 Variations** - 3 per main strategy
-- **Mad Scientist** - Creative, unconventional parameter exploration
-- **Optimizer** - Conservative fixes to parent strategy weaknesses
-- **Synthesizer** - Hybrid best-of-all approach
+- **Mutant** - Creative, unconventional parameter exploration
+- **Tuner** - Conservative fixes to parent strategy weaknesses
+- **Hybrid** - Best-of-all trait synthesis
 
 **AI Evolution Loop** (every 4 hours or 10 trades):
 1. Claude analyzes all 12 strategies' performance
@@ -161,13 +163,21 @@ npm start
 
 ---
 
+## Live Demo
+
+**Dashboard**: [https://corduroycloud.com/darwinfi/](https://corduroycloud.com/darwinfi/)
+
+12 named bots competing in real time with live price feeds from Uniswap V3 pools on Base.
+
 ## On-Chain Artifacts
 
 | Contract | Base Address | Celo Address |
 |----------|-------------|--------------|
-| DarwinVault | TBD | TBD |
-| StrategyExecutor | TBD | TBD |
-| PerformanceLog | TBD | TBD |
+| DarwinVault | Pending deployment | TBD |
+| StrategyExecutor | Pending deployment | TBD |
+| PerformanceLog | Pending deployment | TBD |
+
+**DarwinFi Wallet**: `0xb2db53Db9a2349186F0214BC3e1bF08a195570e3` (Base)
 
 **ENS**: darwinfi.base.eth
 

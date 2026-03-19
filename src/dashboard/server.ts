@@ -59,6 +59,7 @@ export function startDashboard(port: number = 3500): void {
   const app = express();
 
   app.use(express.static(path.join(__dirname)));
+  app.use('/assets', express.static(path.join(__dirname, '../../assets')));
 
   app.get("/api/state", (_req, res) => {
     res.json(state);

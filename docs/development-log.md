@@ -142,8 +142,73 @@
 
 ---
 
+## Session 4a: Hackathon Registration
 
-## Session 4: Cost-Optimized Launch (Paper Trading MVP)
+**Objective:** Submit DarwinFi to the Synthesis hackathon via the Devfolio registration API.
+
+### Challenges & Solutions
+
+- **API field name mismatch.** The registration script used snake_case field names (`agent_name`, `agent_description`, `agent_harness`) but the Devfolio API expected camelCase top-level fields (`name`, `description`, `agentHarness`) with participant data nested under a `humanInfo` object. Discovered via Zod validation errors and corrected iteratively.
+
+- **Enum validation on participant fields.** The `background` field required one of: builder, product, designer, student, founder, other (not free text). Similarly, `cryptoExperience` and `aiAgentExperience` required "yes", "no", or "a little" instead of descriptive text. The API also expected a `problemToSolve` field inside `humanInfo`.
+
+- **Rate limiting.** After three failed attempts with incorrect schemas, the API returned 429. A 15-second cooldown was sufficient to clear the rate limit.
+
+### What Claude Code Did
+
+- Filled in participant info (Maxwell Morgan, builder background, crypto/AI experience).
+- Fixed request body structure: camelCase fields, nested `humanInfo` object, enum values.
+- Submitted registration successfully.
+- Saved API key, participant ID, and team ID to `darwinfi/.env`.
+
+### Registration Result
+
+| Field | Value |
+|-------|-------|
+| Participant ID | `269fb793b8f74b889529ae3e01f6563f` |
+| Team ID | `ec8d8be9b5694b91839db1b2391446e9` |
+| On-chain TX | [basescan.org/tx/0xbeb0c5...](https://basescan.org/tx/0xbeb0c546bfa6e210c9fd8033b255bab29c83ac4b82dc0cc5475cb9ac004c8436) |
+
+**Code Impact:** 1 file modified (`register.ts`), API key + IDs saved to `.env`.
+
+---
+
+## Session 5: Final Sprint - Dashboard Fix, Bot Names, Trade Threshold
+
+**Objective:** Fix the broken dashboard, give bots memorable names, lower trade thresholds to enable paper trading, and prepare for submission.
+
+### Challenges & Solutions
+
+- **Dashboard showing empty (ROOT CAUSE).** The dashboard HTML used absolute fetch paths (`/api/state`, `/api/conversation-log`) which resolved to the root domain (n8n on port 3000) instead of the DarwinFi server (port 3502) when accessed through the Caddy reverse proxy at `/darwinfi/`. Fixed by changing to relative paths (`api/state`, `api/conversation-log`).
+
+- **No paper trades firing.** Token recommendation scores ranged 0-35 (limited by available price data), but the entry evaluation threshold was set at 50. Lowered to 15 to let paper trades flow and populate the leaderboard.
+
+- **Kraken wallet empty.** Attempted to fund the DarwinFi wallet via Kraken API withdrawal, but the Kraken account had zero ETH and zero USDC. Created `scripts/fund-wallet.js` with fallback instructions for manual withdrawal setup.
+
+### What Claude Code Did
+
+- **Dashboard routing fix.** Changed `fetch('/api/state')` and `fetch('/api/conversation-log')` to relative paths in `index.html:515-516`. This was the root cause of the empty dashboard -- all API calls were hitting n8n instead of DarwinFi.
+
+- **Bot naming.** Renamed all 12 strategies from generic names (Alpha Momentum, Beta Mean-Revert, Gamma Breakout + Mad Scientist/Optimizer/Synthesizer variants) to memorable names:
+  - **Apex** (momentum), **Viper** (mean-revert), **Blitz** (breakout) for mains
+  - **Mutant** (experimental), **Tuner** (optimizer), **Hybrid** (synthesizer) for variations
+  - Updated `strategy-manager.ts` seed strategies and variation name generation.
+
+- **Ranking column.** Added a `#` column to the Strategy Tournament table showing rank position (#1 through #12), sorted by composite score.
+
+- **Trade threshold.** Lowered `actionableRecs` filter from `score >= 50` to `score >= 15` in `darwin-agent.ts:357`, enabling entry evaluations to fire with real-world score ranges.
+
+- **Fund-wallet script.** Created `scripts/fund-wallet.js` using the KrakenClient from Money Model. Checks balances, queries withdrawal methods, and attempts Base network withdrawals with fallback instructions.
+
+- **Caddy routing.** Added DarwinFi reverse proxy route to `corduroycloud.com` Caddyfile (was only on `murphy.corduroycloud.com`). Dashboard now accessible at both URLs.
+
+- **README update.** Added live demo URL, wallet address, updated strategy names and variation role names.
+
+**Code Impact:** 5 files modified, 1 file created.
+
+---
+
+## Session 4b: Cost-Optimized Launch (Paper Trading MVP)
 
 **Objective:** Get DarwinFi paper trading ASAP for the agentic judge review (March 18). The original architecture required Anthropic and Venice API keys for every market tick -- ~28K API calls/day at ~$65-75/2wk. Redesigned the signal evaluation pipeline to use Claude Code Max subscription (free CLI calls) for high-frequency signals, reserving paid Venice API for low-frequency evolution only.
 
@@ -168,32 +233,16 @@ Every 4h:   Venice API -> strategy evolution (sponsor showcase) -- ~$0.30/day
 
 - **Three-tier loop architecture.** Split the monolithic 30s main loop into three tiers: fast tick (30s, prices + rule-based stops), signal tick (2min, Claude CLI batch AI evaluation), evolution tick (4h, Venice API). Each tier runs at the frequency appropriate for its cost profile.
 
-- **Claude CLI as signal engine.** Created `ClaudeCliEngine` that spawns `claude -p --model claude-haiku-4-5-20251001` via `child_process.execSync()` for entry/exit signal evaluation. Batch mode evaluates all positions/candidates in a single CLI call instead of N individual API calls. Free via Claude Code Max subscription.
+- **Claude CLI as signal engine.** Created `ClaudeCliEngine` that spawns `claude -p --model claude-haiku-4-5-20251001` for entry/exit signal evaluation. Batch mode evaluates all positions/candidates in a single CLI call. Free via Claude Code Max subscription.
 
-- **Venice API for evolution only (sponsor showcase).** Evolution engine swapped from Anthropic SDK (`@anthropic-ai/sdk`) to OpenAI-compatible SDK (`openai`) pointing at `https://api.venice.ai/api/v1` with `llama-3.3-70b`. This ensures Venice AI (a hackathon sponsor) is prominently used while keeping costs minimal (~6 calls/day).
+- **Venice API for evolution only (sponsor showcase).** Evolution engine swapped from Anthropic SDK to OpenAI-compatible SDK pointing at `https://api.venice.ai/api/v1` with `llama-3.3-70b`. Venice AI (hackathon sponsor) prominently used while keeping costs minimal (~6 calls/day).
 
-- **Removed Anthropic API key dependency.** The agent no longer requires `ANTHROPIC_API_KEY` to start. Evolution uses Venice; signals use Claude CLI.
+- **Removed Anthropic API key dependency.** Evolution uses Venice; signals use Claude CLI.
 
-### What Claude Code Built
-
-**New file:**
-- `claude-cli-engine.ts` -- Claude CLI wrapper implementing the same interface as VeniceEngine (`evaluateEntry()`, `evaluateExit()`, `recommendTokens()`). Batch mode: takes arrays of snapshots/positions, returns arrays of signals from a single CLI call. 30-second timeout. Handles JSON envelope parsing from `claude -p --output-format json`.
-
-**Modified files:**
-- `evolution-engine.ts` -- Replaced `@anthropic-ai/sdk` import with `openai`. Pointed client at Venice API (`https://api.venice.ai/api/v1`). Swapped `client.messages.create()` for `client.chat.completions.create()`. Higher temperature (0.7) for creative evolution.
-- `darwin-agent.ts` -- Replaced `VeniceEngine` with `ClaudeCliEngine` for signal evaluation. Split `mainLoopIteration()` into fast tick / signal tick / evolution tick. Added `SIGNAL_INTERVAL_SEC` config. Separated exit evaluation into `evaluateRuleBasedExits()` (every 30s, free) and `evaluateAiExits()` (every 2min, CLI). Removed `ANTHROPIC_API_KEY` requirement.
-- `.env` -- Added `VENICE_API_KEY`, `SIGNAL_INTERVAL_SEC=120`, `PRIVATE_KEY` (dummy for paper trading chain client init). Removed `ANTHROPIC_API_KEY`.
-
-### Deployment
-
-- Removed standalone `darwinfi-dashboard` PM2 process (port conflict with agent's built-in dashboard).
-- Registered `darwinfi` with PM2 for persistence.
-- Dashboard serving at `https://darwinfi.corduroycloud.com` (port 3502).
-- Agent running in DRY_RUN mode with 12 strategies, live strategy: main-alpha.
-
-**Code Impact:** 1 file created, 3 files modified. Agent now starts and paper trades without any paid API keys.
+**Code Impact:** 1 file created, 3 files modified.
 
 ---
+
 ## Technical Summary
 
 | Metric | Value |
@@ -207,8 +256,8 @@ Every 4h:   Venice API -> strategy evolution (sponsor showcase) -- ~$0.30/day
 | Chains supported | 2 (Base, Celo) |
 | AI models integrated | 3 (Claude CLI for signals, Venice AI for evolution, Claude Haiku for batch eval) |
 | Sponsor integrations | 7 (Base, Uniswap, Venice AI, Celo, ENS, Filecoin, Locus) |
-| Git commits | 5 |
-| Build time | ~2.5 hours |
+| Git commits | 7 |
+| Build time | ~3.5 hours |
 
 ---
 

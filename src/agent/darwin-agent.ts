@@ -22,7 +22,8 @@ dotenv.config();
 import { PerformanceTracker, TradeRecord } from './performance';
 import { StrategyManager, StrategyGenome } from './strategy-manager';
 import { EvolutionEngine } from './evolution-engine';
-import { VeniceEngine, MarketSnapshot, EntrySignal, ExitSignal } from './venice-engine';
+import { ClaudeCliEngine } from './claude-cli-engine';
+import { MarketSnapshot, EntrySignal, ExitSignal } from './venice-engine';
 import { PriceFeed, TOKEN_UNIVERSE } from '../trading/price-feed';
 import { UniswapClient } from '../trading/uniswap-client';
 import { LiveEngine } from '../trading/live-engine';
@@ -35,20 +36,16 @@ import { startDashboard, updateDashboardState, updateConversationLog, DashboardS
 // ---------------------------------------------------------------------------
 
 interface AgentConfig {
-  anthropicApiKey: string;
   veniceApiKey: string;
   evolutionIntervalMs: number;
   minTradesForEvolution: number;
   pollIntervalMs: number;
+  signalIntervalMs: number;
   dryRun: boolean;
   dashboardPort: number;
 }
 
 function loadConfig(): AgentConfig {
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-  if (!anthropicApiKey) {
-    throw new Error('ANTHROPIC_API_KEY is required in .env');
-  }
   const veniceApiKey = process.env.VENICE_API_KEY;
   if (!veniceApiKey) {
     throw new Error('VENICE_API_KEY is required in .env');
@@ -56,15 +53,16 @@ function loadConfig(): AgentConfig {
 
   const evolutionHours = parseInt(process.env.EVOLUTION_INTERVAL_HOURS || '4', 10);
   const minTrades = parseInt(process.env.MIN_TRADES_FOR_PROMOTION || '5', 10);
+  const signalIntervalSec = parseInt(process.env.SIGNAL_INTERVAL_SEC || '120', 10);
 
   return {
-    anthropicApiKey,
     veniceApiKey,
     evolutionIntervalMs: evolutionHours * 60 * 60 * 1000,
     minTradesForEvolution: minTrades * 2, // 10 trades = 2x the promotion minimum
-    pollIntervalMs: 30_000, // 30 seconds between market checks
+    pollIntervalMs: 30_000, // 30 seconds between fast ticks (price fetch + rule-based checks)
+    signalIntervalMs: signalIntervalSec * 1000, // Claude CLI signal evaluation interval
     dryRun: process.env.DRY_RUN === 'true',
-    dashboardPort: parseInt(process.env.DASHBOARD_PORT || '3500', 10),
+    dashboardPort: parseInt(process.env.DASHBOARD_PORT || '3502', 10),
   };
 }
 
@@ -77,7 +75,7 @@ class DarwinAgent {
   private performanceTracker: PerformanceTracker;
   private strategyManager: StrategyManager;
   private evolutionEngine: EvolutionEngine;
-  private veniceEngine: VeniceEngine;
+  private signalEngine: ClaudeCliEngine;
   private priceFeed: PriceFeed;
   private liveEngine: LiveEngine;
   private statePersistence: StatePersistence;
@@ -85,17 +83,19 @@ class DarwinAgent {
 
   private running: boolean = false;
   private lastEvolutionTime: Date = new Date();
+  private lastSignalTime: Date = new Date(0); // Force signal eval on first eligible tick
   private tradesAtLastEvolution: number = 0;
   private tradeIdCounter: number = 0;
   private loopCount: number = 0;
   private startTime: Date = new Date();
+  private latestSnapshots: MarketSnapshot[] = [];
 
   constructor(config: AgentConfig) {
     this.config = config;
     this.performanceTracker = new PerformanceTracker();
     this.strategyManager = new StrategyManager(this.performanceTracker);
-    this.evolutionEngine = new EvolutionEngine(config.anthropicApiKey);
-    this.veniceEngine = new VeniceEngine(config.veniceApiKey);
+    this.evolutionEngine = new EvolutionEngine(config.veniceApiKey);
+    this.signalEngine = new ClaudeCliEngine();
 
     // Trading infrastructure
     const uniswap = new UniswapClient();
@@ -116,9 +116,10 @@ class DarwinAgent {
     console.log('[DarwinFi]   Autonomous Darwinian Trading');
     console.log('[DarwinFi] ====================================');
     console.log(`[DarwinFi] Mode: ${this.config.dryRun ? 'DRY RUN (no real trades)' : 'LIVE'}`);
-    console.log(`[DarwinFi] Evolution interval: ${this.config.evolutionIntervalMs / 3600000}h`);
+    console.log(`[DarwinFi] Fast tick (prices + rule-based): ${this.config.pollIntervalMs / 1000}s`);
+    console.log(`[DarwinFi] Signal tick (Claude CLI batch): ${this.config.signalIntervalMs / 1000}s`);
+    console.log(`[DarwinFi] Evolution tick (Venice API): ${this.config.evolutionIntervalMs / 3600000}h`);
     console.log(`[DarwinFi] Evolution trade trigger: ${this.config.minTradesForEvolution} trades`);
-    console.log(`[DarwinFi] Poll interval: ${this.config.pollIntervalMs / 1000}s`);
 
     this.conversationLog.system('agent', 'DarwinFi agent starting', {
       mode: this.config.dryRun ? 'dry_run' : 'live',
@@ -216,12 +217,15 @@ class DarwinAgent {
   private async mainLoopIteration(): Promise<void> {
     this.loopCount += 1;
 
+    // === FAST TICK (every 30s): Fetch prices, rule-based stops/profits, update dashboard ===
+
     // Step 1: Fetch market data for the token universe
     const snapshots = await this.fetchMarketSnapshots();
     if (snapshots.length === 0) {
       console.warn('[DarwinFi] No market data available, skipping iteration');
       return;
     }
+    this.latestSnapshots = snapshots;
 
     // Step 2: Get the live strategy
     const liveStrategy = this.strategyManager.getLiveStrategy();
@@ -230,19 +234,36 @@ class DarwinAgent {
       return;
     }
 
-    // Step 3: Evaluate exit signals for open positions
-    await this.evaluateExits(liveStrategy, snapshots);
+    // Step 3: Rule-based exits (hard stops, take profits) -- no AI needed
+    await this.evaluateRuleBasedExits(liveStrategy, snapshots);
 
-    // Step 4: Evaluate entry signals (only for live strategy in live mode, all strategies in paper)
-    await this.evaluateEntries(liveStrategy, snapshots);
+    // === SIGNAL TICK (every ~2min): Claude CLI batch evaluation for entries/exits ===
+    const now = new Date();
+    const msSinceLastSignal = now.getTime() - this.lastSignalTime.getTime();
 
-    // Step 5: Run paper trading for non-live strategies
-    await this.runPaperTradingCycle(snapshots);
+    if (msSinceLastSignal >= this.config.signalIntervalMs) {
+      this.lastSignalTime = now;
 
-    // Step 6: Check evolution trigger
+      try {
+        // AI-powered exit evaluation (batch)
+        await this.evaluateAiExits(liveStrategy, snapshots);
+
+        // AI-powered entry evaluation (batch)
+        await this.evaluateEntries(liveStrategy, snapshots);
+
+        // Paper trading for non-live strategies
+        await this.runPaperTradingCycle(snapshots);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[DarwinFi] Signal tick error: ${msg}`);
+        this.conversationLog.error('agent', `Signal tick error: ${msg}`);
+      }
+    }
+
+    // === EVOLUTION TICK (every ~4h): Venice API evolution cycle ===
     await this.checkEvolutionTrigger();
 
-    // Step 7: Periodic status log (every 10 iterations)
+    // Periodic status log (every 10 iterations)
     if (this.loopCount % 10 === 0) {
       this.printStatusReport();
     }
@@ -312,61 +333,72 @@ class DarwinAgent {
       return; // At max capacity
     }
 
-    // Ask Venice for token recommendations
+    // Get token recommendations via Claude CLI (batch)
     let recommendations;
     try {
-      recommendations = await this.veniceEngine.recommendTokens(liveStrategy, relevantSnapshots);
+      recommendations = await this.signalEngine.recommendTokens(liveStrategy, relevantSnapshots);
       this.conversationLog.aiCall(
-        'venice',
+        'claude-cli',
         `Token recommendations for ${liveStrategy.id}`,
-        'llama-3.3-70b',
+        'claude-haiku-4-5',
         `Recommend tokens for ${liveStrategy.name}`,
         `${recommendations.length} recommendations returned`,
         { recommendations: recommendations.map(r => ({ token: r.token, score: r.score })) },
       );
     } catch (err) {
       console.warn(
-        '[DarwinFi] Venice token recommendation failed:',
+        '[DarwinFi] Claude CLI token recommendation failed:',
         err instanceof Error ? err.message : err,
       );
       return;
     }
 
-    // Evaluate entry for top recommendations
-    for (const rec of recommendations) {
-      if (rec.score < 50) continue; // Skip low-confidence picks
-
+    // Filter to actionable recommendations
+    const actionableRecs = recommendations.filter(r => r.score >= 15);
+    const recsToEvaluate = actionableRecs.filter(rec => {
       const snapshot = snapshots.find(s => s.token === rec.token);
-      if (!snapshot || snapshot.price <= 0) continue;
+      return snapshot && snapshot.price > 0 && !openPositions.some(p => p.token === rec.token);
+    });
 
-      // Skip if we already hold this token
-      if (openPositions.some(p => p.token === rec.token)) continue;
+    if (recsToEvaluate.length === 0) return;
 
-      // Still have room?
-      if (openPositions.length >= liveStrategy.parameters.maxPositions) break;
+    // Batch evaluate entries via Claude CLI (one call for all candidates)
+    const evalSnapshots = recsToEvaluate
+      .map(rec => snapshots.find(s => s.token === rec.token)!)
+      .filter(Boolean);
 
-      try {
-        const signal = await this.veniceEngine.evaluateEntry(liveStrategy, snapshot);
+    try {
+      const signals = await this.signalEngine.evaluateEntry(liveStrategy, evalSnapshots);
 
+      this.conversationLog.aiCall(
+        'claude-cli',
+        `Batch entry evaluation for ${liveStrategy.id}`,
+        'claude-haiku-4-5',
+        `Evaluate ${evalSnapshots.length} tokens for entry`,
+        `${signals.filter(s => s.action === 'buy').length} buy signals`,
+        {},
+      );
+
+      for (const signal of signals) {
         if (signal.action === 'buy' && signal.confidence >= 60) {
+          if (openPositions.length >= liveStrategy.parameters.maxPositions) break;
+
+          const snapshot = snapshots.find(s => s.token === signal.token);
+          if (!snapshot) continue;
+
           this.conversationLog.decision(
             'agent',
             `BUY signal: ${snapshot.token} @ $${snapshot.price.toFixed(2)} (confidence: ${signal.confidence})`,
             { strategy: liveStrategy.id, signal },
           );
           await this.executeBuy(liveStrategy, signal, snapshot);
-        } else {
-          console.log(
-            `[DarwinFi] Skip entry: ${snapshot.token} ` +
-            `(action=${signal.action}, confidence=${signal.confidence})`
-          );
         }
-      } catch (err) {
-        console.error(
-          `[DarwinFi] Entry evaluation failed for ${rec.token}:`,
-          err instanceof Error ? err.message : err,
-        );
       }
+    } catch (err) {
+      console.error(
+        '[DarwinFi] Batch entry evaluation failed:',
+        err instanceof Error ? err.message : err,
+      );
     }
   }
 
@@ -374,7 +406,11 @@ class DarwinAgent {
   // Exit Evaluation
   // -------------------------------------------------------------------------
 
-  private async evaluateExits(
+  /**
+   * Rule-based exits only: hard stops and take profits.
+   * Runs every fast tick (30s) -- no AI calls, completely free.
+   */
+  private async evaluateRuleBasedExits(
     strategy: StrategyGenome,
     snapshots: MarketSnapshot[],
   ): Promise<void> {
@@ -386,9 +422,8 @@ class DarwinAgent {
       if (!snapshot || snapshot.price <= 0) continue;
 
       const currentPnlPct = ((snapshot.price - position.entryPrice) / position.entryPrice) * 100;
-      const holdTimeMinutes = (Date.now() - position.entryTime.getTime()) / 60000;
 
-      // Hard stop-loss check (no AI needed)
+      // Hard stop-loss check
       if (currentPnlPct <= -strategy.parameters.trailingStopPct) {
         console.log(
           `[DarwinFi] HARD STOP triggered for ${position.token}: ` +
@@ -407,44 +442,9 @@ class DarwinAgent {
         await this.executeSell(strategy, position, snapshot.price, 'take_profit');
         continue;
       }
-
-      // Venice AI exit evaluation
-      try {
-        const exitSignal = await this.veniceEngine.evaluateExit(
-          strategy,
-          snapshot,
-          position.entryPrice,
-          currentPnlPct,
-          holdTimeMinutes,
-        );
-
-        if (exitSignal.action === 'sell' && exitSignal.confidence >= 70) {
-          console.log(
-            `[DarwinFi] Venice EXIT signal for ${position.token}: ` +
-            `confidence=${exitSignal.confidence} reason="${exitSignal.reasoning}"`
-          );
-          this.conversationLog.decision(
-            'agent',
-            `SELL signal (Venice): ${position.token} (confidence: ${exitSignal.confidence})`,
-            { strategy: strategy.id, exitSignal },
-          );
-          await this.executeSell(strategy, position, snapshot.price, 'venice_signal');
-        } else if (exitSignal.action === 'tighten_stop' && exitSignal.newStopPrice) {
-          console.log(
-            `[DarwinFi] Venice TIGHTEN STOP for ${position.token}: ` +
-            `new stop=$${exitSignal.newStopPrice}`
-          );
-        }
-      } catch (err) {
-        console.warn(
-          `[DarwinFi] Venice exit evaluation failed for ${position.token}:`,
-          err instanceof Error ? err.message : err,
-        );
-        // Don't exit on failure -- hard stops still protect us
-      }
     }
 
-    // Also handle sell-only strategies
+    // Also handle sell-only strategies (rule-based)
     const sellOnlyStrategies = this.strategyManager.getSellOnlyStrategies();
     for (const sellOnly of sellOnlyStrategies) {
       const positions = this.performanceTracker.getOpenPositions(sellOnly.id);
@@ -452,13 +452,79 @@ class DarwinAgent {
         const snapshot = snapshots.find(s => s.token === position.token);
         if (!snapshot || snapshot.price <= 0) continue;
 
-        // Sell-only: aggressively exit all positions
         const currentPnlPct = ((snapshot.price - position.entryPrice) / position.entryPrice) * 100;
         if (currentPnlPct > 0 || currentPnlPct <= -3) {
-          // Exit if profitable or if loss exceeds 3%
           await this.executeSell(sellOnly, position, snapshot.price, 'sell_only_exit');
         }
       }
+    }
+  }
+
+  /**
+   * AI-powered exit evaluation via Claude CLI (batch).
+   * Runs every signal tick (~2min).
+   */
+  private async evaluateAiExits(
+    strategy: StrategyGenome,
+    snapshots: MarketSnapshot[],
+  ): Promise<void> {
+    const openPositions = this.performanceTracker.getOpenPositions(strategy.id);
+    if (openPositions.length === 0) return;
+
+    // Build batch payload for all open positions
+    const positionData = openPositions
+      .map(position => {
+        const snapshot = snapshots.find(s => s.token === position.token);
+        if (!snapshot || snapshot.price <= 0) return null;
+        const currentPnlPct = ((snapshot.price - position.entryPrice) / position.entryPrice) * 100;
+        const holdTimeMinutes = (Date.now() - position.entryTime.getTime()) / 60000;
+        return { token: position.token, snapshot, entryPrice: position.entryPrice, currentPnlPct, holdTimeMinutes };
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null);
+
+    if (positionData.length === 0) return;
+
+    try {
+      const exitSignals = await this.signalEngine.evaluateExit(strategy, positionData);
+
+      this.conversationLog.aiCall(
+        'claude-cli',
+        `Batch exit evaluation for ${strategy.id}`,
+        'claude-haiku-4-5',
+        `Evaluate ${positionData.length} positions for exit`,
+        `${exitSignals.filter(s => s.action === 'sell').length} sell signals`,
+        {},
+      );
+
+      for (const exitSignal of exitSignals) {
+        if (exitSignal.action === 'sell' && exitSignal.confidence >= 70) {
+          const position = openPositions.find(p => p.token === exitSignal.token);
+          const snapshot = snapshots.find(s => s.token === exitSignal.token);
+          if (!position || !snapshot) continue;
+
+          console.log(
+            `[DarwinFi] Claude CLI EXIT signal for ${position.token}: ` +
+            `confidence=${exitSignal.confidence} reason="${exitSignal.reasoning}"`
+          );
+          this.conversationLog.decision(
+            'agent',
+            `SELL signal (Claude CLI): ${position.token} (confidence: ${exitSignal.confidence})`,
+            { strategy: strategy.id, exitSignal },
+          );
+          await this.executeSell(strategy, position, snapshot.price, 'cli_signal');
+        } else if (exitSignal.action === 'tighten_stop' && exitSignal.newStopPrice) {
+          console.log(
+            `[DarwinFi] Claude CLI TIGHTEN STOP for ${exitSignal.token}: ` +
+            `new stop=$${exitSignal.newStopPrice}`
+          );
+        }
+      }
+    } catch (err) {
+      console.warn(
+        '[DarwinFi] Claude CLI batch exit evaluation failed:',
+        err instanceof Error ? err.message : err,
+      );
+      // Rule-based stops still protect us from the fast tick
     }
   }
 
@@ -618,15 +684,18 @@ class DarwinAgent {
   private async runPaperTradingCycle(snapshots: MarketSnapshot[]): Promise<void> {
     const allStrategies = this.strategyManager.getAllStrategies();
     const paperStrategies = allStrategies.filter(
-      s => s.status === 'paper' && s.type !== 'variation' // Only paper-trade mains, not variations directly
+      s => s.status === 'paper' && s.type !== 'variation'
     );
 
     for (const strategy of paperStrategies) {
       try {
-        // Evaluate exits first
-        await this.evaluateExits(strategy, snapshots);
+        // Rule-based exits for paper strategies
+        await this.evaluateRuleBasedExits(strategy, snapshots);
 
-        // Then entries
+        // AI exits for paper strategies
+        await this.evaluateAiExits(strategy, snapshots);
+
+        // Then entries (batch)
         const relevantSnapshots = snapshots.filter(
           s => strategy.parameters.tokenPreferences.includes(s.token)
         );
@@ -635,19 +704,24 @@ class DarwinAgent {
         if (openPositions.length >= strategy.parameters.maxPositions) continue;
         if (relevantSnapshots.length === 0) continue;
 
-        // Use the first preferred token with data for paper entry evaluation
-        for (const snapshot of relevantSnapshots) {
-          if (snapshot.price <= 0) continue;
-          if (openPositions.some(p => p.token === snapshot.token)) continue;
-          if (openPositions.length >= strategy.parameters.maxPositions) break;
+        // Filter to tokens we don't already hold
+        const candidates = relevantSnapshots.filter(
+          s => s.price > 0 && !openPositions.some(p => p.token === s.token)
+        );
+        if (candidates.length === 0) continue;
 
-          const signal = await this.veniceEngine.evaluateEntry(strategy, snapshot);
+        // Batch evaluate entries via Claude CLI
+        const signals = await this.signalEngine.evaluateEntry(strategy, candidates);
+        for (const signal of signals) {
           if (signal.action === 'buy' && signal.confidence >= 60) {
-            await this.executeBuy(strategy, signal, snapshot);
+            if (openPositions.length >= strategy.parameters.maxPositions) break;
+            const snapshot = snapshots.find(s => s.token === signal.token);
+            if (snapshot) {
+              await this.executeBuy(strategy, signal, snapshot);
+            }
           }
         }
       } catch (err) {
-        // Paper trading errors are non-critical
         console.warn(
           `[DarwinFi] Paper trading error for ${strategy.id}:`,
           err instanceof Error ? err.message : err,

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/assets/darwinfi-logo-tight.png">
   <title>DarwinFi - Autonomous Self-Evolving Trading Agent</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
@@ -462,6 +463,7 @@
     <table class="strategy-table">
       <thead>
         <tr>
+          <th>#</th>
           <th>Strategy</th>
           <th>Role</th>
           <th>Status</th>
@@ -511,8 +513,8 @@
     async function fetchAll() {
       try {
         const [stateRes, logRes] = await Promise.all([
-          fetch('/api/state'),
-          fetch('/api/conversation-log'),
+          fetch('api/state'),
+          fetch('api/conversation-log'),
         ]);
         const state = await stateRes.json();
         const logData = await logRes.json();
@@ -574,7 +576,7 @@
       const sorted = [...data.strategies].sort((a, b) => b.score - a.score);
       const maxScore = Math.max(...sorted.map(s => s.score), 0.001);
 
-      tbody.innerHTML = sorted.map(s => {
+      tbody.innerHTML = sorted.map((s, idx) => {
         const statusBadge = s.status === 'live'
           ? '<span class="badge badge-live">LIVE</span>'
           : s.status === 'sell_only'
@@ -589,6 +591,7 @@
         const pnlClass = s.pnl >= 0 ? 'pnl-positive' : 'pnl-negative';
 
         return '<tr>' +
+          '<td style="color:var(--primary);font-weight:700;">#' + (idx + 1) + '</td>' +
           '<td><span class="strategy-name">' + escapeHtml(s.name) + '</span></td>' +
           '<td>' + (s.role || s.type) + roleBadge + '</td>' +
           '<td>' + statusBadge + '</td>' +

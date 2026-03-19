@@ -33,18 +33,21 @@ async function register(payload: RegistrationPayload): Promise<void> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      agent_name: payload.agent.name,
-      agent_description: payload.agent.description,
-      agent_harness: payload.agent.harness,
-      primary_model: payload.agent.model,
-      problem_statement: payload.agent.problemStatement,
-      participant_name: payload.participant.name,
-      participant_email: payload.participant.email,
-      social_handle: payload.participant.social,
-      professional_background: payload.participant.background,
-      crypto_experience: payload.participant.cryptoExperience,
-      ai_experience: payload.participant.aiExperience,
-      coding_comfort: payload.participant.codingComfort,
+      name: payload.agent.name,
+      description: payload.agent.description,
+      agentHarness: payload.agent.harness,
+      model: payload.agent.model,
+      problemStatement: payload.agent.problemStatement,
+      humanInfo: {
+        name: payload.participant.name,
+        email: payload.participant.email,
+        social: payload.participant.social,
+        background: payload.participant.background,
+        cryptoExperience: payload.participant.cryptoExperience,
+        aiAgentExperience: payload.participant.aiExperience,
+        codingComfort: payload.participant.codingComfort,
+        problemToSolve: payload.agent.problemStatement,
+      },
     }),
   });
 
@@ -72,15 +75,15 @@ const agentInfo = {
   problemStatement: "Autonomous agents managing real money need transparent, auditable decision-making with built-in risk controls. DarwinFi solves this by creating a self-improving trading system where strategy performance is publicly verifiable on-chain, spending scopes are enforced by smart contracts, and the AI evolution process is fully logged. The Darwinian competition mechanism ensures continuous improvement without human intervention, while per-strategy budget limits cap downside risk.",
 };
 
-// Participant info - to be filled by Maxwell
+// Participant info
 const participantInfo = {
-  name: "", // Maxwell fills in
-  email: "", // Maxwell fills in
-  social: "", // Maxwell fills in
-  background: "", // Maxwell fills in
-  cryptoExperience: "", // beginner/intermediate/advanced/expert
-  aiExperience: "", // Maxwell fills in
-  codingComfort: 0, // 1-10
+  name: "Maxwell Morgan",
+  email: "maxwell.morgan@creativesolarusa.com",
+  social: "@maxcm92 (X) | github.com/maxwellcm92 | linkedin.com/in/themaxwellmorgan/",
+  background: "builder",
+  cryptoExperience: "yes",
+  aiExperience: "yes",
+  codingComfort: 7,
 };
 
 // Only run if all fields are filled

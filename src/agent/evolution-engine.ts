@@ -8,7 +8,7 @@
  *   - Synthesizer: hybrid best-of-all from main + experimental + optimizer
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import {
   StrategyGenome,
   StrategyManager,
@@ -39,7 +39,8 @@ interface EvolutionCycleReport {
 // Constants
 // ---------------------------------------------------------------------------
 
-const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+const VENICE_BASE_URL = 'https://api.venice.ai/api/v1';
+const VENICE_MODEL = 'llama-3.3-70b';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 2000;
 
@@ -48,12 +49,16 @@ const RETRY_DELAY_MS = 2000;
 // ---------------------------------------------------------------------------
 
 export class EvolutionEngine {
-  private client: Anthropic;
+  private client: OpenAI;
   private cycleCount: number = 0;
 
   constructor(apiKey: string) {
-    this.client = new Anthropic({ apiKey });
-    console.log('[DarwinFi] Evolution engine initialized (Anthropic Claude)');
+    this.client = new OpenAI({
+      apiKey,
+      baseURL: VENICE_BASE_URL,
+      timeout: 30_000,
+    });
+    console.log('[DarwinFi] Evolution engine initialized (Venice AI - sponsor showcase)');
   }
 
   /**
@@ -309,21 +314,21 @@ Create a strategy that would rank #1 on the composite score by cherry-picking wi
   }
 
   private async callClaude(systemPrompt: string, userPrompt: string): Promise<string> {
-    const response = await this.client.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 1024,
-      system: systemPrompt,
+    const completion = await this.client.chat.completions.create({
+      model: VENICE_MODEL,
       messages: [
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
+      max_tokens: 1024,
+      temperature: 0.7, // Higher temperature for creative evolution
     });
 
-    // Extract text content from the response
-    const textBlock = response.content.find(block => block.type === 'text');
-    if (!textBlock || textBlock.type !== 'text') {
-      throw new Error('No text content in Claude response');
+    const content = completion.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('Empty response from Venice evolution API');
     }
-    return textBlock.text;
+    return content;
   }
 
   private parseEvolutionResponse(

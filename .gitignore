@@ -9,3 +9,4 @@ coverage/
 .DS_Store
 /data/
 !src/instinct/data/
+demo-output/

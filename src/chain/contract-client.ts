@@ -18,6 +18,7 @@ import { BaseClient, getBaseClient } from './base-client';
 export interface ContractAddresses {
   darwinVault?: string;
   darwinVaultV2?: string;
+  darwinVaultV3?: string;
   strategyExecutor?: string;
   performanceLog?: string;
 }
@@ -139,6 +140,43 @@ const DARWIN_VAULT_V2_ABI: InterfaceAbi = [
   'event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)',
 ];
 
+const DARWIN_VAULT_V3_ABI: InterfaceAbi = [
+  'function deposit(uint256 assets, address receiver) external returns (uint256)',
+  'function withdraw(uint256 assets, address receiver, address owner) external returns (uint256)',
+  'function redeem(uint256 shares, address receiver, address owner) external returns (uint256)',
+  'function agentBorrow(uint256 amount) external',
+  'function agentReturn(uint256 amount) external',
+  'function emergencyWithdraw() external',
+  'function totalAssets() external view returns (uint256)',
+  'function totalSupply() external view returns (uint256)',
+  'function sharePrice() external view returns (uint256)',
+  'function availableAssets() external view returns (uint256)',
+  'function totalBorrowed() external view returns (uint256)',
+  'function maxTotalAssets() external view returns (uint256)',
+  'function balanceOf(address account) external view returns (uint256)',
+  'function convertToAssets(uint256 shares) external view returns (uint256)',
+  'function convertToShares(uint256 assets) external view returns (uint256)',
+  'function agent() external view returns (address)',
+  'function asset() external view returns (address)',
+  'function setAgent(address _agent) external',
+  'function pause() external',
+  'function unpause() external',
+  'function setMinLockTime(uint256 _minLockTime) external',
+  'function minLockTime() external view returns (uint256)',
+  'function maxWithdraw(address owner) external view returns (uint256)',
+  'function paused() external view returns (bool)',
+  'function managementFeeBps() external view returns (uint256)',
+  'function lastFeeCollection() external view returns (uint256)',
+  'function collectManagementFee() external',
+  'function setManagementFeeBps(uint256 _bps) external',
+  'event AgentBorrowed(uint256 amount, uint256 totalBorrowed)',
+  'event AgentReturned(uint256 amount, uint256 totalBorrowed)',
+  'event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)',
+  'event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)',
+  'event ManagementFeeCollected(uint256 feeShares, uint256 feeAmount)',
+  'event ManagementFeeBpsUpdated(uint256 oldBps, uint256 newBps)',
+];
+
 const PERFORMANCE_LOG_ABI: InterfaceAbi = [
   'function logTradeResult(uint256 strategyId, int256 pnl, bool win) external',
   'function logPromotion(uint256 strategyId, string reason) external',
@@ -165,6 +203,7 @@ export class ContractClient {
 
   private _darwinVault: Contract | null = null;
   private _darwinVaultV2: Contract | null = null;
+  private _darwinVaultV3: Contract | null = null;
   private _strategyExecutor: Contract | null = null;
   private _performanceLog: Contract | null = null;
 
@@ -173,6 +212,7 @@ export class ContractClient {
     this.addresses = {
       darwinVault: addresses?.darwinVault ?? process.env.DARWIN_VAULT_ADDRESS,
       darwinVaultV2: addresses?.darwinVaultV2 ?? process.env.DARWIN_VAULT_V2_ADDRESS,
+      darwinVaultV3: addresses?.darwinVaultV3 ?? process.env.DARWIN_VAULT_V3_ADDRESS,
       strategyExecutor: addresses?.strategyExecutor ?? process.env.STRATEGY_EXECUTOR_ADDRESS,
       performanceLog: addresses?.performanceLog ?? process.env.PERFORMANCE_LOG_ADDRESS,
     };
@@ -198,6 +238,15 @@ export class ContractClient {
       this._darwinVaultV2 = new Contract(address, abi, this.baseClient.signer);
     }
     return this._darwinVaultV2;
+  }
+
+  get darwinVaultV3(): Contract {
+    if (!this._darwinVaultV3) {
+      const address = this.requireAddress('darwinVaultV3');
+      const abi = this.resolveAbi('DarwinVaultV3', DARWIN_VAULT_V3_ABI);
+      this._darwinVaultV3 = new Contract(address, abi, this.baseClient.signer);
+    }
+    return this._darwinVaultV3;
   }
 
   get strategyExecutor(): Contract {
@@ -415,6 +464,76 @@ export class ContractClient {
 
   getVaultV2Address(): string | undefined {
     return this.addresses.darwinVaultV2;
+  }
+
+  // ---------------------------------------------------------------
+  // Type-safe wrappers: DarwinVaultV3
+  // ---------------------------------------------------------------
+
+  async vaultV3BorrowFromVault(amount: bigint): Promise<string> {
+    const tx = await this.darwinVaultV3.agentBorrow(amount);
+    const receipt = await tx.wait();
+    return receipt.hash;
+  }
+
+  async vaultV3ReturnToVault(amount: bigint): Promise<string> {
+    const tx = await this.darwinVaultV3.agentReturn(amount);
+    const receipt = await tx.wait();
+    return receipt.hash;
+  }
+
+  async vaultV3TotalAssets(): Promise<bigint> {
+    return this.darwinVaultV3.totalAssets();
+  }
+
+  async vaultV3AvailableAssets(): Promise<bigint> {
+    return this.darwinVaultV3.availableAssets();
+  }
+
+  async vaultV3TotalBorrowed(): Promise<bigint> {
+    return this.darwinVaultV3.totalBorrowed();
+  }
+
+  async vaultV3SharePrice(): Promise<bigint> {
+    return this.darwinVaultV3.sharePrice();
+  }
+
+  async vaultV3TotalSupply(): Promise<bigint> {
+    return this.darwinVaultV3.totalSupply();
+  }
+
+  async vaultV3MaxTotalAssets(): Promise<bigint> {
+    return this.darwinVaultV3.maxTotalAssets();
+  }
+
+  async vaultV3BalanceOf(address: string): Promise<bigint> {
+    return this.darwinVaultV3.balanceOf(address);
+  }
+
+  async vaultV3ConvertToAssets(shares: bigint): Promise<bigint> {
+    return this.darwinVaultV3.convertToAssets(shares);
+  }
+
+  async vaultV3CollectManagementFee(): Promise<string> {
+    const tx = await this.darwinVaultV3.collectManagementFee();
+    const receipt = await tx.wait();
+    return receipt.hash;
+  }
+
+  async vaultV3ManagementFeeBps(): Promise<bigint> {
+    return this.darwinVaultV3.managementFeeBps();
+  }
+
+  async vaultV3LastFeeCollection(): Promise<bigint> {
+    return this.darwinVaultV3.lastFeeCollection();
+  }
+
+  hasVaultV3(): boolean {
+    return !!this.addresses.darwinVaultV3;
+  }
+
+  getVaultV3Address(): string | undefined {
+    return this.addresses.darwinVaultV3;
   }
 
   // ---------------------------------------------------------------

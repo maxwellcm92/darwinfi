@@ -47,6 +47,11 @@ export const CHECK_INTERVALS = {
   contractScan: 24 * 60 * 60_000,     // 24hr
   apiExposure: 12 * 60 * 60_000,      // 12hr
   genomeEvolution: 12 * 60 * 60_000,  // 12hr
+
+  // Evolution division
+  evolutionPnlWatchdog: 60_000,          // 60s during canary
+  evolutionCanaryHealth: 30_000,         // 30s during canary
+  evolutionBranchIntegrity: 5 * 60_000,  // 5min
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -99,6 +104,12 @@ export const THRESHOLDS = {
   thresholdMinMultiplier: 0.5,
   thresholdMaxMultiplier: 2.0,
   checkGenerationTriggerCount: 3, // >3x in 24h
+
+  // Evolution thresholds
+  evolutionMaxPnlDropPct: 0.02,         // 2% TVL
+  evolutionMaxErrorRateIncrease: 0.50,  // 50%
+  evolutionMaxCrashesIn10Min: 3,
+  evolutionMinCanaryDurationMs: 4 * 60 * 60_000, // 4 hours
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -156,6 +167,7 @@ export const SAFE_FIX_IDS = new Set([
   'state_rebuild',
   'cache_clear',
   'hardhat_cache_clear',
+  'evolution_rollback',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -174,6 +186,7 @@ export const MONITORED_PROCESSES: MonitoredProcess[] = [
   { name: 'darwinfi-instinct', critical: false, checkId: 'process_health_darwinfi-instinct' },
   { name: 'frontier', critical: false, checkId: 'process_health_frontier' },
   { name: 'darwinfi-immune', critical: false, checkId: 'process_health_darwinfi-immune' },
+  { name: 'darwinfi-evolution', critical: false, checkId: 'process_health_darwinfi-evolution' },
 ];
 
 export const RISKY_FIX_IDS = new Set([

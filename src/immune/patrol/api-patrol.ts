@@ -21,12 +21,16 @@ interface ProbeResult {
 function probeEndpoint(ep: { path: string; name: string }): Promise<ProbeResult> {
   return new Promise((resolve) => {
     const start = Date.now();
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), THRESHOLDS.apiTimeoutMs);
+
     const req = http.get(
-      { hostname: '127.0.0.1', port: DASHBOARD_PORT, path: ep.path, timeout: THRESHOLDS.apiTimeoutMs },
+      { hostname: '127.0.0.1', port: DASHBOARD_PORT, path: ep.path, signal: ac.signal },
       (res) => {
         let body = '';
         res.on('data', (chunk: Buffer) => { body += chunk.toString(); });
         res.on('end', () => {
+          clearTimeout(timer);
           const responseMs = Date.now() - start;
           // Verify JSON parseable
           try {
@@ -48,13 +52,11 @@ function probeEndpoint(ep: { path: string; name: string }): Promise<ProbeResult>
       }
     );
 
-    req.on('timeout', () => {
-      req.destroy();
-      resolve({ name: ep.name, path: ep.path, ok: false, responseMs: Date.now() - start, error: 'timeout' });
-    });
-
     req.on('error', (err: Error) => {
-      resolve({ name: ep.name, path: ep.path, ok: false, responseMs: Date.now() - start, error: err.message });
+      clearTimeout(timer);
+      const responseMs = Date.now() - start;
+      const error = err.name === 'AbortError' ? 'timeout' : err.message;
+      resolve({ name: ep.name, path: ep.path, ok: false, responseMs, error });
     });
   });
 }

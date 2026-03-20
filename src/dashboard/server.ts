@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import * as fs from "fs";
 import { ContractClient } from "../chain/contract-client";
 import { ethers } from "ethers";
 import { StateWriter } from "../instinct/nerves/state-writer";
@@ -289,6 +290,112 @@ export function startDashboard(port: number = 3500): void {
 
   // Immune system dashboard routes (must be before SPA catch-all)
   registerImmuneRoutes(app);
+
+  // ---------------------------------------------------------------
+  // Evolution engine routes
+  // ---------------------------------------------------------------
+
+  app.get("/api/evolution/status", (_req, res) => {
+    try {
+      const canaryPath = path.resolve(__dirname, '../../../data/evolution/canary-state.json');
+      const memoryPath = path.resolve(__dirname, '../../../data/evolution/memory.json');
+      let canaryState = null;
+      let memory = null;
+
+      if (fs.existsSync(canaryPath)) {
+        canaryState = JSON.parse(fs.readFileSync(canaryPath, 'utf-8'));
+      }
+      if (fs.existsSync(memoryPath)) {
+        memory = JSON.parse(fs.readFileSync(memoryPath, 'utf-8'));
+      }
+
+      res.json({
+        canary: canaryState,
+        lastProposalTime: memory?.lastProposalTime ?? 0,
+        proposalsToday: memory?.proposalsToday ?? 0,
+        totalProposals: memory?.entries?.length ?? 0,
+        zoneBackoff: memory?.zoneBackoff ?? {},
+      });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.get("/api/evolution/audit", (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string || '50', 10);
+      const auditPath = path.resolve(__dirname, '../../../data/evolution/audit.jsonl');
+      if (!fs.existsSync(auditPath)) {
+        return res.json({ entries: [] });
+      }
+      const lines = fs.readFileSync(auditPath, 'utf-8').trim().split('\n').filter(Boolean);
+      const entries = lines.slice(-limit).map(line => {
+        try { return JSON.parse(line); } catch { return null; }
+      }).filter(Boolean);
+      res.json({ entries });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.get("/api/evolution/memory", (_req, res) => {
+    try {
+      const memoryPath = path.resolve(__dirname, '../../../data/evolution/memory.json');
+      if (!fs.existsSync(memoryPath)) {
+        return res.json({ entries: [], zoneBackoff: {} });
+      }
+      const memory = JSON.parse(fs.readFileSync(memoryPath, 'utf-8'));
+      // Return summary (not full entries for performance)
+      res.json({
+        totalEntries: memory.entries?.length ?? 0,
+        recentEntries: (memory.entries ?? []).slice(-20),
+        zoneBackoff: memory.zoneBackoff ?? {},
+        lastProposalTime: memory.lastProposalTime ?? 0,
+        proposalsToday: memory.proposalsToday ?? 0,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.post("/api/evolution/pause", (_req, res) => {
+    try {
+      // Write a pause flag that the orchestrator checks
+      const flagPath = path.resolve(__dirname, '../../../data/evolution/paused');
+      fs.writeFileSync(flagPath, new Date().toISOString(), 'utf-8');
+      res.json({ paused: true, timestamp: new Date().toISOString() });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.post("/api/evolution/resume", (_req, res) => {
+    try {
+      const flagPath = path.resolve(__dirname, '../../../data/evolution/paused');
+      if (fs.existsSync(flagPath)) {
+        fs.unlinkSync(flagPath);
+      }
+      res.json({ paused: false, timestamp: new Date().toISOString() });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.post("/api/evolution/rollback", (_req, res) => {
+    try {
+      const { execSync } = require('child_process');
+      const cwd = path.resolve(__dirname, '../../../');
+      execSync('git checkout master', { cwd, encoding: 'utf-8' });
+      execSync('npx tsc', { cwd, encoding: 'utf-8', timeout: 120_000 });
+      execSync('pm2 reload darwinfi darwinfi-instinct frontier', { cwd, encoding: 'utf-8' });
+      // Clear canary state
+      const canaryPath = path.resolve(cwd, 'data/evolution/canary-state.json');
+      fs.writeFileSync(canaryPath, 'null', 'utf-8');
+      res.json({ rolledBack: true, timestamp: new Date().toISOString() });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
 
   // SPA catch-all: serve index.html for all non-API routes (client-side routing)
   app.get('*', (_req, res) => {

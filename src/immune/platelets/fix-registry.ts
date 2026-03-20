@@ -52,12 +52,64 @@ registry.set('state_integrity', {
   fixFn: stateRebuild,
 });
 
+registry.set('api_probe', {
+  checkId: 'api_probe',
+  fixName: 'pm2_restart',
+  safety: 'safe',
+  description: 'Restart darwinfi (main API server) if API endpoints unreachable',
+  fixFn: () => pm2Restart('darwinfi'),
+});
+
 registry.set('antibody.test_runner', {
   checkId: 'antibody.test_runner',
   fixName: 'hardhat_cache_clear',
   safety: 'safe',
   description: 'Clear Hardhat cache and recompile',
   fixFn: hardhatCacheClear,
+});
+
+// ---------------------------------------------------------------------------
+// Evolution rollback (safe fix: reverts to known-good master branch)
+// ---------------------------------------------------------------------------
+
+registry.set('evolution_canary_health', {
+  checkId: 'evolution_canary_health',
+  fixName: 'evolution_rollback',
+  safety: 'safe',
+  description: 'Rollback evolution canary to master branch',
+  fixFn: async () => {
+    try {
+      const { execSync } = require('child_process');
+      const cwd = process.cwd();
+      execSync('git checkout master', { cwd, encoding: 'utf-8' });
+      execSync('npx tsc', { cwd, encoding: 'utf-8', timeout: 120_000 });
+      execSync('pm2 reload darwinfi darwinfi-instinct frontier', { cwd, encoding: 'utf-8' });
+      // Clear canary state
+      const fs = require('fs');
+      const path = require('path');
+      const canaryPath = path.join(cwd, 'data', 'evolution', 'canary-state.json');
+      fs.writeFileSync(canaryPath, 'null', 'utf-8');
+      return true;
+    } catch {
+      return false;
+    }
+  },
+});
+
+registry.set('evolution_branch_integrity', {
+  checkId: 'evolution_branch_integrity',
+  fixName: 'evolution_rollback',
+  safety: 'safe',
+  description: 'Reset to master branch on unexpected git state',
+  fixFn: async () => {
+    try {
+      const { execSync } = require('child_process');
+      execSync('git checkout master', { cwd: process.cwd(), encoding: 'utf-8' });
+      return true;
+    } catch {
+      return false;
+    }
+  },
 });
 
 // ---------------------------------------------------------------------------

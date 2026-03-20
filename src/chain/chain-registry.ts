@@ -31,7 +31,6 @@ const ARBITRUM_MAINNET_CONFIG: Omit<EVMClientConfig, 'privateKey'> = {
   chainId: 42161,
   chainName: 'Arbitrum',
   rpcUrls: [
-    'https://arbitrum.llamarpc.com',
     'https://arb1.arbitrum.io/rpc',
     'https://1rpc.io/arb',
   ],
@@ -134,6 +133,48 @@ export class ChainRegistry {
       map.set(chainId, client.provider);
     }
     return map;
+  }
+
+  /**
+   * Check if a chain is registered.
+   */
+  hasChain(chainId: number): boolean {
+    return this.clients.has(chainId);
+  }
+
+  /**
+   * Remove a chain from the registry.
+   */
+  removeChain(chainId: number): boolean {
+    return this.clients.delete(chainId);
+  }
+
+  /**
+   * Get all registered chain IDs.
+   */
+  getChainIds(): number[] {
+    return [...this.clients.keys()];
+  }
+
+  /**
+   * Dynamically add a new chain at runtime (used by evolution engine).
+   * Returns the EVMClient for the new chain.
+   */
+  addChain(config: {
+    chainId: number;
+    chainName: string;
+    rpcUrls: string[];
+    maxGasPriceGwei?: number;
+  }): EVMClient {
+    if (this.clients.has(config.chainId)) {
+      console.log(`[ChainRegistry] Chain ${config.chainId} already registered, updating`);
+    }
+    return this.registerChain({
+      chainId: config.chainId,
+      chainName: config.chainName,
+      rpcUrls: config.rpcUrls,
+      maxGasPriceGwei: config.maxGasPriceGwei ?? 50,
+    });
   }
 
   // ---------------------------------------------------------------

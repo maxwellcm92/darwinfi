@@ -43,5 +43,13 @@ module.exports = {
       min_uptime: '30s',
       max_restarts: 10,
     },
+    {
+      name: 'darwinfi-evolution',
+      script: 'dist/src/evolution/orchestrator.js',
+      cwd: '/opt/murphy/darwinfi',
+      min_uptime: '30s',
+      max_restarts: 5,
+      restart_delay: 30000, // 30s delay on restart
+    },
   ],
 };

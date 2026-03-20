@@ -43,7 +43,7 @@ const EVOLUTION_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours
 const EVOLUTION_TRADE_TRIGGER = 20; // Also evolve after N trades
 
 const DRY_RUN = process.env.DRY_RUN === 'true';
-const TEAM4_ENABLED = process.env.TEAM4_ENABLED === 'true';
+const TEAM4_ENABLED = process.env.TEAM4_ENABLED !== 'false'; // Default ON for product mode
 const DASHBOARD_PORT = parseInt(process.env.FRONTIER_DASHBOARD_PORT ?? '3503', 10);
 
 // ---------------------------------------------------------------------------

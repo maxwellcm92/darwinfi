@@ -3,11 +3,14 @@ import { useSearchParams } from "react-router-dom";
 import { Tournament } from "./Tournament";
 import { Instinct } from "./Instinct";
 import { Frontier } from "./Frontier";
+import { EvolutionPanel } from "../components/EvolutionPanel";
+import { EvolutionAudit } from "../components/EvolutionAudit";
 
 const TABS = [
   { key: "tournament", label: "Tournament" },
   { key: "instinct", label: "Instinct" },
   { key: "frontier", label: "Frontier" },
+  { key: "evolution", label: "Evolution" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -45,6 +48,12 @@ export function Advanced() {
       {activeTab === "tournament" && <Tournament />}
       {activeTab === "instinct" && <Instinct />}
       {activeTab === "frontier" && <Frontier />}
+      {activeTab === "evolution" && (
+        <div className="space-y-8">
+          <EvolutionPanel />
+          <EvolutionAudit />
+        </div>
+      )}
     </div>
   );
 }

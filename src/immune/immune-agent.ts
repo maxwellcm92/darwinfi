@@ -15,7 +15,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 // Load .env from project root
-dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
+dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') });
 
 import { CheckResult, ImmuneHealthSummary, DivisionStatus } from './types';
 import { CHECK_INTERVALS, IMMUNE_FILES, PROJECT_ROOT, MONITORED_PROCESSES } from './config';
@@ -98,6 +98,10 @@ class ImmuneAgent {
     this.checkFunctions.set('api_probe', () => import('./patrol/api-patrol').then(m => m.checkApiEndpoints()));
     this.checkFunctions.set('instinct_health', () => import('./patrol/instinct-patrol').then(m => m.checkInstinctHealth()));
 
+    // Evolution division check functions
+    this.checkFunctions.set('evolution_branch_integrity', () => this.checkEvolutionBranchIntegrity());
+    this.checkFunctions.set('evolution_canary_health', () => this.checkEvolutionCanaryHealth());
+
     // Per-process recheck functions for fix-engine verification
     for (const proc of MONITORED_PROCESSES) {
       this.checkFunctions.set(proc.checkId, () =>
@@ -106,7 +110,7 @@ class ImmuneAgent {
     }
 
     // Initialize division statuses
-    for (const div of ['Patrol', 'Antibodies', 'Thymus', 'Platelets', 'Membrane', 'Lymph', 'Genome']) {
+    for (const div of ['Patrol', 'Antibodies', 'Thymus', 'Platelets', 'Membrane', 'Lymph', 'Genome', 'Evolution']) {
       this.divisionStatus[div] = {
         name: div,
         status: 'ok',
@@ -168,6 +172,12 @@ class ImmuneAgent {
     this.scheduleGenomeEvolution();
     this.divisionStatus['Genome'].message = 'Active';
     this.logger.info('Agent', 'Genome division online');
+
+    // Phase 6: Schedule Evolution division checks
+    this.scheduleCheck('evolution_branch_integrity', () => this.checkEvolutionBranchIntegrity(), CHECK_INTERVALS.evolutionBranchIntegrity, 'Evolution');
+    this.scheduleCheck('evolution_canary_health', () => this.checkEvolutionCanaryHealth(), CHECK_INTERVALS.evolutionCanaryHealth, 'Evolution');
+    this.divisionStatus['Evolution'].message = 'Active';
+    this.logger.info('Agent', 'Evolution division online');
 
     // Write immune state to disk every 30s
     this.stateWriteTimer = setInterval(() => this.writeStateToDisk(), 30_000);
@@ -359,8 +369,143 @@ class ImmuneAgent {
         return 'Thymus';
       case 'genome':
         return 'Genome';
+      case 'evolution':
+        return 'Evolution';
       default:
         return 'Lymph';
+    }
+  }
+
+  /**
+   * Evolution check: verify git branch is clean (no uncommitted changes from evolution).
+   */
+  private async checkEvolutionBranchIntegrity(): Promise<CheckResult> {
+    const start = Date.now();
+    try {
+      const { execSync } = require('child_process');
+      const status = execSync('git status --porcelain', { cwd: PROJECT_ROOT, encoding: 'utf-8' }).trim();
+      const branch = execSync('git branch --show-current', { cwd: PROJECT_ROOT, encoding: 'utf-8' }).trim();
+
+      if (branch !== 'master' && !branch.startsWith('evolution/')) {
+        return {
+          checkId: 'evolution_branch_integrity',
+          category: 'evolution',
+          severity: 'warning',
+          message: `Unexpected branch: ${branch} (expected master or evolution/*)`,
+          timestamp: Date.now(),
+          durationMs: Date.now() - start,
+        };
+      }
+
+      return {
+        checkId: 'evolution_branch_integrity',
+        category: 'evolution',
+        severity: 'ok',
+        message: `Branch: ${branch}, clean: ${status.length === 0}`,
+        timestamp: Date.now(),
+        durationMs: Date.now() - start,
+      };
+    } catch (err) {
+      return {
+        checkId: 'evolution_branch_integrity',
+        category: 'evolution',
+        severity: 'error',
+        message: `Git check failed: ${err instanceof Error ? err.message : err}`,
+        timestamp: Date.now(),
+        durationMs: Date.now() - start,
+      };
+    }
+  }
+
+  /**
+   * Evolution check: monitor active canary health.
+   * Reads canary-state.json and checks if metrics are degrading.
+   */
+  private async checkEvolutionCanaryHealth(): Promise<CheckResult> {
+    const start = Date.now();
+    try {
+      const canaryPath = path.join(PROJECT_ROOT, 'data', 'evolution', 'canary-state.json');
+      if (!fs.existsSync(canaryPath)) {
+        return {
+          checkId: 'evolution_canary_health',
+          category: 'evolution',
+          severity: 'ok',
+          message: 'No active canary',
+          timestamp: Date.now(),
+          durationMs: Date.now() - start,
+        };
+      }
+
+      const raw = fs.readFileSync(canaryPath, 'utf-8');
+      const canaryState = JSON.parse(raw);
+
+      if (!canaryState || !canaryState.active) {
+        return {
+          checkId: 'evolution_canary_health',
+          category: 'evolution',
+          severity: 'ok',
+          message: 'No active canary',
+          timestamp: Date.now(),
+          durationMs: Date.now() - start,
+        };
+      }
+
+      const metrics = canaryState.currentMetrics;
+      if (!metrics) {
+        return {
+          checkId: 'evolution_canary_health',
+          category: 'evolution',
+          severity: 'warning',
+          message: 'Active canary but no metrics yet',
+          details: { proposalId: canaryState.proposalId },
+          timestamp: Date.now(),
+          durationMs: Date.now() - start,
+        };
+      }
+
+      // Check rollback triggers
+      if (metrics.pnlDelta < -0.02) {
+        return {
+          checkId: 'evolution_canary_health',
+          category: 'evolution',
+          severity: 'critical',
+          message: `Canary PnL drop: ${(metrics.pnlDelta * 100).toFixed(2)}% (threshold: -2%)`,
+          details: { proposalId: canaryState.proposalId, metrics },
+          timestamp: Date.now(),
+          durationMs: Date.now() - start,
+        };
+      }
+
+      if (metrics.crashCount >= 3) {
+        return {
+          checkId: 'evolution_canary_health',
+          category: 'evolution',
+          severity: 'critical',
+          message: `Canary crash count: ${metrics.crashCount} (threshold: 3)`,
+          details: { proposalId: canaryState.proposalId, metrics },
+          timestamp: Date.now(),
+          durationMs: Date.now() - start,
+        };
+      }
+
+      return {
+        checkId: 'evolution_canary_health',
+        category: 'evolution',
+        severity: 'ok',
+        message: `Canary active: ${canaryState.proposalId}, PnL: ${(metrics.pnlDelta * 100).toFixed(2)}%`,
+        details: { proposalId: canaryState.proposalId, metrics },
+        timestamp: Date.now(),
+        durationMs: Date.now() - start,
+      };
+    } catch (err) {
+      return {
+        checkId: 'evolution_canary_health',
+        category: 'evolution',
+        severity: 'error',
+        message: `Canary health check failed: ${err instanceof Error ? err.message : err}`,
+        timestamp: Date.now(),
+        durationMs: Date.now() - start,
+      };
     }
   }
 

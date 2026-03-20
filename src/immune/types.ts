@@ -13,7 +13,7 @@ export type CheckSeverity = 'ok' | 'warning' | 'error' | 'critical';
 export type CheckCategory =
   | 'process' | 'api' | 'chain' | 'state' | 'instinct'
   | 'math' | 'invariant' | 'membrane' | 'integration'
-  | 'test' | 'security' | 'genome';
+  | 'test' | 'security' | 'genome' | 'evolution';
 
 export interface CheckResult {
   checkId: string;

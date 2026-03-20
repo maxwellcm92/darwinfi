@@ -2,7 +2,7 @@
 
 **A self-evolving financial organism that increases profits and win rate, autonomously, forever.**
 
-DarwinFi is an autonomous DeFi trading agent that applies Darwinian natural selection to trading strategies. 12 strategies compete in real-time on Base L2 -- the strongest trades live with real capital, the rest paper trade and evolve to dethrone it. Users deposit USDC into an ERC-4626 vault and earn proportional returns.
+DarwinFi is an autonomous DeFi trading agent that applies Darwinian natural selection to trading strategies. 16 strategies compete in real-time -- 12 classic bots on Base L2 plus 4 Frontier archetypes hunting cross-chain -- the strongest trades live with real capital, the rest paper trade and evolve to dethrone it. Users deposit USDC into an ERC-4626 vault and earn proportional returns.
 
 The Golden Rule: every module, every parameter, every decision exists to serve one objective -- **increase profits and win rate**. If DarwinFi were left running with no human input, it should continuously get better at turning money into more money.
 
@@ -18,7 +18,7 @@ DarwinFi is not just a trading bot. It is a closed-loop optimization system wher
 
 ### What Makes DarwinFi Different
 
-1. **Darwinian Tournament**: 12 strategies compete. Winners trade live. Losers evolve or die. No manual parameter tuning -- the population self-optimizes.
+1. **Darwinian Tournament**: 16 strategies compete (12 base + 4 frontier). Winners trade live. Losers evolve or die. No manual parameter tuning -- the population self-optimizes.
 2. **Outcome Attribution**: After every trade, DarwinFi decomposes the result into entry timing, exit timing, slippage, and market regime. This feedback loop tells the evolution engine *why* a strategy fails, not just *that* it failed.
 3. **Self-Calibrating Signals**: AI confidence scores are continuously validated against actual outcomes. If Ollama says 80% confidence on DEGEN but only wins 50% of the time, DarwinFi automatically treats it as 50%.
 4. **Adaptive Safety**: Circuit breaker thresholds scale with strategy quality (Sharpe ratio) and market volatility. A proven strategy gets more leeway. An unproven one gets less.
@@ -53,8 +53,8 @@ DarwinFi is not just a trading bot. It is a closed-loop optimization system wher
                         |
            +------------+------------+
            |            |            |
-      Strategy 1   Strategy 2   Strategy 3
-      (+ 3 vars)   (+ 3 vars)   (+ 3 vars)
+      Strategy 1   Strategy 2   Strategy 3   Team 4: Frontier
+      (+ 3 vars)   (+ 3 vars)   (+ 3 vars)   (4 archetypes)
            |            |            |
       Live/Paper    Paper Only   Paper Only
                         |
@@ -75,7 +75,7 @@ The code evolution engine (11 modules, 2,114 LOC) gives DarwinFi the ability to 
 2. **AI Proposal**: Venice AI (Llama 3.3 70B) generates code mutations
 3. **Static Validation**: Ring checks prevent mutations to critical infrastructure
 4. **Sandbox**: Git worktree isolation + TypeScript compilation
-5. **Test Gate**: All 69 tests must pass
+5. **Test Gate**: All 325 tests must pass
 6. **Canary Deploy**: 4-hour minimum monitoring with 60-second health checks
 7. **Promote or Rollback**: If canary degrades performance, automatic git rollback
 
@@ -141,7 +141,6 @@ Full coverage of vault math, fee calculations, multi-user deposits, agent borrow
 | ETH/WETH | Core | Medium |
 | wstETH | Yield-bearing | Low |
 | UNI | DeFi blue-chip | Medium |
-| ENS | Identity | Medium |
 | AERO | Base DEX | Medium-High |
 | DEGEN | Culture | High |
 | BRETT | Culture | High |
@@ -163,7 +162,7 @@ Full coverage of vault math, fee calculations, multi-user deposits, agent borrow
 
 ## Testing
 
-69 tests across 7 modules:
+325 tests across 25 modules:
 
 ```bash
 npm test
@@ -173,6 +172,17 @@ npm test
 |--------|-------|----------|
 | DarwinVaultV3 | 51 | Deposit/withdraw, fees, HWM, multi-user, agent flow, emergency |
 | Evolution Smoke | 18 | Config, validation, sandbox, test gate, canary, audit |
+| Frontier | 46 | Archetype strategies, chain registry, niche selection |
+| Circuit Breakers | 32 | Adaptive thresholds, recovery mode, strategy quality scaling |
+| Instinct (Predictions) | 28 | 5-department signals, consensus, timing |
+| Immune System | 24 | Self-healing, division coordination, threat detection |
+| AI Router | 22 | Health-check failover, provider routing, latency tracking |
+| Attribution | 18 | 4-factor decomposition, per-token profiles, evolution context |
+| Signal Calibration | 16 | Per-source accuracy, confidence adjustment, clamping |
+| Dynamic Fitness | 14 | Regime detection, weight adaptation, scoring |
+| Strategy Switching | 12 | Continuous monitoring, emergency promote, sell-only mode |
+| Candle Service | 11 | Price feeds, OHLCV aggregation, multi-token |
+| Other modules | 33 | Integration, e2e, utilities |
 
 ---
 

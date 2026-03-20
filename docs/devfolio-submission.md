@@ -6,7 +6,7 @@ A self-evolving financial organism that increases profits and win rate, autonomo
 
 ## Description (~300 words)
 
-DarwinFi applies Darwinian natural selection to DeFi trading. 12 AI-powered strategies compete in real-time on Base L2 -- the strongest trades live with real capital through an ERC-4626 vault, while the rest paper trade and evolve to dethrone it. Users deposit USDC, receive dvUSDC shares, and earn proportional returns. One vault, one engine, all depositors share pro-rata.
+DarwinFi applies Darwinian natural selection to DeFi trading. 16 AI-powered strategies compete in real-time -- 12 classic bots on Base L2 and 4 Frontier archetypes hunting cross-chain -- the strongest trades live with real capital through an ERC-4626 vault, while the rest paper trade and evolve to dethrone it. Users deposit USDC, receive dvUSDC shares, and earn proportional returns. One vault, one engine, all depositors share pro-rata.
 
 The Golden Rule drives every module: increase profits and win rate. If DarwinFi were left running with no human input, it should continuously get better at turning money into more money.
 

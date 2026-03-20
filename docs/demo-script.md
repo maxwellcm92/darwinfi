@@ -52,9 +52,9 @@
 
 **[Screen: DApp tournament leaderboard]**
 
-> "DarwinFi runs 12 trading strategies simultaneously in a Darwinian tournament."
+> "DarwinFi runs 16 trading strategies simultaneously -- 12 classic bots on Base and 4 Frontier archetypes hunting across multiple chains."
 
-1. Show the Tournament tab -- 12 strategies ranked by composite score
+1. Show the Tournament tab -- 16 strategies ranked by composite score
 2. Point out: win rates, PnL, Sharpe ratios, generation numbers
 3. Show the Instinct prediction system -- multi-source signals feeding into trade decisions
 4. Show the trade history feed with recent paper trades and live signals

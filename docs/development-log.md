@@ -15,6 +15,8 @@
 
 - **Why 12?** Three main strategies provide diversity (momentum, mean-reversion, breakout), while three variation roles per strategy ensure both exploration (Mad Scientist) and exploitation (Optimizer). The Synthesizer hybridizes the best traits across all strategies. 3 x 4 = 12 total -- large enough for meaningful competition, small enough to evaluate in real time.
 
+> **[Updated]** The Frontier team (Session 14) expanded the population to 16 strategies: the original 12 plus 4 cross-chain archetypes (Abiogenesis, Mitosis, Cambrian, Symbiont). Murphy has full autonomy to add/remove teams, adjust sizes, and restructure strategies in service of the Golden Rule.
+
 - **Composite performance scoring.** Strategies are ranked by a weighted formula, not just raw PnL:
   ```
   score = (rolling_24h_PnL * 0.30)
@@ -28,6 +30,8 @@
 - **Dual-AI architecture.** Claude handles high-level strategy evolution (parameter mutation, architecture analysis). Venice AI handles real-time execution decisions (buy/sell signals per tick). This separation lets each model focus on what it does best -- Claude for reasoning about strategy design, Venice for fast tactical calls.
 
 - **Token universe: ETH, USDC, UNI, wstETH, ENS, AERO.** Selected for liquidity on Base and alignment with hackathon sponsors (Uniswap, ENS, Lido). AERO included as the top native Base DEX token.
+
+> **[Updated]** ENS removed in Session 9 (no liquidity on Base). DEGEN, BRETT, VIRTUAL, HIGHER added in Session 10. Final token universe: 9 tokens.
 
 - **Per-strategy budget isolation.** DarwinVault allocates $25 USDC per main strategy with hard spending scopes. If a strategy blows up, it can only lose its own allocation. This is enforced at the smart contract level.
 
@@ -375,6 +379,8 @@ Evaluated 8 potential sponsor integrations on one criterion: "Does this make Dar
 | ENS (Basenames) | Claim (already built) | darwinfi.base.eth agent identity |
 | Olas | Skip | Architectural mismatch -- FSM consensus model incompatible with 3-tier timing |
 | Lit Protocol | Skip | Over-engineering at $75 scale; circuit breaker already handles guardrails |
+
+> **[Updated]** Lit Protocol was subsequently built in Session 11 (`lit-actions/trade-policy.js` with chain/contract/token/function whitelists and trade size limits; `scripts/mint-pkp.ts` for PKP minting). The "Skip" decision was revisited as the vault matured to multi-user.
 
 ### What Claude Code Built
 
@@ -915,6 +921,8 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 
 **Code Impact:** 30 files created/modified, ~4,400 lines added. Commits: `d2521eb`.
 
+**Deployment:** VaultV3 deployed to Base mainnet at `0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF`. Agent authorized, fee recipient set. V3 replaces V2 as the primary vault.
+
 ---
 
 ## Session 18: AI Router + Ollama Integration + Autonomy Gap Closures (2026-03-20)
@@ -1012,15 +1020,15 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 
 | Decision | Chosen | Alternatives Considered | Rationale |
 |----------|--------|------------------------|-----------|
-| Strategy competition model | 12-strategy Darwinian tournament | Single adaptive strategy, ensemble voting | Natural selection produces robust strategies without manual tuning. The 12-strategy population balances diversity with computational feasibility. |
+| Strategy competition model | 16-strategy Darwinian tournament (12 base + 4 frontier) | Single adaptive strategy, ensemble voting | Natural selection produces robust strategies without manual tuning. The 12-strategy population balances diversity with computational feasibility. Session 14 added 4 Frontier archetypes (Abiogenesis, Mitosis, Cambrian, Symbiont) for cross-chain niche specialization. Murphy has full autonomy to restructure teams. |
 | AI role separation | Claude for evolution, Venice for execution | Single model for both, no AI | Claude excels at strategic reasoning (what parameters to change); Venice AI adds sponsor alignment and fast inference for real-time decisions. |
 | State persistence | JSON files with atomic writes | SQLite, Redis, on-chain storage | Debuggable, portable, zero dependencies. Atomic writes prevent corruption. Sufficient for single-node hackathon deployment. |
 | Performance scoring | Weighted composite (5 factors) | Raw PnL ranking, Sharpe-only, ELO rating | Multi-factor scoring prevents gaming (one lucky trade) and rewards consistency. Rolling 24h window keeps evaluation current. |
 | Fund isolation | Per-strategy budgets in DarwinVault | Shared pool, off-chain accounting | On-chain enforcement means a rogue strategy literally cannot overspend. Trustless by design. |
-| Token universe | 6 tokens (sponsor-aligned) | Top-20 by volume, stablecoins only | Balances liquidity with sponsor integration requirements. All tokens have deep Uniswap V3 pools on Base. |
+| Token universe | 9 tokens (5 blue-chip + 4 volatile natives) | Top-20 by volume, stablecoins only | Initial 6 sponsor-aligned tokens. ENS removed (no Base liquidity). DEGEN, BRETT, VIRTUAL, HIGHER added for volatility exposure (20-50% hourly moves vs ETH's 1-2%). All have Uniswap V3 pools on Base. |
 | Dashboard UX | Dark theme + retro gaming aesthetic | Minimal charts, no dashboard | The tournament visualization makes the Darwinian competition tangible and engaging for judges reviewing the demo. |
 | Vault standard | ERC-4626 tokenized vault | Custom vault, multisig, DAO treasury | ERC-4626 is the standard tokenized vault interface. Any wallet, aggregator, or DeFi protocol integrates without custom code. Share value rises automatically as agent generates profit. |
-| Agent key management | Lit Protocol PKP (planned) | EOA only, hardware wallet, multisig | Decentralized key management via threshold network. Agent's trading key doesn't exist on any single server. setAgent() allows seamless migration from EOA to PKP. |
+| Agent key management | Lit Protocol PKP (built) | EOA only, hardware wallet, multisig | Decentralized key management via threshold network. trade-policy.js enforces chain/contract/token/function whitelists and trade size limits inside Lit nodes. mint-pkp.ts handles PKP minting. setAgent() allows seamless EOA-to-PKP migration. |
 | Prediction architecture | 5-department biological model (Instinct) | Single ML model, simple indicator engine | Multi-source intelligence with independent timing per department. Adaptive evolution speeds up when accuracy drops and slows down when stable. Source fitness scoring deprioritizes unreliable data. |
 | System monitoring | 7-division immune system with self-healing | External monitoring (Datadog, etc.), manual alerts | Autonomous monitoring that runs as a separate process. Detects problems, attempts automated fixes, verifies the fix worked, and evolves its own thresholds over time. Zero human intervention needed. |
 | Cross-chain expansion | 4-archetype frontier system with niche specialization | More strategies on single chain, manual multi-chain | Each archetype fills a distinct ecological niche (micro-cap detection, HFT scalping, volatility hunting, whale following). ChainRegistry abstracts multi-chain complexity. 1inch aggregation finds best prices across DEXes. |
@@ -1033,4 +1041,4 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 
 ---
 
-*This development log covers 18 sessions of human-agent collaboration, generated from Claude Code session transcripts and git history. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~18 hours.*
+*This development log covers 18 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi now operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~18 hours.*

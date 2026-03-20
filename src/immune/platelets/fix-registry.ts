@@ -6,7 +6,8 @@
  */
 
 import { FixRegistryEntry } from '../types';
-import { pm2Restart, rpcRotation, stateRebuild, hardhatCacheClear } from './safe-fixes';
+import { MONITORED_PROCESSES } from '../config';
+import { pm2Restart, pm2Start, rpcRotation, stateRebuild, hardhatCacheClear } from './safe-fixes';
 
 const registry = new Map<string, FixRegistryEntry>();
 
@@ -14,6 +15,7 @@ const registry = new Map<string, FixRegistryEntry>();
 // Safe fixes (auto-applied by the fix engine)
 // ---------------------------------------------------------------------------
 
+// Legacy single-process entry (backward compat)
 registry.set('process_health', {
   checkId: 'process_health',
   fixName: 'pm2_restart',
@@ -21,6 +23,18 @@ registry.set('process_health', {
   description: 'Restart darwinfi PM2 process',
   fixFn: () => pm2Restart('darwinfi'),
 });
+
+// Per-process pm2_start fixes (skip darwinfi-immune -- can't restart itself)
+for (const proc of MONITORED_PROCESSES) {
+  if (proc.name === 'darwinfi-immune') continue;
+  registry.set(proc.checkId, {
+    checkId: proc.checkId,
+    fixName: 'pm2_start',
+    safety: 'safe',
+    description: `Start/restart ${proc.name} PM2 process`,
+    fixFn: () => pm2Start(proc.name),
+  });
+}
 
 registry.set('chain_health', {
   checkId: 'chain_health',

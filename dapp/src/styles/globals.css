@@ -17,7 +17,6 @@
   --color-darwin-warning: #FFB020;
 
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --font-arcade: "Press Start 2P", cursive;
 }
 
 * {
@@ -61,10 +60,6 @@ body {
 }
 
 /* Custom utility classes */
-.font-arcade {
-  font-family: var(--font-arcade);
-}
-
 .font-mono {
   font-family: var(--font-mono);
 }
@@ -191,4 +186,14 @@ input[type="number"] {
 
 .nav-pill-active {
   box-shadow: 0 0 12px rgba(0, 240, 192, 0.2), 0 0 4px rgba(0, 240, 192, 0.1);
+}
+
+/* Fade-in animation for expandable sections */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
 }

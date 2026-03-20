@@ -10,7 +10,44 @@ import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { RPC_ENDPOINTS, MONITORED_STATE_FILES, PROJECT_ROOT } from '../config';
+
 const PREFIX = '[Immune:Platelets]';
+const ECOSYSTEM_CONFIG = path.join(PROJECT_ROOT, 'ecosystem.config.js');
+
+/**
+ * Start a stopped/missing PM2 process.
+ * If the process exists in PM2 (stopped/errored): restarts it.
+ * If not in PM2: starts it from ecosystem.config.js.
+ */
+export async function pm2Start(processName: string): Promise<boolean> {
+  try {
+    const raw = execSync('pm2 jlist', { encoding: 'utf-8', timeout: 10000 });
+    const processes = JSON.parse(raw);
+    const existing = processes.find((p: any) => p.name === processName);
+
+    if (existing) {
+      // Process exists in PM2 (stopped/errored) -- restart it
+      execSync(`pm2 restart ${processName}`, { timeout: 15_000, stdio: 'pipe' });
+      console.log(`${PREFIX} pm2 restart ${processName} succeeded (was ${existing.pm2_env?.status})`);
+      return true;
+    }
+
+    // Not in PM2 -- start from ecosystem config
+    if (!fs.existsSync(ECOSYSTEM_CONFIG)) {
+      console.error(`${PREFIX} Cannot start ${processName}: ecosystem.config.js not found`);
+      return false;
+    }
+    execSync(`pm2 start ${ECOSYSTEM_CONFIG} --only ${processName}`, {
+      timeout: 15_000,
+      stdio: 'pipe',
+    });
+    console.log(`${PREFIX} pm2 start ${processName} from ecosystem.config.js succeeded`);
+    return true;
+  } catch (err) {
+    console.error(`${PREFIX} pm2 start ${processName} failed: ${err instanceof Error ? err.message : err}`);
+    return false;
+  }
+}
 
 /**
  * Restart a PM2 process by name.

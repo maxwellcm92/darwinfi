@@ -1,10 +1,8 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Navbar } from "./components/Navbar";
 import { Home } from "./pages/Home";
 import { Portfolio } from "./pages/Portfolio";
-import { Tournament } from "./pages/Tournament";
-import { Instinct } from "./pages/Instinct";
-import { Frontier } from "./pages/Frontier";
+import { Advanced } from "./pages/Advanced";
 
 export function App() {
   return (
@@ -14,14 +12,16 @@ export function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/portfolio" element={<Portfolio />} />
-          <Route path="/tournament" element={<Tournament />} />
-          <Route path="/instinct" element={<Instinct />} />
-          <Route path="/frontier" element={<Frontier />} />
+          <Route path="/advanced" element={<Advanced />} />
+          {/* Legacy redirects */}
+          <Route path="/tournament" element={<Navigate to="/advanced?tab=tournament" replace />} />
+          <Route path="/instinct" element={<Navigate to="/advanced?tab=instinct" replace />} />
+          <Route path="/frontier" element={<Navigate to="/advanced?tab=frontier" replace />} />
         </Routes>
       </main>
       <footer className="border-t border-darwin-border/30 py-6 mt-auto">
         <p className="text-center text-xs font-mono text-darwin-text-dim">
-          DarwinFi -- Autonomous DeFi on Base L2
+          DarwinFi - Autonomous DeFi on Base L2
         </p>
       </footer>
     </div>

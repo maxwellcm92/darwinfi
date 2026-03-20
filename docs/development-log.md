@@ -799,6 +799,55 @@ The cascade: No prices (RPC 503) -> no snapshots -> Haiku gets empty/useless dat
 
 ---
 
+## Session 16: Final Audit Fixes -- C2, H8, C3 (2026-03-19)
+
+**Objective:** Complete the final three audit items from the agentic judge feedback. C2 (on-chain trade cycle), H8 (demo video script), and C3 (AI baseline test).
+
+### C2: On-Chain Trade Cycle
+
+Created `scripts/trade-cycle.ts` -- a standalone script that executes the full DarwinFi vault lifecycle on Base mainnet with real USDC:
+
+1. Pre-flight checks (ETH balance, USDC balance, vault agent match)
+2. Approve USDC for vault
+3. Deposit 5 USDC into vault (ERC-4626 `deposit()`)
+4. Agent borrows 3 USDC (`agentBorrow()`)
+5. Swap USDC -> WETH via Uniswap V3 (0.05% pool)
+6. Swap WETH -> USDC via Uniswap V3
+7. Agent returns USDC to vault (`agentReturn()`)
+8. Temporarily set `minLockTime=0`, withdraw, restore to 1h
+9. Print summary with all tx hashes and BaseScan links
+
+Added missing ABI entries to `DARWIN_VAULT_V2_ABI` fallback: `setMinLockTime`, `minLockTime`, `maxWithdraw`, `paused`.
+
+### H8: Demo Video Script
+
+Created `docs/demo-script.md` -- a narration guide for recording a 3-4 minute demo video covering:
+- Scene 1: DApp landing page and vault overview (30s)
+- Scene 2: Wallet connect and deposit flow (60s)
+- Scene 3: On-chain trade cycle terminal demo (60s)
+- Scene 4: Tournament leaderboard and Instinct predictions (60s)
+- Scene 5: Architecture and sponsor integrations (30s)
+
+### C3: AI Baseline Test
+
+Created `scripts/ai-baseline-test.ts` -- compares DarwinFi AI trading performance against:
+- **Random baseline**: 1000 Monte Carlo random-direction trades over the same trade set
+- **Buy-and-hold baseline**: Hold ETH from first to last trade timestamp
+
+Extracted 4 closed trades from `agent-state.json` conversation log. Results are preliminary (small sample size) but the framework demonstrates the comparison methodology. Outputs a formatted comparison table with PnL, win rate, Sharpe ratio, and max drawdown.
+
+### Verification
+
+| Check | Result |
+|-------|--------|
+| TypeScript compilation | 0 errors (skipLibCheck) |
+| Test suite | 256 passing, 0 failures |
+| AI baseline test | Runs, outputs comparison table |
+
+**Code Impact:** 3 files created, 1 file modified (ABI additions), ~500 lines added.
+
+---
+
 ## Technical Summary
 
 | Metric | Value |

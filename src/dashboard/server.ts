@@ -88,6 +88,10 @@ let state: DashboardState = {
   evolutionHistory: [],
 };
 
+// Share price history for mini-chart (sampled every 15 min, kept for 7 days)
+let sharePriceHistory: Array<{ timestamp: number; price: number }> = [];
+let sharePriceSamplerInterval: ReturnType<typeof setInterval> | null = null;
+
 // Conversation log entries (populated by the agent)
 let conversationLogEntries: unknown[] = [];
 
@@ -181,6 +185,11 @@ export function startDashboard(port: number = 3500): void {
       totalPnL: state.totalPnL,
       strategiesActive: state.strategies.length,
     });
+  });
+
+  // Share price history endpoint (for mini-chart)
+  app.get("/api/vault/history", (_req, res) => {
+    res.json({ history: sharePriceHistory });
   });
 
   // VaultV2 stats endpoint
@@ -285,6 +294,27 @@ export function startDashboard(port: number = 3500): void {
   app.get('*', (_req, res) => {
     res.sendFile(path.join(dappDistPath, 'index.html'));
   });
+
+  // Start share price sampler (every 15 minutes)
+  async function sampleSharePrice() {
+    try {
+      const cc = new ContractClient();
+      if (!cc.hasVaultV2()) return;
+      const price = await cc.vaultV2SharePrice();
+      const priceNum = parseFloat(ethers.formatUnits(price, 6));
+      sharePriceHistory.push({ timestamp: Date.now(), price: priceNum });
+      // Keep last 7 days (672 samples at 15-min intervals)
+      if (sharePriceHistory.length > 672) {
+        sharePriceHistory = sharePriceHistory.slice(-672);
+      }
+    } catch {
+      // Silently skip failed samples
+    }
+  }
+
+  // Initial sample + periodic sampling
+  sampleSharePrice();
+  sharePriceSamplerInterval = setInterval(sampleSharePrice, 15 * 60 * 1000);
 
   app.listen(port, () => {
     console.log(`[DarwinFi] Dashboard running at http://localhost:${port}`);

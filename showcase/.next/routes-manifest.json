@@ -3,8 +3,17 @@
   "pages404": true,
   "appType": "app",
   "caseSensitive": false,
-  "basePath": "",
+  "basePath": "/showcase",
   "redirects": [
+    {
+      "source": "/showcase/",
+      "destination": "/showcase",
+      "basePath": false,
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^/showcase/$"
+    },
     {
       "source": "/:path+/",
       "destination": "/:path+",

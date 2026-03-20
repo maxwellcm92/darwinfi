@@ -144,7 +144,7 @@ export function ShaderHero() {
   }, []);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: "16 / 5" }}>
+    <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: "16 / 5", minHeight: "140px" }}>
       {/* WebGL Canvas */}
       <canvas
         ref={canvasRef}

@@ -18,7 +18,7 @@ import * as fs from 'fs';
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
 import { CheckResult, ImmuneHealthSummary, DivisionStatus } from './types';
-import { CHECK_INTERVALS, IMMUNE_FILES, PROJECT_ROOT } from './config';
+import { CHECK_INTERVALS, IMMUNE_FILES, PROJECT_ROOT, MONITORED_PROCESSES } from './config';
 import { LogAggregator } from './lymph/log-aggregator';
 import { AlertManager } from './lymph/alert-manager';
 import { PatrolScheduler } from './patrol/patrol-scheduler';
@@ -97,6 +97,13 @@ class ImmuneAgent {
     this.checkFunctions.set('state_integrity', () => import('./patrol/state-patrol').then(m => m.checkStateFiles()));
     this.checkFunctions.set('api_probe', () => import('./patrol/api-patrol').then(m => m.checkApiEndpoints()));
     this.checkFunctions.set('instinct_health', () => import('./patrol/instinct-patrol').then(m => m.checkInstinctHealth()));
+
+    // Per-process recheck functions for fix-engine verification
+    for (const proc of MONITORED_PROCESSES) {
+      this.checkFunctions.set(proc.checkId, () =>
+        import('./patrol/process-patrol').then(m => m.checkSingleProcessHealth(proc))
+      );
+    }
 
     // Initialize division statuses
     for (const div of ['Patrol', 'Antibodies', 'Thymus', 'Platelets', 'Membrane', 'Lymph', 'Genome']) {

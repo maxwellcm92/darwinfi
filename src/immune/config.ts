@@ -151,11 +151,30 @@ export const RPC_ENDPOINTS = [
 
 export const SAFE_FIX_IDS = new Set([
   'pm2_restart',
+  'pm2_start',
   'rpc_rotation',
   'state_rebuild',
   'cache_clear',
   'hardhat_cache_clear',
 ]);
+
+// ---------------------------------------------------------------------------
+// Monitored Processes
+// ---------------------------------------------------------------------------
+
+export interface MonitoredProcess {
+  name: string;
+  critical: boolean;
+  checkId: string;
+}
+
+export const MONITORED_PROCESSES: MonitoredProcess[] = [
+  { name: 'darwinfi', critical: true, checkId: 'process_health_darwinfi' },
+  { name: 'darwinfi-candles', critical: false, checkId: 'process_health_darwinfi-candles' },
+  { name: 'darwinfi-instinct', critical: false, checkId: 'process_health_darwinfi-instinct' },
+  { name: 'frontier', critical: false, checkId: 'process_health_frontier' },
+  { name: 'darwinfi-immune', critical: false, checkId: 'process_health_darwinfi-immune' },
+];
 
 export const RISKY_FIX_IDS = new Set([
   'env_modification',

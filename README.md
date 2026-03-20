@@ -2,9 +2,9 @@
 
 **Autonomous, self-evolving DeFi agent with multi-user vault and cryptographic trading guardrails.**
 
-12 concurrent trading strategies compete on Uniswap V3 (Base L2). The top performer trades live on-chain; the rest paper trade and evolve to dethrone it. Users deposit USDC into an ERC-4626 vault and earn proportional returns from the agent's trading profits -- with Lit Protocol PKP guardrails ensuring the agent can never rug depositors.
+12 concurrent trading strategies compete on Uniswap V3 (Base L2). The top performer trades live on-chain; the rest paper trade and evolve to dethrone it. Users deposit USDC into an ERC-4626 vault and earn proportional returns from the agent's trading profits, with Lit Protocol PKP guardrails ensuring the agent can never rug depositors.
 
-Built for the [Synthesis Hackathon](https://synthesis.md/) -- "Agents that Pay" track.
+Built for the [Synthesis Hackathon](https://synthesis.md/), "Agents that Pay" track.
 
 **Live Dashboard**: [https://corduroycloud.com/darwinfi/](https://corduroycloud.com/darwinfi/)
 
@@ -12,12 +12,22 @@ Built for the [Synthesis Hackathon](https://synthesis.md/) -- "Agents that Pay" 
 
 ## What Makes DarwinFi Different
 
-1. **Self-Evolving Strategies** -- AI generates, mutates, and promotes trading strategies through Darwinian competition. No manual parameter tuning.
-2. **ERC-4626 Multi-User Vault** -- Standard tokenized vault. Deposit USDC, receive dvUSDC shares. As the pool grows from trading profits, shares appreciate automatically.
-3. **Lit Protocol Guardrails** -- A Programmable Key Pair (PKP) signs every transaction. An IPFS-hosted Lit Action enforces a strict trading policy: whitelisted contracts, whitelisted tokens, per-trade size limits (max 1000 USDC). The agent provably cannot steal funds.
-4. **Multi-AI Architecture** -- Claude (Anthropic) evaluates trade signals. Venice AI (Llama 3.3 70B) evolves strategy parameters. Two independent AI systems with different strengths.
+1. **Self-Evolving Strategies**: AI generates, mutates, and promotes trading strategies through Darwinian competition. No manual parameter tuning.
+2. **ERC-4626 Multi-User Vault**: Standard tokenized vault. Deposit USDC, receive dvUSDC shares. As the pool grows from trading profits, shares appreciate automatically.
+3. **Lit Protocol Guardrails**: AProgrammable Key Pair (PKP) signs every transaction. An IPFS-hosted Lit Action enforces a strict trading policy: whitelisted contracts, whitelisted tokens, per-trade size limits (max 1000 USDC). The agent provably cannot steal funds.
+4. **Multi-AI Architecture**: Claude (Anthropic) evaluates trade signals. Venice AI (Llama 3.3 70B) evolves strategy parameters. Two independent AI systems with different strengths.
 
 ---
+
+## Trust Architecture: Immutable / Mutable / Bridge
+
+DarwinFi separates concerns into three layers so that the evolving AI brain can never exceed its boundaries:
+
+- **Immutable (on-chain):** The ERC-4626 vault (deposit/withdraw/borrow/return) and the Lit Protocol trade policy (approved tokens, max trade size, approved contracts) are deployed on-chain and pinned to IPFS. They cannot be changed after deployment.
+- **Mutable (off-chain):** The TypeScript agent with 12 trading strategies, Venice AI evolution engine, and Claude CLI signal evaluation all run off-chain. These components evolve and improve over time through Darwinian competition.
+- **Bridge (Lit Protocol PKP):** A Programmable Key Pair signs every transaction only if it passes the immutable IPFS policy. This provides cryptographic proof that the evolving brain can never steal funds, trade unauthorized tokens, or exceed size limits.
+
+This three-layer design means users get the benefits of an adaptive, self-improving trading agent while retaining the security guarantees of immutable smart contracts.
 
 ## Architecture
 
@@ -170,14 +180,14 @@ If any check fails, the PKP refuses to sign. The agent literally cannot execute 
 ## Strategy Evolution
 
 **3 Main Strategies** compete for the live trading slot:
-- **Apex** (Momentum) -- RSI oversold + trailing stop
-- **Viper** (Mean-Revert) -- Bollinger bounce + fixed target
-- **Blitz** (Breakout) -- EMA crossover + trailing stop
+- **Apex** (Momentum): RSI oversold + trailing stop
+- **Viper** (Mean-Revert): Bollinger bounce + fixed target
+- **Blitz** (Breakout): EMA crossover + trailing stop
 
 **9 Variations** (3 per main) evolve to challenge their parent:
-- **Mutant** -- Creative, unconventional parameter exploration
-- **Tuner** -- Conservative fixes to parent weaknesses
-- **Hybrid** -- Best-of-all trait synthesis
+- **Mutant**: Creative, unconventional parameter exploration
+- **Tuner**: Conservative fixes to parent weaknesses
+- **Hybrid**: Best-of-all trait synthesis
 
 **Evolution Loop** (every 4 hours or 10 trades):
 1. Claude analyzes all 12 strategies' performance
@@ -307,24 +317,24 @@ npm start
 
 ## Built With
 
-- **Claude** (Anthropic) -- Batch signal evaluation via Claude CLI
-- **Venice AI** -- Strategy evolution via 3 AI personas (Llama 3.3 70B)
-- **Uniswap V3** -- On-chain swap execution + Quoter V2 price feeds
-- **Base** -- Primary L2 chain (Coinbase)
-- **Lit Protocol** -- PKP cryptographic trading guardrails
-- **OpenZeppelin v5** -- ERC-4626, Ownable, ReentrancyGuard, Pausable
-- **React 19 + Vite 6** -- DApp frontend
-- **wagmi + RainbowKit** -- Wallet connection
-- **Tailwind CSS v4** -- Styling
-- **Hardhat** -- Smart contract development + testing
-- **ethers.js v6** -- Chain interaction
-- **Claude Code** -- Agent harness
+- **Claude** (Anthropic): Batch signal evaluation via Claude CLI
+- **Venice AI**: Strategy evolution via 3 AI personas (Llama 3.3 70B)
+- **Uniswap V3**: On-chain swap execution + Quoter V2 price feeds
+- **Base**: Primary L2 chain (Coinbase)
+- **Lit Protocol**: PKP cryptographic trading guardrails
+- **OpenZeppelin v5**: ERC-4626, Ownable, ReentrancyGuard, Pausable
+- **React 19 + Vite 6**: DApp frontend
+- **wagmi + RainbowKit**: Wallet connection
+- **Tailwind CSS v4**: Styling
+- **Hardhat**: Smart contract development + testing
+- **ethers.js v6**: Chain interaction
+- **Claude Code**: Agent harness
 
 ---
 
 ## License
 
-MIT License -- see [LICENSE](LICENSE)
+MIT License. See [LICENSE](LICENSE).
 
 ---
 

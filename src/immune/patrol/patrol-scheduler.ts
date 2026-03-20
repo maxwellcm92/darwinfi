@@ -7,9 +7,9 @@
  */
 
 import { CheckResult } from '../types';
-import { CHECK_INTERVALS } from '../config';
+import { CHECK_INTERVALS, MONITORED_PROCESSES } from '../config';
 import { LogAggregator } from '../lymph/log-aggregator';
-import { checkProcessHealth } from './process-patrol';
+import { checkSingleProcessHealth } from './process-patrol';
 import { checkApiEndpoints } from './api-patrol';
 import { checkChainHealth } from './chain-patrol';
 import { checkStateFiles } from './state-patrol';
@@ -29,7 +29,17 @@ export class PatrolScheduler {
 
   start(): void {
     this.logger.info('Patrol', 'Starting patrol scheduler');
-    this.schedule('process_health', checkProcessHealth, CHECK_INTERVALS.processHealth);
+
+    // Per-process health checks (skip darwinfi-immune -- can't restart itself)
+    for (const proc of MONITORED_PROCESSES) {
+      if (proc.name === 'darwinfi-immune') continue;
+      this.schedule(
+        proc.checkId,
+        () => checkSingleProcessHealth(proc),
+        CHECK_INTERVALS.processHealth,
+      );
+    }
+
     this.schedule('api_probe', checkApiEndpoints, CHECK_INTERVALS.apiProbe);
     this.schedule('chain_health', checkChainHealth, CHECK_INTERVALS.chainHealth);
     this.schedule('state_integrity', checkStateFiles, CHECK_INTERVALS.stateIntegrity);

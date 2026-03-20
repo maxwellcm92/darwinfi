@@ -62,7 +62,7 @@ export function InstinctSummary({ instinctState, loading }: InstinctSummaryProps
 
   return (
     <Link
-      to="/instinct"
+      to="/advanced?tab=instinct"
       className="block bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 transition-all duration-300 hover:border-darwin-purple/40 hover:shadow-lg hover:shadow-black/20 group"
     >
       <div className="flex items-center justify-between mb-4">

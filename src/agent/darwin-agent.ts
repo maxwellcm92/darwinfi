@@ -67,7 +67,7 @@ const STRATEGY_ID_MAP: Record<string, bigint> = {
 // Configuration
 // ---------------------------------------------------------------------------
 
-interface AgentConfig {
+export interface AgentConfig {
   veniceApiKey: string;
   evolutionIntervalMs: number;
   minTradesForEvolution: number;
@@ -77,7 +77,7 @@ interface AgentConfig {
   dashboardPort: number;
 }
 
-function loadConfig(): AgentConfig {
+export function loadConfig(): AgentConfig {
   const veniceApiKey = process.env.VENICE_API_KEY;
   if (!veniceApiKey) {
     throw new Error('VENICE_API_KEY is required in .env');
@@ -102,7 +102,7 @@ function loadConfig(): AgentConfig {
 // DarwinAgent
 // ---------------------------------------------------------------------------
 
-class DarwinAgent {
+export class DarwinAgent {
   private config: AgentConfig;
   private performanceTracker: PerformanceTracker;
   private strategyManager: StrategyManager;
@@ -1484,4 +1484,6 @@ async function main(): Promise<void> {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}

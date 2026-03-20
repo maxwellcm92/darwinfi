@@ -1,7 +1,7 @@
 # DarwinFi Development Log
 
 > Built with [Claude Code](https://claude.com/claude-code) (`claude-opus-4-6`) as the agent harness.
-> Sessions: March 18-19, 2026. Total: 157 source files, ~34,000 lines of code, 261 tests.
+> Sessions: March 18-20, 2026. Total: 219 source files, ~44,500 lines of code, 325 tests.
 
 ---
 
@@ -848,24 +848,163 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 
 ---
 
+## Session 17: VaultV3 + Self-Evolution Engine + Frontier Freedom (2026-03-20)
+
+**Objective:** Build the fee-generating vault contract (VaultV3), a fully autonomous self-evolution engine that can modify its own codebase, enable Frontier bots by default, and add dashboard components for evolution monitoring. This session captures the transition from "hackathon project" to "protocol with sustainable economics."
+
+### Key Decisions
+
+- **VaultV3 with dual fee model.** VaultV2 had a 10% performance fee but no management fee, meaning zero revenue during flat markets. VaultV3 adds a 1% annual management fee (collected as minted shares, pro-rated per second) alongside the 5% performance fee (only taken above a high water mark). The management fee accrues continuously and is auto-collected on every `agentReturn()`, ensuring the protocol earns revenue even when trading is flat.
+
+- **Self-evolution via Venice AI code generation.** Rather than waiting for a human to tune parameters, the evolution engine generates actual code diffs using Venice AI (Llama 3.3 70B). Each proposal goes through a 10-step pipeline: velocity check, zone selection, context assembly, AI generation, static validation, git worktree sandbox, TypeScript compilation, Hardhat test gate, canary deployment, and metric monitoring with auto-rollback. The engine literally modifies its own trading logic.
+
+- **File mutability rings.** Not all code should be evolvable. Three rings: Ring 0 (immutable) protects wallet code, live trading execution, smart contracts, the fitness function, and the evolution engine itself (it cannot modify its own pipeline). Ring 1 (evolvable) covers prediction models, frontier bots, health checks, and circuit breaker thresholds. Ring 2 (additive only) allows adding new indicators but not modifying existing ones.
+
+- **Velocity limits and anti-loop safeguards.** Maximum 4 proposals per day, minimum 4 hours between proposals, 12-hour forced cooldown after a rollback. Duplicate diff hashes are rejected. Zones that fail 3 consecutive proposals enter exponential backoff (24h initial, max 7 days). Same file cannot be targeted more than 3 consecutive times. These limits prevent runaway mutations.
+
+- **Frontier enabled by default.** Changed `TEAM4_ENABLED` to default `true` so Frontier bots start running immediately when the DarwinFi agent launches, rather than requiring manual activation.
+
+### What Claude Code Built
+
+**Smart Contract (1 file, 437 lines of Solidity):**
+- `DarwinVaultV3.sol` -- ERC-4626 vault with dvUSDC share token. Dual fee model: 1% annual management fee (pro-rated per second, collected as minted shares) + 5% performance fee (above high water mark only). Agent borrow/return with totalBorrowed tracking. Deposit cap, anti-flash-loan lock, emergency withdrawal. Owner-configurable parameters (setPerformanceFeeBps, setManagementFeeBps, setAgent, setMaxTotalAssets, setMinLockTime, pause/unpause).
+
+**Self-Evolution Engine (11 files, 2,122 lines):**
+- `orchestrator.ts` (451 lines) -- PM2 entry point running 6-hour evolution cycles. 10-step pipeline: velocity check, canary resume check, zone selection, context assembly, AI proposal generation, static validation, sandbox (git worktree + tsc), test gate, canary deployment, canary monitoring.
+- `config.ts` (172 lines) -- File mutability ring definitions (Ring 0/1/2), velocity limits, rollback thresholds (-2% TVL, +50% error rate, 3 crashes/10min), forbidden code patterns (eval, process.env, child_process, credentials), evolution zone priorities.
+- `proposal.ts` (232 lines) -- Venice AI integration for code generation. Builds context prompts with current metrics, file contents, and failed proposal history. Parses AI response into structured diff with rationale.
+- `static-validator.ts` (137 lines) -- Pre-sandbox validation: ring enforcement (immutable files rejected, additive files checked for modification), forbidden pattern scanning, size limit checks (max 200 lines added, 50 modified, 3 files per proposal).
+- `sandbox.ts` (134 lines) -- Git worktree isolation. Creates a throwaway branch, applies the diff, runs `tsc --noEmit`. Cleans up on failure.
+- `test-gate.ts` (127 lines) -- Runs `npx hardhat test` in the sandbox. Parses pass/fail counts, captures stdout. Proposal rejected if any test fails.
+- `canary.ts` (240 lines) -- Canary deployment with PM2 restart. Monitors PnL delta, error rate delta, crash count. 60-second check intervals, 4-hour minimum canary duration.
+- `rollback.ts` (99 lines) -- `git revert` the canary commit, PM2 restart. Logs the rollback reason.
+- `memory.ts` (196 lines) -- Persistent evolution state: daily proposal count, zone backoff timers, file targeting history, duplicate diff hashes, failed proposal context for anti-loop injection.
+- `types.ts` (165 lines) -- Full type system: EvolutionProposal, CanaryState, CanaryMetrics, ValidationResult, SandboxResult, TestResult, AntiLoopEntry, FileRingMapping, VelocityLimits.
+- `audit.ts` (173 lines) -- Append-only JSONL audit trail. Records every event in the evolution lifecycle: proposal_created, validation_passed/failed, sandbox_passed/failed, tests_passed/failed, canary_started, canary_check, proposal_promoted, proposal_rejected, rollback, cycle_started, cycle_completed, genome_pinned.
+
+**Dashboard Components (4 files, ~530 lines):**
+- `dapp/src/components/EvolutionPanel.tsx` (200 lines) -- Live evolution engine status: current proposal state, canary metrics, cycle countdown.
+- `dapp/src/components/EvolutionAudit.tsx` (89 lines) -- Audit trail viewer showing recent evolution events.
+- `dapp/src/hooks/useEvolutionAPI.ts` (144 lines) -- React hooks for evolution engine API data.
+- `dapp/src/pages/Advanced.tsx` (59 lines) -- Tabbed advanced dashboard (Tournament, Instinct, Frontier, Evolution).
+
+**Deploy Script (1 file, 41 lines):**
+- `scripts/deploy-v3.ts` -- Hardhat deploy script for DarwinVaultV3 with configurable USDC address, agent address, and fee recipient.
+
+**Immune System Updates (3 files, ~80 lines):**
+- `src/immune/immune-agent.ts` -- Added evolution division to immune monitoring.
+- `src/immune/platelets/fix-registry.ts` -- Fix registry for automated remediation.
+- `src/immune/config.ts` -- Updated health check config for evolution monitoring.
+
+**Infrastructure (1 file):**
+- `ecosystem.config.js` -- Added PM2 process definitions for darwinfi-evolution and darwinfi-showcase.
+
+**Tests (2 files, 875 lines):**
+- `test/DarwinVaultV3.test.ts` (631 lines) -- 51 tests covering deposit, withdraw, borrow, return, performance fees, management fees, high water mark, emergency withdrawal, lock time, max assets cap, pause/unpause, and access control.
+- `test/evolution-smoke.test.ts` (244 lines) -- 18 smoke tests: config loading, file ring classification, forbidden pattern detection, velocity limit enforcement, static validation, zone selection.
+
+### Verification
+
+| Check | Result |
+|-------|--------|
+| Hardhat compile | 0 errors (6 contracts) |
+| VaultV3 tests | 51 passing |
+| Evolution smoke tests | 18 passing |
+| DApp build | Clean |
+| PM2 start (darwinfi-evolution) | Clean startup |
+
+**Code Impact:** 30 files created/modified, ~4,400 lines added. Commits: `d2521eb`.
+
+---
+
+## Session 18: AI Router + Ollama Integration + Autonomy Gap Closures (2026-03-20)
+
+**Objective:** Close the six autonomy gaps identified in the March 20 audit (system was 40% autonomous, 60% static guardrails). Build an AI router with local Ollama inference, outcome attribution, signal calibration, dynamic fitness weights, real-time strategy switching, and adaptive circuit breakers. Transform DarwinFi from a trading bot that needs human parameter tuning into a system that identifies its own weaknesses and fixes them.
+
+### Key Decisions
+
+- **Ollama on KS RTX 3090 as primary inference.** Local inference via Tailscale (`http://100.89.161.12:30068`) running gemma2:9b gives 2-3 second response times at zero API cost. This replaces paid Claude CLI calls for signal evaluation and predictions. The KS compute node's RTX 3090 handles the workload comfortably.
+
+- **Three-tier AI routing with health-check failover.** The AIRouter pings Ollama every 60 seconds. If healthy, fast tasks (signals, predictions, experimental/optimizer evolution) route to Ollama. Quality tasks (synthesizer evolution) route to Venice for better reasoning. If Ollama goes down after 3 consecutive health check failures, all traffic falls back to Venice, then Claude CLI as last resort. When Ollama recovers, traffic automatically routes back. Zero-cost inference during normal operation.
+
+- **Outcome attribution replaces blind evolution.** Instead of the evolution engine blindly mutating parameters, every closed trade is now decomposed into four factors: entry timing quality, exit timing quality, slippage impact, and market regime alignment. Each factor gets a score from -1 (hurt) to +1 (helped). The dominant loss factor per strategy per token is identified and injected into evolution prompts: "On DEGEN, your main loss factor is poor exit timing -- consider adjusting stops/targets."
+
+- **Signal calibration as self-correcting feedback loop.** Every signal source (Ollama, Claude, Venice, rule-based) is tracked per-token. If Ollama gives 80% confidence on DEGEN but only 50% of those signals win, the calibration factor drops to 0.625 and future signals are adjusted. Overconfident sources get dampened; underconfident sources get boosted. This closes the gap between predicted and actual accuracy.
+
+- **Dynamic fitness weights replace static scoring.** The 30/25/20/15/10 composite scoring weights are now market-regime-aware. High volatility periods increase the Sharpe ratio weight (reward risk management). Low volatility increases PnL weight (reward any profit). Trending markets boost win rate weight. Range-bound markets boost drawdown penalty. Weights are recalculated every scoring cycle based on rolling volatility.
+
+- **Real-time strategy switching with continuous monitoring.** Paper strategies that outperform the live strategy for 3+ consecutive scoring cycles get auto-promoted. Emergency switch triggers on 10% drawdown -- the best paper strategy takes over immediately. Sell-only mode for demoted strategies ensures positions unwind gracefully.
+
+- **Adaptive circuit breakers scale with strategy quality.** A strategy with a 2.0 Sharpe ratio gets more room (drawdown limit * 1.3) than a strategy with 0.5 Sharpe (drawdown limit * 0.7). After a circuit breaker trips, the strategy enters recovery mode at 50% position sizing. Circuit breaker thresholds are exposed in the genome so the evolution engine can tune them.
+
+### What Claude Code Built
+
+**AI Router (1 file, 299 lines):**
+- `src/agent/ai-router.ts` -- Health-check routing with fallback chain. Manages provider status (healthy, consecutiveFailures, avgLatencyMs, totalCalls, totalErrors). Routes signals/predictions to Ollama, evolution synthesis to Venice. Exposes `evaluateEntry()`, `evaluateExit()`, `evolve()` with automatic failover. EMA latency tracking for monitoring.
+
+**Ollama Engine (1 file, 243 lines):**
+- `src/agent/ollama-engine.ts` -- HTTP client to KS RTX 3090 via Tailscale. Same interface as VeniceEngine/ClaudeCliEngine. Health check via `/api/tags`. Batch entry/exit signal evaluation with JSON parsing. Scoring rubric injected into system prompt. 15-second timeout with AbortController. Temperature 0.3, max 1024 tokens.
+
+**Outcome Attribution (1 file, 389 lines):**
+- `src/agent/attribution.ts` -- `AttributionEngine` class. `recordPrice()` maintains 2-hour rolling price buffer per token. `attributeTrade()` decomposes closed trades into 4 factors: entry timing (position within hold range), exit timing (how close to best price), slippage (fees/notional ratio), market regime (volatility + PnL combination). `getStrategyTokenProfile()` aggregates per strategy+token pair with dominant loss factor detection. `getEvolutionContext()` generates injectable text for evolution prompts. Persistence via `load()`/`getAll()`. Max 1,000 attributions with FIFO rotation.
+
+**Signal Calibration (1 file, 177 lines):**
+- `src/agent/signal-calibration.ts` -- `SignalCalibration` class. `recordOutcome()` tracks signal correctness (buy+profit = correct, sell+loss = correct, skip+flat = correct). `calibrate()` adjusts raw AI confidence by the calibration factor (actual win rate / predicted win rate), clamped to 0.2-2.0x. `getProfile()` returns per-source per-token stats. `getEvolutionContext()` generates injectable text identifying overconfident/underconfident sources. Max 2,000 outcomes with FIFO.
+
+**Modified: Circuit Breaker (+93 lines):**
+- `src/agent/circuit-breaker.ts` -- Added adaptive threshold scaling based on strategy Sharpe ratio. Recovery mode with 50% position sizing after breaker trips. New BreakerState fields: `adaptiveDrawdownLimit`, `adaptiveLossLimit`, `inRecovery`, `recoveryPositionScale`, `sharpeRatio`. Thresholds scale from 0.7x (low quality strategy) to 1.3x (high quality strategy).
+
+**Modified: Performance Tracker (+129 lines):**
+- `src/agent/performance.ts` -- Added dynamic fitness weights based on market regime detection. `getDynamicWeights()` calculates rolling 24h volatility and adjusts composite scoring: high vol boosts Sharpe weight, low vol boosts PnL weight, trend boosts win rate weight, range boosts drawdown penalty. `computeDynamicComposite()` applies market-adjusted weights.
+
+**Modified: Strategy Manager (+126 lines):**
+- `src/agent/strategy-manager.ts` -- Added continuous outperformance tracking (`consecutiveOutperformCycles` per strategy). `checkAutoPromotion()` promotes paper strategies that beat live for 3+ cycles. `emergencySwitch()` triggers on drawdown threshold. `getDemotion()` returns lowest scorer for sell-only transition.
+
+**Modified: Darwin Agent (+68 lines):**
+- `src/agent/darwin-agent.ts` -- Wired AIRouter for signal evaluation. Wired AttributionEngine to decompose closed trades. Wired SignalCalibration to track signal outcomes. Feeds Instinct predictions into signal evaluation with configurable instinctWeight per strategy genome.
+
+**Modified: Evolution Engine (+107 lines):**
+- `src/agent/evolution-engine.ts` -- Integrated Ollama via AIRouter for fast evolution proposals (experimental + optimizer roles route to Ollama, synthesizer to Venice). Injected attribution context and signal calibration data into evolution prompts so AI can target specific weaknesses.
+
+**Modified: AI Predictor (+74 lines):**
+- `src/instinct/reflexes/ai-predictor.ts` -- Ollama integration for 1m/5m predictions. Routing: 1m/5m tries Ollama first (2-3s), falls back to Claude CLI (45s). 15m/1h stays on Venice. Periodic health check every 60s.
+
+**Modified: Evolution Audit (+8 lines):**
+- `src/evolution/audit.ts` -- Added `auditGenomePinned()` for tracking IPFS genome pinning events.
+
+### Verification
+
+| Check | Result |
+|-------|--------|
+| TypeScript compilation | 0 errors |
+| Test suite | 325 passing, 5 pending |
+| AIRouter health check | Ollama reachable (gemma2:9b) |
+| Signal evaluation via Ollama | 2-3s latency confirmed |
+
+**Code Impact:** 12 files (4 new, 8 modified), ~1,800 lines added, ~300 lines removed. Commit: `73010ae`.
+
+---
+
 ## Technical Summary
 
 | Metric | Value |
 |--------|-------|
-| TypeScript source files | 91 (~22,700 LOC) |
-| Solidity contracts | 5 (~1,100 LOC) |
-| DApp files (React/TSX) | 35 (~4,500 LOC) |
-| Test files | 23 modules, 261 tests |
-| Total source files | 157 |
-| Total lines of code | ~34,000 |
+| TypeScript source files | 106 agent/trading + 29 showcase (~31,100 LOC) |
+| Solidity contracts | 6 (~1,550 LOC) |
+| DApp files (React/TSX) | 41 (~3,800 LOC) |
+| Test files | 25 modules, 325 tests (5 pending) |
+| Evolution engine files | 11 (~2,100 LOC) |
+| Total source files | 219 |
+| Total lines of code | ~44,500 |
 | Trading strategies | 16 (12 base + 4 frontier archetypes) |
-| PM2 processes | 3 (darwinfi, darwinfi-instinct, darwinfi-immune) |
+| PM2 processes | 7 (darwinfi, darwinfi-candles, darwinfi-instinct, darwinfi-immune, frontier, darwinfi-showcase, darwinfi-evolution) |
 | Token pairs | 9 on Base + multi-chain discovery |
 | Chains supported | 3 (Base, Arbitrum, Optimism) + Celo deployment |
-| AI models integrated | 4 (Claude CLI signals, Venice AI evolution, Claude Haiku batch eval, Grok-X via Venice sentiment) |
+| AI models integrated | 5 (Ollama gemma2:9b local signals, Venice AI evolution, Claude CLI fallback, Claude Haiku batch eval, Grok-X via Venice sentiment) |
+| AI routing | Ollama (KS RTX 3090) -> Venice -> Claude CLI fallback chain |
 | Sponsor integrations | 7 (Base, Uniswap, Venice AI, Filecoin, ENS, Lido, 1inch) |
-| Git commits | 33 |
-| Build time | ~12 hours across 15 sessions |
+| Git commits | 41 |
+| Build time | ~18 hours across 18 sessions |
 
 ---
 
@@ -885,7 +1024,13 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 | Prediction architecture | 5-department biological model (Instinct) | Single ML model, simple indicator engine | Multi-source intelligence with independent timing per department. Adaptive evolution speeds up when accuracy drops and slows down when stable. Source fitness scoring deprioritizes unreliable data. |
 | System monitoring | 7-division immune system with self-healing | External monitoring (Datadog, etc.), manual alerts | Autonomous monitoring that runs as a separate process. Detects problems, attempts automated fixes, verifies the fix worked, and evolves its own thresholds over time. Zero human intervention needed. |
 | Cross-chain expansion | 4-archetype frontier system with niche specialization | More strategies on single chain, manual multi-chain | Each archetype fills a distinct ecological niche (micro-cap detection, HFT scalping, volatility hunting, whale following). ChainRegistry abstracts multi-chain complexity. 1inch aggregation finds best prices across DEXes. |
+| Self-evolution engine | Venice AI code mutations + git worktree sandbox + canary deploy + auto-rollback | Manual parameter tuning, no evolution, simple random mutations | AI-generated diffs are more targeted than random mutations. The 10-step pipeline (validate, sandbox, test, canary, monitor) ensures only improvements survive. File mutability rings prevent evolution from touching safety-critical code. Velocity limits and anti-loop backoffs prevent runaway mutations. |
+| AI routing fallback chain | Ollama (local GPU) -> Venice API -> Claude CLI | Single provider, round-robin, cost-based routing | Local Ollama on KS RTX 3090 gives 2-3s latency at zero cost. Health-check failover means zero downtime. Quality tasks (evolution synthesis) route to Venice regardless. Claude CLI as ultimate fallback ensures signals always flow. |
+| VaultV3 fee model | 1% management + 5% performance (HWM) | Performance-only, flat fee, no fees | Management fee provides baseline revenue during flat markets. Performance fee only above high water mark prevents fee extraction during drawdown recovery. Both paid as minted shares (dilution-based) so vault always holds maximum USDC for trading. |
+| Ollama local inference | gemma2:9b on KS RTX 3090 via Tailscale | Claude API (paid), Venice for everything, no local | KS compute node is already provisioned. gemma2:9b fits in memory, responds in 2-3s, and costs $0. Replaces ~28K paid API calls/day for signal evaluation. Venice reserved for quality tasks (evolution synthesis) where reasoning depth matters. |
+| Outcome attribution | 4-factor trade decomposition (entry, exit, slippage, regime) | Raw PnL only, no decomposition, ML-based attribution | Targeted feedback lets evolution fix specific weaknesses instead of blind mutations. A strategy losing due to poor exit timing gets different parameter changes than one losing due to bad market regime alignment. Simple enough to compute in real-time without ML overhead. |
+| Signal calibration | Per-source per-token confidence adjustment | Trust all signals equally, manual confidence thresholds | Self-correcting: if Ollama overestimates on DEGEN (predicts 80%, hits 50%), the calibration factor automatically adjusts future signals. Minimum 5 signals before calibrating prevents premature adjustments. Clamped to 0.2-2.0x to prevent extreme swings. |
 
 ---
 
-*This development log covers 15 sessions of human-agent collaboration, generated from Claude Code session transcripts and git history. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~12 hours.*
+*This development log covers 18 sessions of human-agent collaboration, generated from Claude Code session transcripts and git history. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~18 hours.*

@@ -75,12 +75,26 @@ const features = [
     gradient: "from-[#00F0C0]/20 via-[#E4C64B]/10 to-transparent",
     accent: "text-darwin-accent",
   },
+  {
+    title: "Evolution",
+    subtitle: "Self-Evolution Engine",
+    description:
+      "DarwinFi evolves its own source code. Venice AI generates mutations tested in isolated git worktree sandboxes with canary deploy and auto-rollback.",
+    capabilities: [
+      "Venice AI (Llama 3.3 70B) code generation",
+      "Git worktree sandbox isolation",
+      "Canary deploy with performance comparison",
+      "Auto-rollback on degradation (18 smoke tests)",
+    ],
+    gradient: "from-[#E4C64B]/20 via-[#8040DD]/10 to-transparent",
+    accent: "text-darwin-gold",
+  },
 ];
 
 const techStack = [
-  { category: "Smart Contracts", items: ["Solidity", "Hardhat", "OpenZeppelin ERC-4626", "Base Mainnet"] },
+  { category: "Smart Contracts", items: ["Solidity", "Hardhat", "OpenZeppelin ERC-4626", "VaultV3 (fee model)", "Base Mainnet"] },
   { category: "Agent Core", items: ["TypeScript", "ethers.js v6", "Uniswap V3 SDK", "1inch Aggregator"] },
-  { category: "AI Models", items: ["Claude Haiku (signals)", "Venice AI / Llama 3.3 70B (evolution)", "Grok/X (sentiment)"] },
+  { category: "AI Models", items: ["Claude Haiku (signals)", "Venice AI / Llama 3.3 70B (evolution)", "Ollama/Gemma2 (local fallback)", "Grok/X (sentiment)"] },
   { category: "DApp", items: ["React", "Vite", "Wagmi", "RainbowKit", "Tailwind CSS"] },
   { category: "Infrastructure", items: ["PM2", "Express", "Caddy", "IPFS/Filecoin", "Base / Arbitrum / Optimism"] },
 ];
@@ -103,7 +117,7 @@ export default function ProductPage() {
             </h1>
             <p className="text-darwin-text text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
               A full-stack DeFi application: ERC-4626 vault, 16 competing strategies,
-              biological AI systems, and cross-chain expansion. All live on Base mainnet.
+              biological AI systems, self-evolving code, and cross-chain expansion. All live on Base mainnet.
             </p>
           </AnimatedSection>
         </div>
@@ -116,7 +130,7 @@ export default function ProductPage() {
             DApp Features
           </h2>
           <p className="text-darwin-text-dim text-center max-w-lg mx-auto mb-12">
-            Five pages, each exposing a different layer of the living organism.
+            Six pages, each exposing a different layer of the living organism.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -191,6 +205,18 @@ export default function ProductPage() {
 
             <div className="darwin-card">
               <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-darwin-text-bright">DarwinVaultV3 (Fee Model)</h3>
+                <span className="text-xs font-mono text-darwin-purple bg-darwin-purple/10 px-2 py-0.5 rounded">
+                  Built
+                </span>
+              </div>
+              <p className="text-sm text-darwin-text-dim mb-2">
+                1% management fee + 5% performance fee (high water mark). 325 passing tests. Ready for mainnet deployment.
+              </p>
+            </div>
+
+            <div className="darwin-card">
+              <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-darwin-text-bright">Deployer Wallet</h3>
               </div>
               <p className="font-mono text-sm text-darwin-text-dim mb-2 break-all">
@@ -221,7 +247,7 @@ export default function ProductPage() {
             Tech Stack
           </h2>
           <p className="text-darwin-text-dim text-center max-w-lg mx-auto mb-12">
-            157 source files across 5 layers.
+            106 source files across 5 layers.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">

@@ -15,11 +15,11 @@
   },
   {
     "route": "/story",
-    "firstLoadUncompressedJsBytes": 559436,
+    "firstLoadUncompressedJsBytes": 565639,
     "firstLoadChunkPaths": [
       ".next/static/chunks/05amrd05dn~6f.js",
       ".next/static/chunks/100h~mrhwkao0.js",
-      ".next/static/chunks/0vx4j.wt5bp_g.js",
+      ".next/static/chunks/0a4imwy__hoju.js",
       ".next/static/chunks/17z01hwg7i9ta.js",
       ".next/static/chunks/0q_-ic5qrfj0d.js",
       ".next/static/chunks/00kv21_l8-q0j.js",
@@ -43,11 +43,11 @@
   },
   {
     "route": "/product",
-    "firstLoadUncompressedJsBytes": 552656,
+    "firstLoadUncompressedJsBytes": 553765,
     "firstLoadChunkPaths": [
       ".next/static/chunks/05amrd05dn~6f.js",
       ".next/static/chunks/100h~mrhwkao0.js",
-      ".next/static/chunks/10jm6.py~thtk.js",
+      ".next/static/chunks/152f-a3.3_gzy.js",
       ".next/static/chunks/17z01hwg7i9ta.js",
       ".next/static/chunks/0q_-ic5qrfj0d.js",
       ".next/static/chunks/00kv21_l8-q0j.js",

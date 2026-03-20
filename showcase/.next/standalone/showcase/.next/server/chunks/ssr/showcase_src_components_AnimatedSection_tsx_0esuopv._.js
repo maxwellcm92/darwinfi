@@ -1,0 +1,3 @@
+module.exports=[24479,a=>{"use strict";var b=a.i(81864),c=a.i(49230);a.s(["AnimatedSection",0,function({children:a,className:d="",delay:e=0}){let f=(0,c.useRef)(null),[g,h]=(0,c.useState)(!1);return(0,c.useEffect)(()=>{let a=f.current;if(!a)return;let b=new IntersectionObserver(([c])=>{c.isIntersecting&&(setTimeout(()=>h(!0),e),b.unobserve(a))},{threshold:.1});return b.observe(a),()=>b.disconnect()},[e]),(0,b.jsx)("div",{ref:f,className:`transition-all duration-700 ${g?"opacity-100 translate-y-0":"opacity-0 translate-y-6"} ${d}`,children:a})}])}];
+
+//# sourceMappingURL=showcase_src_components_AnimatedSection_tsx_0esuopv._.js.map

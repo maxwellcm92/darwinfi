@@ -157,6 +157,126 @@ const sessions: SessionData[] = [
     codeImpact: "33 files created, 10 test files, ~7,200 lines added. 99 new tests",
     type: "audit",
   },
+  {
+    number: 11,
+    title: "Instinct System",
+    objective:
+      "Build a 5-department biological prediction layer that gives DarwinFi market intuition across multiple intelligence sources.",
+    highlights: [
+      "5 departments: Senses, Reflexes, Cortex, Nerves, Marrow",
+      "Multi-timeframe predictions (1m, 5m, 15m, 1h)",
+      "Adaptive evolution with emergency triggers on accuracy drops",
+    ],
+    details:
+      "Senses collect intelligence from Grok/X sentiment, RSS feeds, and on-chain events. Reflexes generate directional predictions at 4 timeframes. Cortex runs Bayesian weight optimization every 24h. Nerves publish predictions-live.json every 30s. Marrow detects recurring signal patterns. Adaptive evolution speeds up when accuracy drops below 30%.",
+    codeImpact: "23 files created, ~5,200 lines added. PM2 process: darwinfi-instinct",
+    type: "architecture",
+  },
+  {
+    number: 12,
+    title: "Instinct Dashboard UI & Evolution Tuning",
+    objective:
+      "Build the DApp Instinct page and tune evolution parameters for faster adaptation.",
+    highlights: [
+      "Instinct dashboard with live prediction feeds",
+      "Source fitness scoring visible per department",
+      "Evolution cycle acceleration (4h -> 1h during qualification)",
+    ],
+    details:
+      "Added the Instinct tab to the DApp showing real-time predictions, source fitness scores, and department health. Tuned evolution parameters so cycles accelerate during low-accuracy periods. Built confidence visualization with color-coded directional indicators.",
+    codeImpact: "UI components + evolution parameter tuning",
+    type: "architecture",
+  },
+  {
+    number: 13,
+    title: "Immune System",
+    objective:
+      "Build a 7-division autonomous monitoring and self-healing system inspired by biological immunity.",
+    highlights: [
+      "7 divisions: Patrol, Antibodies, Thymus, Platelets, Membrane, Lymph, Genome",
+      "Self-healing with fix-then-verify pattern",
+      "12h self-evolution cycle for threshold tuning",
+    ],
+    details:
+      "Patrol monitors health every 30s-5min. Antibodies verify math and state invariants. Thymus scans for security vulnerabilities. Platelets auto-fix detected issues. Membrane checks boundary truth against external sources. Lymph handles logging and alerts. Genome evolves its own detection thresholds every 12h.",
+    codeImpact: "31 files created, ~4,400 lines added. PM2 process: darwinfi-immune",
+    type: "deployment",
+  },
+  {
+    number: 14,
+    title: "Frontier System",
+    objective:
+      "Deploy four new bot archetypes that hunt across Base, Arbitrum, and Optimism -- each filling a distinct ecological niche.",
+    highlights: [
+      "4 archetypes: Abiogenesis, Mitosis, Cambrian, Symbiont",
+      "ChainRegistry for multi-chain with 1inch aggregation",
+      "Cross-team championship bracket",
+    ],
+    details:
+      "Built the Frontier system with chain layer (ChainRegistry, EVM client), trading layer (1inch aggregator, cross-chain engine, bridge client), and 5 frontier modules (token discovery, rug detector, spread scanner, vol scanner, whale tracker). Agent runs 3 tick speeds (8s, 30s, 4h). Full test suite with 99 tests across 10 files.",
+    codeImpact: "33 files created, 10 test files, ~7,200 lines added",
+    type: "architecture",
+  },
+  {
+    number: 15,
+    title: "DApp Deployment",
+    objective:
+      "Deploy the React SPA to production with VaultV2 integration, wallet connect, and live data feeds.",
+    highlights: [
+      "React SPA deployed at corduroycloud.com/darwinfi/",
+      "VaultV2 (ERC-4626) integration with deposit/withdraw",
+      "RainbowKit wallet connect + Base chain",
+    ],
+    details:
+      "Deployed the full DApp as a React SPA served via Express on port 3502 with Caddy reverse proxy stripping the /darwinfi prefix. Integrated VaultV2 contract at 0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3 with wagmi hooks for deposit, withdraw, share price, and TVL. RainbowKit provides wallet connection with Base chain support.",
+    codeImpact: "DApp deployed, Express server configured, Caddy routes added",
+    type: "deployment",
+  },
+  {
+    number: 16,
+    title: "VaultV3 Contract & Evolution Enhancements",
+    objective:
+      "Build the next-generation vault contract with management and performance fees, plus evolution engine upgrades.",
+    highlights: [
+      "VaultV3: 1% management fee + 5% performance fee (high water mark)",
+      "51 contract tests passing",
+      "Deploy script ready for mainnet launch",
+    ],
+    details:
+      "Developed DarwinVaultV3 extending ERC-4626 with a dual-fee model: 1% annual management fee accrued per-block and 5% performance fee above a high water mark. Includes fee recipient configuration, fee claim functions, and admin controls. Full test suite with 51 tests covering fee math, edge cases, and access control.",
+    codeImpact: "VaultV3 contract + deploy script + 51 tests",
+    type: "audit",
+  },
+  {
+    number: 17,
+    title: "Self-Evolution Engine & Frontier Freedom",
+    objective:
+      "Build the self-evolution engine that lets DarwinFi mutate its own source code, plus expand Frontier bot autonomy.",
+    highlights: [
+      "Venice AI code generation with git worktree sandboxing",
+      "Canary deploy with auto-rollback on degradation",
+      "18 smoke tests gate every mutation",
+    ],
+    details:
+      "Built src/evolution/ with Venice AI (Llama 3.3 70B) generating code mutations. Each candidate is tested in an isolated git worktree sandbox. Mutations that pass 18 smoke tests get canary-deployed alongside the live system. If the canary degrades performance metrics, the system auto-rolls back. Also expanded Frontier bot autonomy with independent decision cycles.",
+    codeImpact: "Evolution engine + 18 smoke tests + canary deploy system",
+    type: "architecture",
+  },
+  {
+    number: 18,
+    title: "AI Router & Autonomy Gap Closures",
+    objective:
+      "Build a cascading AI router with local Ollama fallback and close critical autonomy gaps identified in the March 20 audit.",
+    highlights: [
+      "AI Router: Claude -> Ollama/Gemma2 -> rule-based fallback chain",
+      "Ollama engine for $0 local AI inference",
+      "Autonomy audit: 40% -> closing 6 critical gaps",
+    ],
+    details:
+      "Built a three-tier AI routing system: primary Claude API, fallback to local Ollama/Gemma2 running on RTX 3090 via Tailscale ($0 cost), and final deterministic rule-based fallback. This ensures DarwinFi always has a working AI brain even when external APIs fail. Addressed 6 critical autonomy gaps: no real-time strategy switching, disconnected evolution engines, no outcome attribution, static fitness weights, disconnected predictions, and rigid circuit breakers.",
+    codeImpact: "AI router + Ollama engine + autonomy gap fixes across multiple modules",
+    type: "fix",
+  },
 ];
 
 export default function StoryPage() {
@@ -172,15 +292,15 @@ export default function StoryPage() {
               The Build Story
             </h1>
             <p className="text-darwin-text text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-              10 sessions. 157 files. 34,000 lines of code. 261 tests.
-              Built in ~12 hours with Claude Code as the agent harness.
+              18 sessions. 106 source files. 27,000 lines of code. 325 tests.
+              Built across March 13-20, 2026 with Claude Code as the agent harness.
             </p>
             <div className="flex flex-wrap justify-center gap-6 text-center">
               {[
-                { value: "10", label: "Sessions" },
-                { value: "157", label: "Files" },
-                { value: "34k", label: "Lines" },
-                { value: "261", label: "Tests" },
+                { value: "18", label: "Sessions" },
+                { value: "106", label: "Files" },
+                { value: "27k", label: "Lines" },
+                { value: "325", label: "Tests" },
               ].map((stat) => (
                 <div key={stat.label}>
                   <p className="text-2xl md:text-3xl font-bold text-darwin-accent font-mono">

@@ -993,6 +993,52 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 
 ---
 
+## Session 19: Demo Video Pipeline
+
+**Objective:** Build a complete automated demo video pipeline so DarwinFi can generate its own hackathon submission video -- narrated in first person by a British AI voice via ElevenLabs TTS.
+
+### Key Decisions
+
+- **Agent-narrated demo.** Rather than a human voiceover, DarwinFi narrates its own demo in first person. This reinforces the autonomy thesis that judges scored highly (5.7-6.4/10) and creates a memorable submission. The narration is confident, British, and slightly dry -- fitting for an AI organism describing itself.
+
+- **ElevenLabs free tier.** The full narration is ~2,220 characters across 5 scenes. ElevenLabs free tier gives 10,000 chars/month -- plenty of room for retakes. Using the `eleven_multilingual_v2` model with British male preset voice "Daniel."
+
+- **Fully automated pipeline.** One command (`./scripts/build-demo.sh`) runs the entire chain: TTS generation -> Playwright screen recording -> ImageMagick title cards -> ffmpeg compositing. Supports `--skip-tts` and `--skip-record` flags for iterating on individual steps.
+
+### New Files (6 files, ~885 lines)
+
+**Narration Script (1 file):**
+- `docs/demo-narration.md` -- First-person narration in DarwinFi's voice. 5 scenes: Intro (25s), Vault (40s), Live Trading (50s), Tournament & Evolution (50s), Safety & Outro (25s). Total ~3 min 10 sec.
+
+**Video Pipeline (5 files):**
+- `scripts/generate-narration.py` -- ElevenLabs TTS wrapper. Generates MP3 per scene + full concatenated narration. Voice lookup by name, configurable stability/similarity/style settings.
+- `scripts/record-demo.ts` -- Playwright screen recorder. Captures 5 scenes from the live dapp at 1920x1080 with smooth scrolling and tab navigation. Each scene saves as `.webm`, auto-renamed for compositing.
+- `scripts/generate-slides.py` -- ImageMagick title card generator. Creates 5 PNG cards (opening, 3 scene transitions, closing with sponsors) in dark theme (#0a0a0a) with teal accents (#14b8a6). Auto-converts to 3-second MP4 clips.
+- `scripts/compose-video.sh` -- ffmpeg compositor. Normalizes all clips to consistent format, concatenates in order (title cards between scenes), overlays narration audio, encodes H.264 1080p AAC.
+- `scripts/build-demo.sh` -- Master orchestrator. Dependency checks, runs all 4 steps in sequence. Flags: `--skip-tts`, `--skip-record`, `--slides-only`.
+
+### System Dependencies Added
+
+- ffmpeg 6.1.1 (apt)
+- ImageMagick 6.9.12 (apt)
+- Playwright 1.58.2 + Chromium 145 (already in project)
+
+### Verification
+
+| Check | Result |
+|-------|--------|
+| Title card generation | 5/5 PNGs + 5/5 MP4 clips generated |
+| Opening card visual | Teal "DarwinFi" + tagline on dark background, crisp at 1080p |
+| Closing card visual | Contract address, dapp URL, 5 sponsor names in teal |
+| DApp serving | HTTP 200, React content rendering |
+| PM2 processes | 7/7 online |
+| Playwright/Chromium | Installed and runnable |
+| Env vars | PRIVATE_KEY, RPC URLs present |
+
+**Code Impact:** 6 new files, ~885 lines added. Commit: `8605b72`.
+
+---
+
 ## Technical Summary
 
 | Metric | Value |
@@ -1011,8 +1057,8 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 | AI models integrated | 5 (Ollama gemma2:9b local signals, Venice AI evolution, Claude CLI fallback, Claude Haiku batch eval, Grok-X via Venice sentiment) |
 | AI routing | Ollama (KS RTX 3090) -> Venice -> Claude CLI fallback chain |
 | Sponsor integrations | 7 (Base, Uniswap, Venice AI, Filecoin, ENS, Lido, 1inch) |
-| Git commits | 41 |
-| Build time | ~18 hours across 18 sessions |
+| Git commits | 42 |
+| Build time | ~19 hours across 19 sessions |
 
 ---
 
@@ -1041,4 +1087,4 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 
 ---
 
-*This development log covers 18 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi now operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~18 hours.*
+*This development log covers 19 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi now operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~18 hours.*

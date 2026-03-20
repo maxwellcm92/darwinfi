@@ -12,6 +12,45 @@ import { SharePriceChart } from "../components/SharePriceChart";
 import { useVaultStats } from "../hooks/useVaultStats";
 import { useDarwinFiAPI } from "../hooks/useDarwinFiAPI";
 
+function PerformanceBar() {
+  const { sharePrice } = useVaultStats();
+  const { agentState } = useDarwinFiAPI();
+
+  const totalTrades = agentState?.totalTrades ?? null;
+  const champion = agentState?.championStrategy ?? null;
+  const uptimeSec = agentState?.uptime ?? null;
+  const daysSinceLaunch = uptimeSec != null ? Math.floor(uptimeSec / 86400) : null;
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-3 text-center">
+        <p className="text-xs font-mono text-darwin-text-dim uppercase tracking-wider mb-1">Share Price</p>
+        <p className="text-sm font-mono font-bold text-darwin-text-bright">
+          ${sharePrice ? parseFloat(sharePrice).toFixed(6) : "--"}
+        </p>
+      </div>
+      <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-3 text-center">
+        <p className="text-xs font-mono text-darwin-text-dim uppercase tracking-wider mb-1">Total Trades</p>
+        <p className="text-sm font-mono font-bold text-darwin-text-bright">
+          {totalTrades != null ? totalTrades.toLocaleString() : "--"}
+        </p>
+      </div>
+      <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-3 text-center">
+        <p className="text-xs font-mono text-darwin-text-dim uppercase tracking-wider mb-1">Days Live</p>
+        <p className="text-sm font-mono font-bold text-darwin-text-bright">
+          {daysSinceLaunch != null ? daysSinceLaunch : "--"}
+        </p>
+      </div>
+      <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-3 text-center">
+        <p className="text-xs font-mono text-darwin-text-dim uppercase tracking-wider mb-1">Champion</p>
+        <p className="text-sm font-mono font-bold text-darwin-accent truncate">
+          {champion ?? "--"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function formatUSD(value: string | null): string {
   if (value == null) return "--";
   const num = parseFloat(value);
@@ -55,7 +94,7 @@ function VaultStatsBar() {
 function StepExplainer() {
   const steps = [
     { num: "1", title: "Deposit USDC", desc: "Connect your wallet and deposit any amount of USDC into the vault." },
-    { num: "2", title: "Bot Trades", desc: "12 AI strategies compete. The best one trades live on Uniswap V3." },
+    { num: "2", title: "Bot Trades", desc: "16 AI strategies compete. The best one trades live on Uniswap V3." },
     { num: "3", title: "Withdraw Anytime", desc: "Your dvUSDC shares grow as the vault profits. Redeem whenever you want." },
   ];
 
@@ -116,6 +155,7 @@ export function Home() {
     return (
       <div className="space-y-8">
         <ShaderHero />
+        <PerformanceBar />
 
         {/* Big Connect CTA */}
         <div className="text-center space-y-4">
@@ -148,6 +188,7 @@ export function Home() {
   if (hasPosition) {
     return (
       <div className="space-y-6">
+        <PerformanceBar />
         {/* Position + Chart side by side */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <PositionDisplay />
@@ -200,6 +241,7 @@ export function Home() {
   return (
     <div className="space-y-8">
       <ShaderHero />
+      <PerformanceBar />
 
       {/* Centered deposit */}
       <div className="max-w-md mx-auto space-y-4">

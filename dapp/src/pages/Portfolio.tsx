@@ -2,6 +2,7 @@ import { useAccount } from "wagmi";
 import { PortfolioCard } from "../components/PortfolioCard";
 import { DepositCard } from "../components/DepositCard";
 import { WithdrawCard } from "../components/WithdrawCard";
+import { VAULT_ADDRESS } from "../lib/contracts";
 
 export function Portfolio() {
   const { isConnected } = useAccount();
@@ -44,12 +45,14 @@ export function Portfolio() {
               <span className="text-xs font-mono text-darwin-text-dim uppercase text-right">Date</span>
             </div>
             <div className="text-center py-8">
-              <p className="text-sm font-mono text-darwin-text-dim">
-                Transaction history will populate from on-chain events.
-              </p>
-              <p className="text-xs font-mono text-darwin-text-dim mt-1">
-                Deposit and Withdraw events are indexed from the vault contract.
-              </p>
+              <a
+                href={`https://basescan.org/address/${VAULT_ADDRESS}#events`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-mono text-darwin-purple hover:text-darwin-accent transition-colors"
+              >
+                {"View all transactions on BaseScan ->"}
+              </a>
             </div>
           </div>
         )}

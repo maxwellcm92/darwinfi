@@ -52,7 +52,7 @@ function TrustCard({ icon, question, answer, detail, accentColor }: TrustCardPro
 }
 
 export function TrustModel() {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   return (
     <div className="space-y-3">

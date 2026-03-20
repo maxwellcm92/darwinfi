@@ -5,22 +5,27 @@ import { useVaultWithdraw } from "../hooks/useVaultWithdraw";
 
 export function WithdrawCard() {
   const { isConnected } = useAccount();
-  const { userShares, userShareValue, lockSeconds, userDepositTimestamp } =
+  const { userShares, userShareValue, sharePrice, lockSeconds, userDepositTimestamp } =
     useVaultStats();
   const { step, error, redeem, reset, isRedeeming, isRedeemConfirmed, redeemTxHash } =
     useVaultWithdraw();
 
   const [amount, setAmount] = useState("");
 
+  // Convert USDC input to shares using share price
+  const sharePriceNum = sharePrice ? parseFloat(sharePrice) : 0;
+  const usdcAmount = amount ? parseFloat(amount) : 0;
+  const sharesToRedeem = sharePriceNum > 0 ? usdcAmount / sharePriceNum : 0;
+
   const handleMax = () => {
-    if (userShares) {
-      setAmount(userShares);
+    if (userShareValue) {
+      setAmount(userShareValue);
     }
   };
 
   const handleSubmit = () => {
-    if (!amount || parseFloat(amount) <= 0) return;
-    redeem(amount);
+    if (!amount || usdcAmount <= 0 || sharePriceNum <= 0) return;
+    redeem(sharesToRedeem.toFixed(6));
   };
 
   const handleReset = () => {
@@ -77,7 +82,7 @@ export function WithdrawCard() {
       {/* Amount Input */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1">
-          <label className="text-xs font-mono text-darwin-text-dim">Shares to Redeem</label>
+          <label className="text-xs font-mono text-darwin-text-dim">USDC to Withdraw</label>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex-1 relative">
@@ -93,7 +98,7 @@ export function WithdrawCard() {
                 placeholder:text-darwin-text-dim/40"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-darwin-text-dim text-sm font-mono">
-              dvUSDC
+              USDC
             </span>
           </div>
           <button
@@ -107,6 +112,11 @@ export function WithdrawCard() {
             MAX
           </button>
         </div>
+        {amount && usdcAmount > 0 && sharePriceNum > 0 && (
+          <p className="text-xs font-mono text-darwin-text-dim mt-1">
+            ~{sharesToRedeem.toFixed(6)} dvUSDC shares will be redeemed
+          </p>
+        )}
       </div>
 
       {/* Action Button */}
@@ -145,7 +155,7 @@ export function WithdrawCard() {
             isLocked ||
             !amount ||
             parseFloat(amount) <= 0 ||
-            (userShares != null && parseFloat(amount) > parseFloat(userShares))
+            (userShareValue != null && usdcAmount > parseFloat(userShareValue))
           }
           className="w-full py-3 rounded-lg font-mono text-sm font-bold uppercase tracking-wider transition-all duration-200
             bg-darwin-purple text-darwin-text-bright

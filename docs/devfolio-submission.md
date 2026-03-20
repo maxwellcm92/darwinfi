@@ -26,10 +26,32 @@ What makes DarwinFi genuinely autonomous:
 
 DarwinVaultV3 collects 1% annual management + 5% performance fees (high water mark). Built with Claude Code as the agent harness, Venice AI for evolution, Uniswap V3 for execution, and Lit Protocol for cryptographic trading guardrails.
 
+## Demo Video
+
+**Status:** Pipeline built, ready to execute March 21.
+
+DarwinFi generates its own demo video -- narrated in first person by a British AI voice (ElevenLabs TTS). The video is fully automated: one command runs TTS generation, Playwright screen recording of the live dapp, ImageMagick title cards, and ffmpeg compositing into a final 1080p MP4.
+
+5 scenes (~3 min 10 sec total):
+1. **Intro** (~25s) -- DarwinFi introduces itself as a self-evolving organism
+2. **The Vault** (~40s) -- USDC deposit flow, dvUSDC shares, ERC-4626
+3. **Live Trading** (~50s) -- Real on-chain Uniswap V3 swaps on Base mainnet
+4. **Tournament & Evolution** (~50s) -- 16 strategies competing, code self-mutation, IPFS genome pinning
+5. **Safety & Outro** (~25s) -- Lit Protocol guardrails, closing statement
+
+Upload: YouTube (unlisted), embed in Devfolio submission.
+
+## Links
+
+- **Live DApp:** https://corduroycloud.com/darwinfi/
+- **Vault (BaseScan):** https://basescan.org/address/0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3
+- **GitHub:** https://github.com/maxwellcm92/darwinfi
+- **Basename:** darwinfi.base.eth
+
 ## Track
 
 Agents that Pay
 
 ## Technologies
 
-Base, Uniswap V3, ERC-4626 (OpenZeppelin v5), Claude Code, Venice AI, Ollama, Storacha/IPFS, Lit Protocol, ENS/Basenames, React 19, Hardhat, ethers.js v6, Tailscale
+Base, Uniswap V3, ERC-4626 (OpenZeppelin v5), Claude Code, Venice AI, Ollama, Storacha/IPFS, Lit Protocol, ENS/Basenames, React 19, Hardhat, ethers.js v6, Tailscale, ElevenLabs TTS, Playwright, ffmpeg

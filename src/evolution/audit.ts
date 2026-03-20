@@ -162,3 +162,11 @@ export function auditCycleCompleted(proposalId?: string, outcome?: string): void
     details: { outcome: outcome || 'no_proposal' },
   });
 }
+
+export function auditGenomePinned(strategyId: string, generation: number, cid: string): void {
+  appendAudit({
+    timestamp: Date.now(),
+    event: 'genome_pinned',
+    details: { strategyId, generation, cid },
+  });
+}

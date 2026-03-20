@@ -147,6 +147,11 @@ export class StrategyManager {
   private qualificationProfitCount: Map<string, number> = new Map();
   private static readonly MIN_QUALIFICATION_TRADES = 3;
 
+  // Real-time strategy switching state
+  private outperformStartTimes: Map<string, number> = new Map();
+  private recentLossCount: number = 0;
+  private recentWinCount: number = 0;
+
   get qualificationMode(): boolean {
     return this._qualificationMode;
   }
@@ -154,6 +159,127 @@ export class StrategyManager {
   constructor(performanceTracker: PerformanceTracker) {
     this.performanceTracker = performanceTracker;
     this.consecutiveOutperformCycles = 2; // Required consecutive cycles to promote
+  }
+
+  /**
+   * Real-time strategy switching: continuously monitor paper vs live performance.
+   * Call this every fast tick (30s). If a paper strategy outperforms live by
+   * a significant margin for a sustained period, auto-promote it.
+   *
+   * Thresholds are adaptive: tighter after losses, looser after wins.
+   */
+  checkRealTimeSwitch(): PromotionEvent | null {
+    const live = this.getLiveStrategy();
+    if (!live || this._qualificationMode) return null;
+
+    const liveScore = this.performanceTracker.getCompositeScore(live.id);
+    const paperMains = this.getMainStrategies().filter(m => m.status === 'paper');
+
+    // Adaptive thresholds
+    const lossRatio = this.recentLossCount / Math.max(1, this.recentLossCount + this.recentWinCount);
+    const outperformThresholdPct = lossRatio > 0.5 ? 5 : 10; // 5% after losses, 10% after wins
+    const sustainedMinutes = lossRatio > 0.5 ? 15 : 30; // 15min after losses, 30min after wins
+
+    for (const paper of paperMains) {
+      const paperScore = this.performanceTracker.getCompositeScore(paper.id);
+      const outperformPct = liveScore > 0
+        ? ((paperScore - liveScore) / liveScore) * 100
+        : paperScore > 0 ? 100 : 0;
+
+      if (outperformPct >= outperformThresholdPct) {
+        const startTime = this.outperformStartTimes.get(paper.id);
+        if (!startTime) {
+          this.outperformStartTimes.set(paper.id, Date.now());
+          console.log(
+            `[DarwinFi] RT Switch: ${paper.id} outperforming live by ${outperformPct.toFixed(1)}%, monitoring...`
+          );
+        } else {
+          const elapsedMin = (Date.now() - startTime) / 60000;
+          if (elapsedMin >= sustainedMinutes) {
+            // Auto-promote
+            console.log(
+              `[DarwinFi] RT SWITCH: ${paper.id} promoted to live ` +
+              `(outperformed by ${outperformPct.toFixed(1)}% for ${elapsedMin.toFixed(0)}min)`
+            );
+            this.promoteMainToLive(paper, live);
+            this.outperformStartTimes.clear();
+
+            const event: PromotionEvent = {
+              timestamp: new Date(),
+              type: 'main_to_live',
+              fromId: paper.id,
+              toId: live.id,
+              reason: `Real-time switch: outperformed by ${outperformPct.toFixed(1)}% for ${elapsedMin.toFixed(0)}min`,
+            };
+            this.promotionHistory.push(event);
+            return event;
+          }
+        }
+      } else {
+        this.outperformStartTimes.delete(paper.id);
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Emergency switch: if live strategy drawdown hits a critical level,
+   * immediately promote the best performing paper strategy.
+   */
+  emergencySwitch(liveDrawdownPct: number): PromotionEvent | null {
+    const live = this.getLiveStrategy();
+    if (!live) return null;
+
+    // Emergency threshold: 10% drawdown
+    if (liveDrawdownPct < 10) return null;
+
+    const paperMains = this.getMainStrategies().filter(m => m.status === 'paper');
+    if (paperMains.length === 0) return null;
+
+    // Find best paper strategy
+    let bestPaper: StrategyGenome | null = null;
+    let bestScore = -Infinity;
+    for (const paper of paperMains) {
+      const score = this.performanceTracker.getCompositeScore(paper.id);
+      if (score > bestScore) {
+        bestScore = score;
+        bestPaper = paper;
+      }
+    }
+
+    if (!bestPaper) return null;
+
+    console.log(
+      `[DarwinFi] EMERGENCY SWITCH: ${live.id} drawdown ${liveDrawdownPct.toFixed(1)}%, ` +
+      `promoting ${bestPaper.id} (score: ${bestScore.toFixed(3)})`
+    );
+
+    this.promoteMainToLive(bestPaper, live);
+
+    const event: PromotionEvent = {
+      timestamp: new Date(),
+      type: 'main_to_live',
+      fromId: bestPaper.id,
+      toId: live.id,
+      reason: `Emergency switch: live drawdown ${liveDrawdownPct.toFixed(1)}%`,
+    };
+    this.promotionHistory.push(event);
+    return event;
+  }
+
+  /** Track trade outcomes for adaptive threshold calculation */
+  recordTradeOutcome(isWin: boolean): void {
+    if (isWin) {
+      this.recentWinCount++;
+    } else {
+      this.recentLossCount++;
+    }
+    // Decay old counts (keep a sliding window feel)
+    if (this.recentWinCount + this.recentLossCount > 50) {
+      this.recentWinCount = Math.floor(this.recentWinCount * 0.8);
+      this.recentLossCount = Math.floor(this.recentLossCount * 0.8);
+    }
   }
 
   /**

@@ -29,6 +29,14 @@ export interface BreakerState {
   currentDrawdown: number;
   peakEquity: number;
   manualOverride: boolean;
+  /** Adaptive thresholds (per-strategy, overrides config defaults) */
+  adaptiveDrawdownLimit: number;
+  adaptiveLossLimit: number;
+  /** Recovery mode: after trip, trade at reduced size */
+  inRecovery: boolean;
+  recoveryPositionScale: number;
+  /** Strategy quality indicator for threshold scaling */
+  sharpeRatio: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -51,9 +59,50 @@ export class CircuitBreaker {
   private states: Map<string, BreakerState> = new Map();
   private portfolioHalted = false;
   private portfolioPeakValue = 0;
+  private currentVolatility: number = 0;
 
   constructor(config?: Partial<CircuitBreakerConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+  }
+
+  // ---- Volatility feed --------------------------------------------------
+
+  /** Update current market volatility for adaptive threshold scaling */
+  updateVolatility(volatility: number): void {
+    this.currentVolatility = volatility;
+    // Recalculate adaptive thresholds for all strategies
+    for (const state of this.states.values()) {
+      this.recalculateAdaptiveThresholds(state);
+    }
+  }
+
+  /** Update a strategy's Sharpe ratio for threshold scaling */
+  updateStrategySharpe(strategyId: string, sharpe: number): void {
+    const state = this.states.get(strategyId);
+    if (state) {
+      state.sharpeRatio = sharpe;
+      this.recalculateAdaptiveThresholds(state);
+    }
+  }
+
+  private recalculateAdaptiveThresholds(state: BreakerState): void {
+    // High-Sharpe strategies get more leeway
+    // Low-Sharpe strategies get tighter limits
+    const sharpeMultiplier = state.sharpeRatio > 1.5 ? 1.33
+      : state.sharpeRatio > 0.5 ? 1.0
+      : 0.6;
+
+    // High volatility tightens limits (more caution needed)
+    const volMultiplier = this.currentVolatility > 0.03 ? 0.8
+      : this.currentVolatility > 0.01 ? 1.0
+      : 1.2;
+
+    state.adaptiveDrawdownLimit = Math.min(0.25,
+      this.config.maxStrategyDrawdown * sharpeMultiplier * volMultiplier
+    );
+    state.adaptiveLossLimit = Math.max(3,
+      Math.round(this.config.maxConsecutiveLosses * sharpeMultiplier * volMultiplier)
+    );
   }
 
   // ---- Strategy lifecycle ------------------------------------------------
@@ -68,6 +117,11 @@ export class CircuitBreaker {
       currentDrawdown: 0,
       peakEquity: 0,
       manualOverride: false,
+      adaptiveDrawdownLimit: this.config.maxStrategyDrawdown,
+      adaptiveLossLimit: this.config.maxConsecutiveLosses,
+      inRecovery: false,
+      recoveryPositionScale: 1.0,
+      sharpeRatio: 0,
     });
   }
 
@@ -97,19 +151,35 @@ export class CircuitBreaker {
         ? (state.peakEquity - equityAfterTrade) / state.peakEquity
         : 0;
 
+    // If in recovery and trade was profitable, exit recovery
+    if (state.inRecovery && pnl > 0) {
+      state.inRecovery = false;
+      state.recoveryPositionScale = 1.0;
+      console.log(`[CircuitBreaker] ${strategyId} exited recovery mode after profitable trade`);
+    }
+
+    // Use ADAPTIVE thresholds (scaled by Sharpe and volatility)
+    const drawdownLimit = state.adaptiveDrawdownLimit;
+    const lossLimit = state.adaptiveLossLimit;
+
     // Check consecutive loss threshold
-    if (state.consecutiveLosses >= this.config.maxConsecutiveLosses) {
-      const reason = `Consecutive losses reached ${state.consecutiveLosses} (limit: ${this.config.maxConsecutiveLosses})`;
+    if (state.consecutiveLosses >= lossLimit) {
+      const reason = `Consecutive losses reached ${state.consecutiveLosses} (adaptive limit: ${lossLimit})`;
       state.isPaused = true;
       state.pauseReason = reason;
+      // Enter recovery mode: will trade at 50% size when unpaused
+      state.inRecovery = true;
+      state.recoveryPositionScale = 0.5;
       return { tripped: true, reason };
     }
 
     // Check drawdown threshold
-    if (state.currentDrawdown >= this.config.maxStrategyDrawdown) {
-      const reason = `Strategy drawdown ${(state.currentDrawdown * 100).toFixed(1)}% exceeds limit ${(this.config.maxStrategyDrawdown * 100).toFixed(1)}%`;
+    if (state.currentDrawdown >= drawdownLimit) {
+      const reason = `Strategy drawdown ${(state.currentDrawdown * 100).toFixed(1)}% exceeds adaptive limit ${(drawdownLimit * 100).toFixed(1)}%`;
       state.isPaused = true;
       state.pauseReason = reason;
+      state.inRecovery = true;
+      state.recoveryPositionScale = 0.5;
       return { tripped: true, reason };
     }
 
@@ -164,6 +234,13 @@ export class CircuitBreaker {
     }
 
     return { allowed: true };
+  }
+
+  /** Get position size scaling factor (1.0 normal, 0.5 in recovery) */
+  getPositionScale(strategyId: string): number {
+    const state = this.states.get(strategyId);
+    if (!state) return 1.0;
+    return state.inRecovery ? state.recoveryPositionScale : 1.0;
   }
 
   // ---- Manual override ---------------------------------------------------
@@ -258,6 +335,14 @@ export class CircuitBreaker {
     if (!state) {
       this.initStrategy(strategyId);
       state = this.states.get(strategyId)!;
+    }
+    // Backfill adaptive fields for deserialized states missing them
+    if (state.adaptiveDrawdownLimit === undefined) {
+      state.adaptiveDrawdownLimit = this.config.maxStrategyDrawdown;
+      state.adaptiveLossLimit = this.config.maxConsecutiveLosses;
+      state.inRecovery = false;
+      state.recoveryPositionScale = 1.0;
+      state.sharpeRatio = 0;
     }
     return state;
   }

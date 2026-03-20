@@ -30,6 +30,7 @@ function spawnAsync(cmd: string, args: string[], input: string, opts: { timeout:
   });
 }
 import { Prediction, Resolution, Candle, WorldEvent, PredictionStrategyConfig } from '../types';
+import { OllamaEngine } from '../../agent/ollama-engine';
 
 const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
 const VENICE_MODEL = 'llama-3.3-70b';
@@ -54,6 +55,10 @@ function parseAIResponse(raw: string): Record<string, unknown> | null {
 
 export class AIPredictor {
   private veniceClient: OpenAI;
+  private ollamaEngine: OllamaEngine;
+  private ollamaHealthy: boolean = false;
+  private lastOllamaCheck: number = 0;
+  private readonly OLLAMA_CHECK_INTERVAL = 60_000;
 
   constructor(config: AIPredictorConfig) {
     this.veniceClient = new OpenAI({
@@ -61,10 +66,13 @@ export class AIPredictor {
       baseURL: VENICE_BASE_URL,
       timeout: 30_000,
     });
+    this.ollamaEngine = new OllamaEngine();
   }
 
   /**
    * Generate prediction for a token at a given resolution.
+   * Routes: 1m/5m -> Ollama (fast) -> Claude CLI fallback
+   *         15m/1h -> Venice (quality)
    */
   async predict(
     token: string,
@@ -73,12 +81,76 @@ export class AIPredictor {
     events: WorldEvent[],
     indicators: Record<string, number | undefined>,
   ): Promise<Prediction | null> {
-    // Route to appropriate model based on resolution
     if (resolution === '1m' || resolution === '5m') {
+      // Try Ollama first for fast predictions
+      await this.refreshOllamaHealth();
+      if (this.ollamaHealthy) {
+        try {
+          return await this.predictWithOllama(token, resolution, candles, events, indicators);
+        } catch (err) {
+          console.warn(`[AIPredictor] Ollama prediction failed, falling back to Claude CLI:`, (err as Error).message);
+        }
+      }
       return this.predictWithClaude(token, resolution, candles, events, indicators);
     } else {
       return this.predictWithVenice(token, resolution, candles, events, indicators);
     }
+  }
+
+  private async refreshOllamaHealth(): Promise<void> {
+    if (Date.now() - this.lastOllamaCheck < this.OLLAMA_CHECK_INTERVAL) return;
+    this.lastOllamaCheck = Date.now();
+    this.ollamaHealthy = await this.ollamaEngine.isHealthy();
+  }
+
+  /**
+   * Ollama prediction (gemma2:9b) for fast 1m/5m timeframes. ~2-3s latency.
+   */
+  private async predictWithOllama(
+    token: string,
+    resolution: Resolution,
+    candles: Candle[],
+    events: WorldEvent[],
+    indicators: Record<string, number | undefined>,
+  ): Promise<Prediction | null> {
+    const currentPrice = candles.length > 0 ? candles[candles.length - 1].close : 0;
+    if (currentPrice === 0) return null;
+
+    const systemPrompt = `You are a crypto price prediction engine. Predict the NEXT ${resolution} candle. Output ONLY valid JSON.
+{"direction":"up"|"down"|"flat","predictedClose":number,"predictedHigh":number,"predictedLow":number,"confidence":0-100,"reasoning":"brief"}`;
+
+    const recentCandles = candles.slice(-20).map(c =>
+      `${new Date(c.timestamp * 1000).toISOString().slice(11, 19)} O:${c.open.toFixed(4)} H:${c.high.toFixed(4)} L:${c.low.toFixed(4)} C:${c.close.toFixed(4)} V:${c.volume.toFixed(0)}`
+    ).join('\n');
+
+    const indicatorStr = Object.entries(indicators)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => `${k}: ${(v as number).toFixed(4)}`)
+      .join(', ');
+
+    const userPrompt = `Token: ${token} | ${resolution} | Price: $${currentPrice.toFixed(4)}
+Candles:
+${recentCandles}
+Indicators: ${indicatorStr || 'none'}`;
+
+    const response = await this.ollamaEngine.generate(systemPrompt, userPrompt);
+    const parsed = parseAIResponse(response);
+    if (!parsed) return null;
+
+    return {
+      id: randomUUID(),
+      strategyId: 'ai_ollama',
+      timestamp: Date.now(),
+      token,
+      resolution,
+      predictedDirection: this.validateDirection(parsed.direction as string),
+      predictedClose: Number(parsed.predictedClose) || currentPrice,
+      predictedHigh: Number(parsed.predictedHigh) || currentPrice * 1.001,
+      predictedLow: Number(parsed.predictedLow) || currentPrice * 0.999,
+      confidence: Math.max(0, Math.min(100, Number(parsed.confidence) || 50)),
+      currentPrice,
+      eventIds: events.map(e => e.id),
+    };
   }
 
   /**

@@ -23,6 +23,8 @@ import { PerformanceTracker, TradeRecord } from './performance';
 import { StrategyManager, StrategyGenome } from './strategy-manager';
 import { EvolutionEngine } from './evolution-engine';
 import { ClaudeCliEngine } from './claude-cli-engine';
+import { AIRouter } from './ai-router';
+import { AttributionEngine } from './attribution';
 import { MarketSnapshot, EntrySignal } from './venice-engine';
 import { PriceFeed, TOKEN_UNIVERSE } from '../trading/price-feed';
 import { UniswapClient } from '../trading/uniswap-client';
@@ -106,6 +108,7 @@ class DarwinAgent {
   private strategyManager: StrategyManager;
   private evolutionEngine: EvolutionEngine;
   private signalEngine: ClaudeCliEngine;
+  private aiRouter: AIRouter;
   private priceFeed: PriceFeed;
   private liveEngine: LiveEngine;
   private statePersistence: StatePersistence;
@@ -123,6 +126,7 @@ class DarwinAgent {
   private loopCount: number = 0;
   private startTime: Date = new Date();
   private latestSnapshots: MarketSnapshot[] = [];
+  private attributionEngine: AttributionEngine;
   private dexScreenerCache: Map<string, { volume24h: number; priceChange24h: number; timestamp: number }> = new Map();
   private readonly DEXSCREENER_CACHE_TTL = 60_000; // 60s cache
 
@@ -130,8 +134,14 @@ class DarwinAgent {
     this.config = config;
     this.performanceTracker = new PerformanceTracker();
     this.strategyManager = new StrategyManager(this.performanceTracker);
-    this.evolutionEngine = new EvolutionEngine(config.veniceApiKey);
+    this.aiRouter = new AIRouter();
     this.signalEngine = new ClaudeCliEngine();
+
+    // Persistence & Attribution
+    this.attributionEngine = new AttributionEngine();
+
+    // Evolution engine with attribution and AI routing
+    this.evolutionEngine = new EvolutionEngine(config.veniceApiKey, this.aiRouter, this.attributionEngine);
 
     // Trading infrastructure (RPC health check happens at start())
     const uniswap = new UniswapClient();
@@ -228,6 +238,10 @@ class DarwinAgent {
       console.error('[DarwinFi] WARNING: All RPC endpoints failed health check. Will retry on first price fetch.');
     }
 
+    // Start AI Router (KS Ollama health monitoring)
+    await this.aiRouter.start();
+    console.log('[DarwinFi] AI Router started (Ollama -> Venice -> Claude fallback chain)');
+
     // Main loop
     console.log('[DarwinFi] Entering main loop...');
     this.conversationLog.system('agent', 'Entering main trading loop');
@@ -295,6 +309,21 @@ class DarwinAgent {
       return;
     }
     this.latestSnapshots = snapshots;
+
+    // Feed prices into attribution engine and market regime detector
+    for (const s of snapshots) {
+      this.attributionEngine.recordPrice(s.token, s.price);
+    }
+    const ethSnapshot = snapshots.find(s => s.token === 'ETH');
+    if (ethSnapshot) {
+      this.performanceTracker.updateMarketRegime(ethSnapshot.price);
+    }
+
+    // Real-time strategy switching check (every fast tick)
+    const rtSwitchEvent = this.strategyManager.checkRealTimeSwitch();
+    if (rtSwitchEvent) {
+      this.conversationLog.promotion('strategy-manager', `RT Switch: ${rtSwitchEvent.reason}`);
+    }
 
     // Step 2: Get the live strategy (may be undefined during qualification phase)
     const liveStrategy = this.strategyManager.getLiveStrategy();
@@ -621,18 +650,30 @@ class DarwinAgent {
 
     if (recsToEvaluate.length === 0) return;
 
-    // Batch evaluate entries via Claude CLI (one call for all candidates)
+    // Batch evaluate entries -- try Ollama first (2-5s), fall back to Claude CLI (10-60s)
     const evalSnapshots = recsToEvaluate
       .map(rec => snapshots.find(s => s.token === rec.token)!)
       .filter(Boolean);
 
     try {
-      const signals = await this.signalEngine.evaluateEntry(liveStrategy, evalSnapshots);
+      let signals: EntrySignal[];
+      let providerUsed: string;
+
+      // Try AI Router (Ollama) first
+      const routerResult = await this.aiRouter.evaluateEntry(liveStrategy, evalSnapshots);
+      if (routerResult.signals.length > 0) {
+        signals = routerResult.signals;
+        providerUsed = routerResult.provider;
+      } else {
+        // Fallback to Claude CLI
+        signals = await this.signalEngine.evaluateEntry(liveStrategy, evalSnapshots);
+        providerUsed = 'claude-cli';
+      }
 
       this.conversationLog.aiCall(
-        'claude-cli',
+        providerUsed,
         `Batch entry evaluation for ${liveStrategy.id}`,
-        'claude-haiku-4-5',
+        providerUsed === 'ollama' ? 'gemma2:9b' : 'claude-haiku-4-5',
         `Evaluate ${evalSnapshots.length} tokens for entry`,
         `${signals.filter(s => s.action === 'buy').length} buy signals`,
         {},
@@ -744,12 +785,23 @@ class DarwinAgent {
     if (positionData.length === 0) return;
 
     try {
-      const exitSignals = await this.signalEngine.evaluateExit(strategy, positionData);
+      let exitSignals;
+      let providerUsed: string;
+
+      // Try AI Router (Ollama) first
+      const routerResult = await this.aiRouter.evaluateExit(strategy, positionData);
+      if (routerResult.signals.length > 0) {
+        exitSignals = routerResult.signals;
+        providerUsed = routerResult.provider;
+      } else {
+        exitSignals = await this.signalEngine.evaluateExit(strategy, positionData);
+        providerUsed = 'claude-cli';
+      }
 
       this.conversationLog.aiCall(
-        'claude-cli',
+        providerUsed,
         `Batch exit evaluation for ${strategy.id}`,
-        'claude-haiku-4-5',
+        providerUsed === 'ollama' ? 'gemma2:9b' : 'claude-haiku-4-5',
         `Evaluate ${positionData.length} positions for exit`,
         `${exitSignals.filter(s => s.action === 'sell').length} sell signals`,
         {},

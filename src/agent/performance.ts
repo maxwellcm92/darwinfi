@@ -53,12 +53,55 @@ const MIN_TRADES_FOR_SHARPE = 3;
 const RISK_FREE_RATE_HOURLY = 0.05 / (365 * 24); // ~5% APR in hourly terms
 const MIN_TRADES_FOR_PROMOTION = 5;
 
-// Composite score weights
-const W_ROLLING_PNL = 0.30;
-const W_ROLLING_SHARPE = 0.25;
-const W_ROLLING_WINRATE = 0.20;
-const W_TOTAL_PNL = 0.15;
-const W_DRAWDOWN = 0.10;
+// Default composite score weights (used when no regime data available)
+const DEFAULT_W_ROLLING_PNL = 0.30;
+const DEFAULT_W_ROLLING_SHARPE = 0.25;
+const DEFAULT_W_ROLLING_WINRATE = 0.20;
+const DEFAULT_W_TOTAL_PNL = 0.15;
+const DEFAULT_W_DRAWDOWN = 0.10;
+
+// Market regime detection
+export type MarketRegime = 'trending' | 'ranging' | 'volatile' | 'unknown';
+
+interface DynamicWeights {
+  rollingPnl: number;
+  rollingSharpe: number;
+  rollingWinRate: number;
+  totalPnl: number;
+  drawdown: number;
+}
+
+// Regime-adaptive weight profiles
+const REGIME_WEIGHTS: Record<MarketRegime, DynamicWeights> = {
+  trending: {
+    rollingPnl: 0.35,     // Reward momentum riders
+    rollingSharpe: 0.20,
+    rollingWinRate: 0.15,
+    totalPnl: 0.20,       // Reward cumulative gains
+    drawdown: 0.10,
+  },
+  ranging: {
+    rollingPnl: 0.20,
+    rollingSharpe: 0.20,
+    rollingWinRate: 0.35,  // Reward consistency in choppy markets
+    totalPnl: 0.10,
+    drawdown: 0.15,        // Penalize drawdown more
+  },
+  volatile: {
+    rollingPnl: 0.20,
+    rollingSharpe: 0.35,   // Reward risk-adjusted returns
+    rollingWinRate: 0.15,
+    totalPnl: 0.10,
+    drawdown: 0.20,        // Heavily penalize drawdown in chaos
+  },
+  unknown: {
+    rollingPnl: DEFAULT_W_ROLLING_PNL,
+    rollingSharpe: DEFAULT_W_ROLLING_SHARPE,
+    rollingWinRate: DEFAULT_W_ROLLING_WINRATE,
+    totalPnl: DEFAULT_W_TOTAL_PNL,
+    drawdown: DEFAULT_W_DRAWDOWN,
+  },
+};
 
 // ---------------------------------------------------------------------------
 // PerformanceTracker
@@ -68,6 +111,8 @@ export class PerformanceTracker {
   private metrics: Map<string, PerformanceMetrics> = new Map();
   private hourlyReturns: Map<string, HourlyReturn[]> = new Map();
   private equityCurves: Map<string, number[]> = new Map();
+  private currentRegime: MarketRegime = 'unknown';
+  private recentMarketPrices: number[] = []; // For regime detection
 
   /**
    * Initialize tracking for a strategy. Safe to call multiple times --
@@ -373,6 +418,65 @@ export class PerformanceTracker {
     return maxDD;
   }
 
+  /**
+   * Update market regime based on recent price data.
+   * Call this from the main loop with ETH price (or a basket).
+   */
+  updateMarketRegime(price: number): void {
+    this.recentMarketPrices.push(price);
+    if (this.recentMarketPrices.length > 100) {
+      this.recentMarketPrices.shift();
+    }
+    if (this.recentMarketPrices.length < 20) {
+      this.currentRegime = 'unknown';
+      return;
+    }
+
+    this.currentRegime = this.detectRegime(this.recentMarketPrices);
+  }
+
+  /**
+   * Get the current market regime.
+   */
+  getMarketRegime(): MarketRegime {
+    return this.currentRegime;
+  }
+
+  /**
+   * Get the current dynamic weights based on market regime.
+   */
+  getDynamicWeights(): DynamicWeights & { regime: MarketRegime } {
+    return { ...REGIME_WEIGHTS[this.currentRegime], regime: this.currentRegime };
+  }
+
+  private detectRegime(prices: number[]): MarketRegime {
+    const returns: number[] = [];
+    for (let i = 1; i < prices.length; i++) {
+      returns.push((prices[i] - prices[i - 1]) / prices[i - 1]);
+    }
+
+    // Volatility: standard deviation of returns
+    const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+    const variance = returns.reduce((s, r) => s + (r - mean) ** 2, 0) / (returns.length - 1);
+    const volatility = Math.sqrt(variance);
+
+    // Trend: linear regression slope
+    const n = returns.length;
+    const xMean = (n - 1) / 2;
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) {
+      num += (i - xMean) * (returns[i] - mean);
+      den += (i - xMean) ** 2;
+    }
+    const slope = den !== 0 ? num / den : 0;
+    const trendStrength = Math.abs(slope) / (volatility || 0.001);
+
+    // Classification
+    if (volatility > 0.03) return 'volatile';
+    if (trendStrength > 1.5) return 'trending';
+    return 'ranging';
+  }
+
   private computeCompositeScore(strategyId: string, allIds: string[]): number {
     const m = this.metrics.get(strategyId);
     if (!m || m.tradesCompleted === 0) return 0;
@@ -403,12 +507,15 @@ export class PerformanceTracker {
     // Normalize max drawdown via sigmoid (invert: lower drawdown is better)
     const normalizedDrawdown = 1 - this.sigmoidNormalize(m.maxDrawdown, 0, DRAWDOWN_SCALE);
 
+    // Use dynamic weights based on current market regime
+    const w = REGIME_WEIGHTS[this.currentRegime];
+
     const score =
-      normalizedRolling24hPnL * W_ROLLING_PNL +
-      normalizedRollingSharpe * W_ROLLING_SHARPE +
-      normalizedRollingWinRate * W_ROLLING_WINRATE +
-      normalizedTotalPnL * W_TOTAL_PNL +
-      normalizedDrawdown * W_DRAWDOWN;
+      normalizedRolling24hPnL * w.rollingPnl +
+      normalizedRollingSharpe * w.rollingSharpe +
+      normalizedRollingWinRate * w.rollingWinRate +
+      normalizedTotalPnL * w.totalPnl +
+      normalizedDrawdown * w.drawdown;
 
     return Math.max(0, Math.min(1, score)); // Clamp [0, 1]
   }

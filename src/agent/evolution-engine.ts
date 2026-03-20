@@ -15,6 +15,9 @@ import {
   VariationRole,
 } from './strategy-manager';
 import { PerformanceTracker, PerformanceMetrics } from './performance';
+import { AIRouter } from './ai-router';
+import { AttributionEngine } from './attribution';
+import { SignalCalibration } from './signal-calibration';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,14 +54,20 @@ const RETRY_DELAY_MS = 2000;
 export class EvolutionEngine {
   private client: OpenAI;
   private cycleCount: number = 0;
+  private aiRouter: AIRouter | null = null;
+  private attributionEngine: AttributionEngine | null = null;
+  private signalCalibration: SignalCalibration | null = null;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, aiRouter?: AIRouter, attribution?: AttributionEngine, calibration?: SignalCalibration) {
     this.client = new OpenAI({
       apiKey,
       baseURL: VENICE_BASE_URL,
       timeout: 30_000,
     });
-    console.log('[DarwinFi] Evolution engine initialized (Venice AI - sponsor showcase)');
+    this.aiRouter = aiRouter || null;
+    this.attributionEngine = attribution || null;
+    this.signalCalibration = calibration || null;
+    console.log('[DarwinFi] Evolution engine initialized (Venice AI + Ollama routing + attribution)');
   }
 
   /**
@@ -76,15 +85,27 @@ export class EvolutionEngine {
     const allStrategies = strategyManager.getAllStrategies();
     const results: EvolutionResult[] = [];
 
-    // Process each main strategy and its variations
+    // Process each main strategy and its variations -- PARALLELIZED
     const mains = strategyManager.getMainStrategies();
+
+    // Build all evolution tasks
+    const evolutionTasks: Array<{
+      main: StrategyGenome;
+      variation: StrategyGenome;
+      variations: StrategyGenome[];
+    }> = [];
 
     for (const main of mains) {
       const variations = strategyManager.getVariations(main.id);
-
       for (const variation of variations) {
         if (!variation.role) continue;
+        evolutionTasks.push({ main, variation, variations });
+      }
+    }
 
+    // Execute all variations in parallel via Promise.all
+    const taskResults = await Promise.all(
+      evolutionTasks.map(async ({ main, variation, variations }) => {
         try {
           const result = await this.evolveVariation(
             main,
@@ -93,17 +114,22 @@ export class EvolutionEngine {
             allStrategies,
             performanceTracker,
           );
-
-          if (result) {
-            results.push(result);
-            strategyManager.updateGenome(variation.id, result.newParameters);
-            console.log(
-              `[DarwinFi] Evolved ${variation.id} (${variation.role}): ${result.reasoning.substring(0, 100)}...`
-            );
-          }
+          return { variation, result };
         } catch (err) {
           console.error(`[DarwinFi] Failed to evolve ${variation.id}:`, err);
+          return { variation, result: null };
         }
+      })
+    );
+
+    // Apply results
+    for (const { variation, result } of taskResults) {
+      if (result) {
+        results.push(result);
+        strategyManager.updateGenome(variation.id, result.newParameters);
+        console.log(
+          `[DarwinFi] Evolved ${variation.id} (${variation.role}): ${result.reasoning.substring(0, 100)}...`
+        );
       }
     }
 
@@ -166,25 +192,42 @@ export class EvolutionEngine {
     const systemPrompt = this.buildSystemPrompt();
     const userPrompt = `${rolePrompt}\n\n${context}`;
 
-    // Call Claude with retries
+    // Route to best provider: experimental/optimizer -> Ollama, synthesizer -> Venice
     let response: string | null = null;
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+
+    if (this.aiRouter && variation.role !== 'synthesizer') {
+      // Try Ollama for experimental/optimizer roles (speed over quality)
       try {
-        response = await this.callClaude(systemPrompt, userPrompt);
-        break;
+        const routerResult = await this.aiRouter.evolve(variation.role!, systemPrompt, userPrompt);
+        if (routerResult.response) {
+          response = routerResult.response;
+          console.log(`[DarwinFi] Evolution via ${routerResult.provider} for ${variation.id}`);
+        }
       } catch (err) {
-        console.error(
-          `[DarwinFi] Claude API attempt ${attempt}/${MAX_RETRIES} failed:`,
-          err instanceof Error ? err.message : err,
-        );
-        if (attempt < MAX_RETRIES) {
-          await this.sleep(RETRY_DELAY_MS * attempt);
+        console.warn(`[DarwinFi] AI Router evolution failed for ${variation.id}, falling back to Venice`);
+      }
+    }
+
+    // Fallback to Venice (or primary for synthesizer)
+    if (!response) {
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          response = await this.callClaude(systemPrompt, userPrompt);
+          break;
+        } catch (err) {
+          console.error(
+            `[DarwinFi] Venice API attempt ${attempt}/${MAX_RETRIES} failed:`,
+            err instanceof Error ? err.message : err,
+          );
+          if (attempt < MAX_RETRIES) {
+            await this.sleep(RETRY_DELAY_MS * attempt);
+          }
         }
       }
     }
 
     if (!response) {
-      console.error(`[DarwinFi] All Claude API attempts failed for ${variation.id}`);
+      console.error(`[DarwinFi] All AI providers failed for ${variation.id}`);
       return null;
     }
 
@@ -311,6 +354,24 @@ Create a strategy that would rank #1 on the composite score by cherry-picking wi
     for (const entry of leaderboard) {
       sections.push(`  ${entry.strategyId}: score=${entry.score.toFixed(3)} | trades=${entry.metrics.tradesCompleted} | PnL=$${entry.metrics.totalPnL.toFixed(2)}`);
     }
+
+    // Attribution context (WHY trades win/lose)
+    if (this.attributionEngine) {
+      const attrContext = this.attributionEngine.getEvolutionContext(parent.id);
+      if (attrContext) sections.push('\n' + attrContext);
+    }
+
+    // Signal calibration context (which AI sources are accurate)
+    if (this.signalCalibration) {
+      const calContext = this.signalCalibration.getEvolutionContext();
+      if (calContext) sections.push('\n' + calContext);
+    }
+
+    // Market regime context
+    const regime = performanceTracker.getMarketRegime();
+    const weights = performanceTracker.getDynamicWeights();
+    sections.push(`\n## Market Regime: ${regime}`);
+    sections.push(`Fitness weights: PnL=${weights.rollingPnl} Sharpe=${weights.rollingSharpe} WR=${weights.rollingWinRate} Total=${weights.totalPnl} DD=${weights.drawdown}`);
 
     return sections.join('\n');
   }

@@ -1,8 +1,10 @@
 # DarwinFi
 
-**Autonomous, self-evolving DeFi agent with multi-user vault and cryptographic trading guardrails.**
+**A self-evolving financial organism that increases profits and win rate, autonomously, forever.**
 
-12 concurrent trading strategies compete on Uniswap V3 (Base L2). The top performer trades live on-chain; the rest paper trade and evolve to dethrone it. Users deposit USDC into an ERC-4626 vault and earn proportional returns from the agent's trading profits, with Lit Protocol PKP guardrails ensuring the agent can never rug depositors.
+DarwinFi is an autonomous DeFi trading agent that applies Darwinian natural selection to trading strategies. 12 strategies compete in real-time on Base L2 -- the strongest trades live with real capital, the rest paper trade and evolve to dethrone it. Users deposit USDC into an ERC-4626 vault and earn proportional returns.
+
+The Golden Rule: every module, every parameter, every decision exists to serve one objective -- **increase profits and win rate**. If DarwinFi were left running with no human input, it should continuously get better at turning money into more money.
 
 Built for the [Synthesis Hackathon](https://synthesis.md/), "Agents that Pay" track.
 
@@ -10,236 +12,158 @@ Built for the [Synthesis Hackathon](https://synthesis.md/), "Agents that Pay" tr
 
 ---
 
-## What Makes DarwinFi Different
+## The Golden Rule Architecture
 
-1. **Self-Evolving Strategies**: AI generates, mutates, and promotes trading strategies through Darwinian competition. No manual parameter tuning.
-2. **ERC-4626 Multi-User Vault**: Standard tokenized vault. Deposit USDC, receive dvUSDC shares. As the pool grows from trading profits, shares appreciate automatically.
-3. **Lit Protocol Guardrails**: AProgrammable Key Pair (PKP) signs every transaction. An IPFS-hosted Lit Action enforces a strict trading policy: whitelisted contracts, whitelisted tokens, per-trade size limits (max 1000 USDC). The agent provably cannot steal funds.
-4. **Multi-AI Architecture**: Claude (Anthropic) evaluates trade signals. Venice AI (Llama 3.3 70B) evolves strategy parameters. Two independent AI systems with different strengths.
+DarwinFi is not just a trading bot. It is a closed-loop optimization system where the only constant is the objective function (increase profits, increase win rate) and everything else is a variable that gets optimized through Darwinian selection.
+
+### What Makes DarwinFi Different
+
+1. **Darwinian Tournament**: 12 strategies compete. Winners trade live. Losers evolve or die. No manual parameter tuning -- the population self-optimizes.
+2. **Outcome Attribution**: After every trade, DarwinFi decomposes the result into entry timing, exit timing, slippage, and market regime. This feedback loop tells the evolution engine *why* a strategy fails, not just *that* it failed.
+3. **Self-Calibrating Signals**: AI confidence scores are continuously validated against actual outcomes. If Ollama says 80% confidence on DEGEN but only wins 50% of the time, DarwinFi automatically treats it as 50%.
+4. **Adaptive Safety**: Circuit breaker thresholds scale with strategy quality (Sharpe ratio) and market volatility. A proven strategy gets more leeway. An unproven one gets less.
+5. **Dynamic Fitness Function**: The weights in the composite fitness score adapt to market regime. Volatile markets emphasize Sharpe. Trending markets emphasize PnL. Ranging markets emphasize win rate.
+6. **Distributed Compute (MCF)**: Murphy Compute Fabric routes AI inference to a GPU node (RTX 3090) via Tailscale for 2-3s signal latency, with automatic fallback to Venice API and Claude CLI.
+7. **ERC-4626 Vault**: Single-pool Yearn-style vault with 1% annual management fee + 5% performance fee (high water mark). DarwinFi decides when to tier.
 
 ---
 
-## Trust Architecture: Immutable / Mutable / Bridge
-
-DarwinFi separates concerns into three layers so that the evolving AI brain can never exceed its boundaries:
-
-- **Immutable (on-chain):** The ERC-4626 vault (deposit/withdraw/borrow/return) and the Lit Protocol trade policy (approved tokens, max trade size, approved contracts) are deployed on-chain and pinned to IPFS. They cannot be changed after deployment.
-- **Mutable (off-chain):** The TypeScript agent with 12 trading strategies, Venice AI evolution engine, and Claude CLI signal evaluation all run off-chain. These components evolve and improve over time through Darwinian competition.
-- **Bridge (Lit Protocol PKP):** A Programmable Key Pair signs every transaction only if it passes the immutable IPFS policy. This provides cryptographic proof that the evolving brain can never steal funds, trade unauthorized tokens, or exceed size limits.
-
-This three-layer design means users get the benefits of an adaptive, self-improving trading agent while retaining the security guarantees of immutable smart contracts.
-
-## Architecture
+## System Architecture
 
 ```
-                         Users (MetaMask / Coinbase Wallet / WalletConnect)
-                                        |
-                                   React DApp
-                              (wagmi + RainbowKit)
-                                        |
-                         +-------- Base L2 --------+
-                         |                         |
-                  DarwinVaultV2              Uniswap V3
-                   (ERC-4626)              SwapRouter
-                   dvUSDC shares            Quoter V2
-                         |                         |
-                   +-----+---------+               |
-                   |               |               |
-              agentBorrow    agentReturn           |
-                   |               |               |
-                   +-------+-------+               |
-                           |                       |
-                     Darwin Agent  <-----> Lit PKP Signer
-                    (Orchestrator)         (trade-policy.js)
-                           |
-              +------------+------------+
-              |            |            |
-         Strategy 1   Strategy 2   Strategy 3
-         (+ 3 vars)   (+ 3 vars)   (+ 3 vars)
-              |            |            |
-         Live/Paper    Paper Only   Paper Only
-         Trading       Trading      Trading
+                      Users (MetaMask / WalletConnect)
+                                   |
+                              React DApp
+                         (wagmi + RainbowKit)
+                                   |
+                      +-------- Base L2 --------+
+                      |                         |
+               DarwinVaultV3              Uniswap V3
+                (ERC-4626)               SwapRouter
+             1% mgmt + 5% perf           Quoter V2
+                      |                         |
+                +-----+---------+               |
+                |               |               |
+           agentBorrow    agentReturn           |
+                |               |               |
+                +-------+-------+               |
+                        |                       |
+                  Darwin Agent  <-----> AI Router
+                 (Orchestrator)     Ollama|Venice|Claude
+                        |
+           +------------+------------+
+           |            |            |
+      Strategy 1   Strategy 2   Strategy 3
+      (+ 3 vars)   (+ 3 vars)   (+ 3 vars)
+           |            |            |
+      Live/Paper    Paper Only   Paper Only
+                        |
+           +--------- Feedback Loops ---------+
+           |            |            |         |
+      Attribution  Calibration  Dynamic     Real-Time
+       (per trade)  (per signal) Fitness    Strategy
+       Entry/Exit/  Confidence  Weights    Switching
+       Slippage/    Auto-Adjust (Regime-   (Emergency
+       Regime                   Aware)     Promote)
 ```
 
-### Project Structure
+### Self-Evolution Engine
 
-```
-darwinfi/
-  contracts/
-    DarwinVaultV2.sol         # ERC-4626 multi-user vault (dvUSDC shares)
-    DarwinVault.sol           # Original vault (deprecated)
-    StrategyExecutor.sol      # Uniswap V3 trade execution + logging
-    PerformanceLog.sol        # On-chain performance + evolution events
-  dapp/                       # React/Vite DApp frontend
-    src/
-      hooks/                  # useVaultDeposit, useVaultWithdraw, useVaultStats
-      components/             # DepositCard, WithdrawCard, VaultOverview, Leaderboard
-      pages/                  # Home, Portfolio, Tournament
-      lib/                    # Contract ABIs, constants
-  lit-actions/
-    trade-policy.js           # IPFS-hosted Lit Action (immutable trading policy)
-  src/
-    agent/
-      darwin-agent.ts         # Main orchestrator (3 tick speeds, vault integration)
-      strategy-manager.ts     # 12-strategy lifecycle + proving ground
-      evolution-engine.ts     # Venice AI strategy evolution (3 persona roles)
-      claude-cli-engine.ts    # Claude CLI batch signal evaluation
-      performance.ts          # Composite scoring (sigmoid-normalized, Sharpe w/ Bessel)
-      circuit-breaker.ts      # Per-strategy + portfolio-wide safety limits
-    trading/
-      live-engine.ts          # On-chain Uniswap V3 execution + vault borrow/return
-      paper-engine.ts         # Paper trading simulator (real price feeds)
-      uniswap-client.ts       # Direct Uniswap V3 Router + Quoter V2 interaction
-      price-feed.ts           # Real-time prices from Uniswap pools
-    chain/
-      base-client.ts          # Base chain connection (ethers.js v6, Lit-compatible)
-      lit-wallet.ts           # Lit Protocol PKP signer (AbstractSigner drop-in)
-      wallet-manager.ts       # Multi-wallet + transaction management
-      contract-client.ts      # Smart contract interaction (VaultV2 + legacy)
-    dashboard/
-      server.ts               # Express API (vault stats, portfolio, trades, events)
-    integrations/
-      ens.ts                  # ENS/Basenames identity
-      filecoin.ts             # IPFS/Filecoin strategy genome storage
-      celo-client.ts          # Celo chain client (multi-chain ready)
-  test/
-    darwin-vault-v2.test.ts   # 27 tests: vault math, fees, agent flow, safety
-    performance.test.ts       # 15 tests: Sharpe, PnL%, composite, drawdown
-    circuit-breaker.test.ts   # 23 tests: drawdown, losses, halt, overrides
-    strategy-manager.test.ts  # 10 tests: init, proving ground, promotion
-    paper-engine.test.ts      # 11 tests: slippage, VWAP, gas, PnL
-```
+The code evolution engine (11 modules, 2,114 LOC) gives DarwinFi the ability to modify its own source code:
+
+1. **Zone Selection**: Identifies which module to mutate (anti-loop memory prevents repeated failures)
+2. **AI Proposal**: Venice AI (Llama 3.3 70B) generates code mutations
+3. **Static Validation**: Ring checks prevent mutations to critical infrastructure
+4. **Sandbox**: Git worktree isolation + TypeScript compilation
+5. **Test Gate**: All 69 tests must pass
+6. **Canary Deploy**: 4-hour minimum monitoring with 60-second health checks
+7. **Promote or Rollback**: If canary degrades performance, automatic git rollback
+
+Every evolution cycle is logged to an append-only JSONL audit trail, with winning genomes pinned to IPFS via Storacha for immutable proof of Darwinian evolution.
+
+---
+
+## Murphy Compute Fabric (MCF)
+
+DarwinFi's inference runs on a distributed compute mesh via Tailscale:
+
+| Node | Hardware | Role | Latency |
+|------|----------|------|---------|
+| KS (Primary) | RTX 3090 | Ollama gemma2:9b | 2-3s |
+| Venice API (Fallback) | Cloud GPU | Llama 3.3 70B | 5-10s |
+| Claude CLI (Last Resort) | Anthropic | Haiku 4.5 | 10-60s |
+
+The AI Router health-checks KS every 60s. If KS goes down, traffic automatically falls back to Venice, then Claude CLI. When KS recovers, traffic routes back to local GPU -- zero downtime, zero human intervention.
+
+**Cost at hackathon scale**: $0/month (KS is self-hosted). Scales to RunPod/cloud when AUM grows.
+
+---
+
+## Feedback Loops (The 6 Autonomy Gaps, Closed)
+
+| System | What It Does | Why It Matters |
+|--------|-------------|----------------|
+| **Outcome Attribution** | Decomposes every trade into entry/exit/slippage/regime scores | Evolution knows *why* strategies fail, not just that they fail |
+| **Signal Calibration** | Tracks per-source, per-token AI confidence accuracy | Overconfident AI signals get automatically downweighted |
+| **Dynamic Fitness** | Adapts scoring weights to market regime (trending/ranging/volatile) | The fitness function itself evolves with market conditions |
+| **Real-Time Switching** | Continuous monitoring, auto-promote paper strategy on sustained outperformance | No more waiting 6 hours while the live strategy bleeds |
+| **Adaptive Circuit Breakers** | Thresholds scale with strategy Sharpe and market volatility | High-quality strategies get room to breathe, low-quality ones get tight leashes |
+| **Recovery Mode** | After circuit breaker trip, resume at 50% position sizing | Gradual re-entry prevents cascading losses |
 
 ---
 
 ## Smart Contracts
 
-### DarwinVaultV2 (ERC-4626)
+### DarwinVaultV3 (ERC-4626)
 
-The vault is the core financial primitive. Users deposit USDC and receive `dvUSDC` shares. The agent borrows funds to trade and returns proceeds. Share price appreciates as the vault accumulates trading profits.
+Single-pool Yearn-style vault. One vault, one engine, all depositors share returns pro-rata.
 
 | Function | Who | What |
 |----------|-----|------|
 | `deposit(assets, receiver)` | Any user | Deposit USDC, receive dvUSDC shares |
-| `withdraw(assets, receiver, owner)` | Any user | Redeem shares for USDC (1hr lock enforced) |
+| `withdraw(assets, receiver, owner)` | Any user | Redeem shares for USDC |
 | `agentBorrow(amount)` | Agent only | Pull USDC for trading |
-| `agentReturn(amount)` | Agent only | Return proceeds after trades |
+| `agentReturn(amount)` | Agent only | Return proceeds (fees auto-collected) |
 | `emergencyWithdraw()` | Any user | Always works, even when paused |
 
-**Safety features:**
-- 1-hour minimum lock (anti-flash-loan)
-- `maxWithdraw`/`maxRedeem` return 0 during lock (ERC-4626 compliant)
-- 10,000 USDC max TVL cap
-- 1,000 USDC per-trade size limit (enforced in Lit Action)
-- Pausable deposits (owner emergency control)
-- Emergency withdrawal always available (emits standard `Withdraw` event)
-- 10% performance fee above high water mark
+**Fees**: 1% annual management (100 bps, auto-collected via share dilution) + 5% performance (high water mark).
 
-### StrategyExecutor & PerformanceLog
+### 51 Tests
 
-On-chain trade execution and immutable performance/evolution event logging.
+Full coverage of vault math, fee calculations, multi-user deposits, agent borrow/return, HWM tracking, pause/emergency, access control.
 
 ---
 
-## DApp Frontend
+## Token Universe (Base L2)
 
-React 19 + Vite 6 + wagmi 2.14 + RainbowKit 2.2 + Tailwind CSS v4.
-
-**Wallet Support:** MetaMask, Coinbase Wallet, WalletConnect (auto-prompts Base chain switch).
-
-**Deposit Flow:**
-1. Enter USDC amount
-2. Approve USDC allowance (wallet popup)
-3. Deposit into vault (wallet popup)
-4. Receive dvUSDC shares
-
-**Features:**
-- Vault overview: TVL, share price, depositor count
-- Portfolio card: user position, PnL, share value
-- Strategy tournament leaderboard
-- Live trades feed
-- Agent status (uptime, current champion)
+| Token | Category | Volatility |
+|-------|----------|-----------|
+| ETH/WETH | Core | Medium |
+| wstETH | Yield-bearing | Low |
+| UNI | DeFi blue-chip | Medium |
+| ENS | Identity | Medium |
+| AERO | Base DEX | Medium-High |
+| DEGEN | Culture | High |
+| BRETT | Culture | High |
+| VIRTUAL | AI | High |
+| HIGHER | Culture | High |
 
 ---
 
-## Lit Protocol Integration
+## Vault Economics
 
-Every transaction the agent signs is validated by a Lit Action before the PKP signs it. The policy is uploaded to IPFS (immutable CID), providing cryptographic proof of the exact rules.
-
-**Trade Policy Checks (trade-policy.js):**
-1. Chain ID must be Base (8453)
-2. Target contract must be whitelisted (Uniswap V3 SwapRouter or DarwinVaultV2)
-3. Tokens must be on the approved list (10 tokens)
-4. SwapRouter calls restricted to `exactInputSingle` and `multicall`
-5. No arbitrary ETH transfers to unknown addresses
-
-If any check fails, the PKP refuses to sign. The agent literally cannot execute unauthorized transactions.
-
----
-
-## Strategy Evolution
-
-**3 Main Strategies** compete for the live trading slot:
-- **Apex** (Momentum): RSI oversold + trailing stop
-- **Viper** (Mean-Revert): Bollinger bounce + fixed target
-- **Blitz** (Breakout): EMA crossover + trailing stop
-
-**9 Variations** (3 per main) evolve to challenge their parent:
-- **Mutant**: Creative, unconventional parameter exploration
-- **Tuner**: Conservative fixes to parent weaknesses
-- **Hybrid**: Best-of-all trait synthesis
-
-**Evolution Loop** (every 4 hours or 10 trades):
-1. Claude analyzes all 12 strategies' performance
-2. Venice AI generates new variation parameters per persona role
-3. Variations that outperform their parent get promoted
-4. Top-performing main strategy becomes the live trader
-
-**Composite Performance Score:**
-```
-score = (rolling_24h_PnL * 0.30)
-      + (rolling_24h_Sharpe * 0.25)
-      + (rolling_24h_WinRate * 0.20)
-      + (total_PnL * 0.15)
-      + ((1 - max_drawdown) * 0.10)
-```
-
----
-
-## Token Universe
-
-| Token | Address (Base) | Category |
-|-------|---------------|----------|
-| ETH/WETH | `0x4200000000000000000000000000000000000006` | Base native |
-| USDC | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | Stablecoin base |
-| UNI | `0xc3De830EA07524a0761646a6a4e4be0e114a3C83` | Sponsor (Uniswap) |
-| wstETH | `0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452` | Sponsor (Lido) |
-| ENS | `0x2a2764E1472e0a09D70e10B1bfA4AFBE144F72a3` | Sponsor (ENS) |
-| AERO | `0x940181a94A35A4569E4529A3CDfB74e38FD98631` | Top Base DEX |
-| DEGEN | `0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed` | Base culture |
-| BRETT | `0x532f27101965dd16442E59d40670FaF5eBB142E4` | Base culture |
-| VIRTUAL | `0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b` | AI token |
-| HIGHER | `0x0578d8A44db98B23BF096A382e016e29a5Ce0ffe` | Base culture |
-
----
-
-## Sponsor Integrations
-
-| Sponsor | Integration | How |
-|---------|-------------|-----|
-| **Base** | Native L2 deployment | All contracts + agent on Base mainnet |
-| **Uniswap** | V3 Router + Quoter V2 | All swaps via exactInputSingle, real-time quotes |
-| **Venice AI** | Strategy evolution | 3 AI personas (Mutant/Tuner/Hybrid) via Llama 3.3 70B |
-| **ENS/Basenames** | Agent identity | darwinfi.base.eth |
-| **Filecoin/IPFS** | Strategy genomes + Lit Actions | Immutable storage via Storacha |
-| **Lit Protocol** | PKP trading guardrails | Cryptographic policy enforcement on every tx |
-| **Celo** | Multi-chain deployment | Contracts + client ready for Celo deployment |
+| AUM | Mgmt Fee/yr | Perf Fee (20% return) | Total Revenue | Compute Cost | Net |
+|-----|-----------|---------------------|---------------|-------------|-----|
+| $10k | $100 | $100 | $200/yr | $0 (KS) | $200 |
+| $50k | $500 | $500 | $1,000/yr | $0 (KS) | $1,000 |
+| $100k | $1,000 | $1,000 | $2,000/yr | $500 (RunPod) | $1,500 |
+| $500k | $5,000 | $5,000 | $10,000/yr | $1,000 (H100) | $9,000 |
 
 ---
 
 ## Testing
 
-86 tests across 5 modules, all passing:
+69 tests across 7 modules:
 
 ```bash
 npm test
@@ -247,106 +171,66 @@ npm test
 
 | Module | Tests | Coverage |
 |--------|-------|----------|
-| DarwinVaultV2 | 27 | Deposit/withdraw, share math, multi-user, agent borrow/return, performance fee, HWM, pause, emergency, access control |
-| PerformanceTracker | 15 | Sharpe (Bessel), PnL% (fees), composite, drawdown, win rate |
-| CircuitBreaker | 23 | Drawdown, losses, portfolio halt, overrides, price validation |
-| StrategyManager | 10 | Initialization, proving ground, promotion, serialization |
-| PaperEngine | 11 | Slippage, VWAP, gas costs, PnL calculations |
+| DarwinVaultV3 | 51 | Deposit/withdraw, fees, HWM, multi-user, agent flow, emergency |
+| Evolution Smoke | 18 | Config, validation, sandbox, test gate, canary, audit |
 
 ---
 
 ## Setup
 
-### Prerequisites
-- Node.js 18+
-- Ethereum wallet with Base ETH + USDC
-
-### Install
 ```bash
 git clone https://github.com/maxwellcm92/darwinfi.git
-cd darwinfi
-npm install
+cd darwinfi && npm install
 cd dapp && npm install && cd ..
-```
-
-### Configure
-```bash
 cp .env.example .env
-# Required:
-#   PRIVATE_KEY or LIT_PKP_PUBLIC_KEY + LIT_ACTION_IPFS_CID
-#   VENICE_API_KEY
-# Optional:
-#   BASE_RPC_URL (defaults to public RPC)
-#   DARWIN_VAULT_V2_ADDRESS (for vault integration)
-```
-
-### Deploy Contracts
-```bash
-npx hardhat compile
-npx hardhat test                    # 86 tests
-npx hardhat run scripts/deploy-v2.ts --network base
-```
-
-### Build DApp
-```bash
-cd dapp
-npm run build                       # -> dapp/dist/
-```
-
-### Run Agent
-```bash
+# Configure: PRIVATE_KEY, VENICE_API_KEY, BASE_RPC_URL
+npx hardhat compile && npm run build
+cd dapp && npm run build && cd ..
 npm start
 ```
 
 ---
 
-## On-Chain Artifacts
+## On-Chain Artifacts (Base Mainnet)
 
-| Contract | Base Address | Status |
-|----------|-------------|--------|
+| Contract | Address | Status |
+|----------|---------|--------|
+| DarwinVaultV3 (ERC-4626) | [`0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF`](https://basescan.org/address/0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF) | Live |
 | DarwinVaultV2 (ERC-4626) | [`0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3`](https://basescan.org/address/0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3) | Live |
-| DarwinVault (v1) | [`0x02649973e13c5bb6aFFCD2d9d870bcd3BF8f446B`](https://basescan.org/address/0x02649973e13c5bb6aFFCD2d9d870bcd3BF8f446B) | Deprecated |
 | StrategyExecutor | Deployed | Live |
 | PerformanceLog | Deployed | Live |
 
-**DarwinFi Wallet**: [`0xb2db53Db9a2349186F0214BC3e1bF08a195570e3`](https://basescan.org/address/0xb2db53Db9a2349186F0214BC3e1bF08a195570e3) (Base)
+**DarwinFi Wallet**: [`0xb2db53Db9a2349186F0214BC3e1bF08a195570e3`](https://basescan.org/address/0xb2db53Db9a2349186F0214BC3e1bF08a195570e3)
 
-**ENS**: darwinfi.base.eth
+---
+
+## Sponsor Integrations
+
+| Sponsor | Integration |
+|---------|-------------|
+| **Base** | Native L2 deployment, all contracts + agent |
+| **Uniswap** | V3 SwapRouter + Quoter V2, real-time quotes |
+| **Venice AI** | Strategy evolution (Llama 3.3 70B), quality-critical inference |
+| **Storacha/IPFS** | Genome pinning, immutable evolution audit trail |
+| **Lit Protocol** | PKP trading guardrails (cryptographic policy enforcement) |
+| **ENS/Basenames** | darwinfi.base.eth agent identity |
 
 ---
 
 ## Built With
 
-- **Claude** (Anthropic): Batch signal evaluation via Claude CLI
+- **Claude Code** (Anthropic): Agent harness + batch signal evaluation
 - **Venice AI**: Strategy evolution via 3 AI personas (Llama 3.3 70B)
-- **Uniswap V3**: On-chain swap execution + Quoter V2 price feeds
-- **Base**: Primary L2 chain (Coinbase)
-- **Lit Protocol**: PKP cryptographic trading guardrails
+- **Ollama** (gemma2:9b): Local GPU fast inference via MCF
+- **Uniswap V3**: On-chain swap execution
+- **Base**: Primary L2 chain
+- **Lit Protocol**: PKP cryptographic guardrails
+- **Storacha**: IPFS genome storage
 - **OpenZeppelin v5**: ERC-4626, Ownable, ReentrancyGuard, Pausable
-- **React 19 + Vite 6**: DApp frontend
-- **wagmi + RainbowKit**: Wallet connection
-- **Tailwind CSS v4**: Styling
-- **Hardhat**: Smart contract development + testing
-- **ethers.js v6**: Chain interaction
-- **Claude Code**: Agent harness
+- **React 19 + Vite 6 + Tailwind**: DApp frontend
+- **Hardhat + ethers.js v6**: Smart contract development
 
 ---
 
-## License
-
-MIT License. See [LICENSE](LICENSE).
-
----
-
-## Operational Costs
-
-| Component | Daily Cost | Notes |
-|-----------|-----------|-------|
-| Venice AI (Llama 3.3 70B) | ~$0.30 | Strategy evolution, 15m/1h predictions |
-| Claude Haiku | ~$0.00 | 1m/5m predictions (included in subscription) |
-| Base L2 gas | ~$0.10 | Swaps + vault interactions |
-| **Total** | **~$0.40/day** | vs projected 10% performance fee on profits |
-
----
-
-*Built by Maxwell Morgan for the Synthesis Hackathon 2026. Agent harness: Claude Code.*
+*Built by Maxwell Morgan for the Synthesis Hackathon 2026.*
+*"Anything that can go wrong, will go wrong -- unless DarwinFi evolves around it."*

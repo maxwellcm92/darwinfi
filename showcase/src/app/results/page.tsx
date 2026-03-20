@@ -75,31 +75,7 @@ function EvolutionTimeline() {
   );
 }
 
-function InstinctPredictions() {
-  const { data, loading } = usePollAPI<InstinctState>(
-    "/api/instinct",
-    15000
-  );
-
-  if (loading) {
-    return (
-      <div className="darwin-card">
-        <h3 className="section-header text-darwin-accent mb-4">
-          Instinct Predictions
-        </h3>
-        <div className="space-y-3">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="skeleton h-12 w-full" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (!data?.predictions || data.predictions.length === 0) {
-    return null;
-  }
-
+function InstinctPredictions({ data }: { data: InstinctState }) {
   return (
     <div className="darwin-card">
       <h3 className="section-header text-darwin-accent mb-4">
@@ -116,7 +92,7 @@ function InstinctPredictions() {
         </div>
       )}
       <div className="space-y-2">
-        {data.predictions.map((p, i) => (
+        {data.predictions!.map((p, i) => (
           <div
             key={i}
             className="flex items-center justify-between p-2.5 rounded-lg bg-darwin-bg/50 border border-darwin-border/30"
@@ -191,6 +167,9 @@ function formatTimestamp(ts: string) {
 }
 
 export default function ResultsPage() {
+  const { data: instinctData } = usePollAPI<InstinctState>("/api/instinct", 15000);
+  const hasInstinct = !!(instinctData?.predictions && instinctData.predictions.length > 0);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
       {/* Page Header */}
@@ -232,9 +211,9 @@ export default function ResultsPage() {
 
       {/* Bottom Row: Evolution + Instinct */}
       <AnimatedSection delay={400}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className={hasInstinct ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : ""}>
           <EvolutionTimeline />
-          <InstinctPredictions />
+          {hasInstinct && <InstinctPredictions data={instinctData!} />}
         </div>
       </AnimatedSection>
     </div>

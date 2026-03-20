@@ -40,7 +40,7 @@ export default function RootLayout({
       <body className="font-sans">
         <ChatProvider>
           <Header />
-          <main className="min-h-screen">{children}</main>
+          <main className="min-h-screen pt-16">{children}</main>
           <Footer />
           <ChatBubble />
         </ChatProvider>

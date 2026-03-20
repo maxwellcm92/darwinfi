@@ -317,7 +317,7 @@ export default function StoryPage() {
       </div>
 
       {/* Legend */}
-      <div className="max-w-6xl mx-auto px-6 mb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
         <AnimatedSection>
           <div className="flex flex-wrap justify-center gap-4 md:gap-8">
             {[
@@ -336,7 +336,7 @@ export default function StoryPage() {
       </div>
 
       {/* Timeline */}
-      <div className="max-w-5xl mx-auto px-6 pb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <StoryTimeline sessions={sessions} />
       </div>
 

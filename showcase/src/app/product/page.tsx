@@ -123,7 +123,7 @@ export default function ProductPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Feature Grid */}
         <AnimatedSection className="pb-20">
           <h2 className="font-serif text-3xl md:text-4xl font-bold text-darwin-text-bright text-center mb-4">
@@ -180,7 +180,7 @@ export default function ProductPage() {
             Deployed and verified on Base mainnet (chain 8453).
           </p>
 
-          <div className="max-w-2xl mx-auto space-y-4">
+          <div className="max-w-4xl mx-auto space-y-4">
             <div className="darwin-card">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-darwin-text-bright">DarwinVaultV2 (ERC-4626)</h3>
@@ -250,7 +250,7 @@ export default function ProductPage() {
             106 source files across 5 layers.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
             {techStack.map((group) => (
               <div key={group.category} className="darwin-card">
                 <h3 className="font-semibold text-darwin-text-bright text-sm mb-3">

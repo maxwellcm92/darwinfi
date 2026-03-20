@@ -136,7 +136,7 @@ export default function HomePage() {
         </div>
       </ShaderHero>
 
-      <div className="max-w-6xl mx-auto px-6 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <DNAHelix side="left" />
         <DNAHelix side="right" />
 
@@ -552,7 +552,7 @@ export default function HomePage() {
             For builders and auditors -- the math, the safety, and the proof.
           </p>
 
-          <div className="max-w-3xl mx-auto space-y-4">
+          <div className="max-w-5xl mx-auto space-y-4">
             {/* Scoring Formula */}
             <div className="darwin-card">
               <button

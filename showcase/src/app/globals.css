@@ -22,12 +22,6 @@
   --font-serif: "Playfair Display", ui-serif, Georgia, serif;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 html {
   background-color: var(--color-darwin-bg);
   color: var(--color-darwin-text);

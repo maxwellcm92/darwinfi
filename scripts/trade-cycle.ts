@@ -65,8 +65,8 @@ async function main() {
   const contracts = new ContractClient(base);
   const uniswap = new UniswapClient(base);
   const wallet = base.walletAddress;
-  const vaultAddress = contracts.getVaultV2Address()!;
-  const vault = contracts.darwinVaultV2;
+  const vaultAddress = contracts.getVaultV4Address()!;
+  const vault = contracts.darwinVaultV4;
 
   const usdc = new Contract(BASE_TOKENS.USDC, ERC20_ABI, base.signer);
 
@@ -130,7 +130,7 @@ async function main() {
   // Step 3: Agent borrows 3 USDC
   // -----------------------------------------------------------------
   console.log('Step 3: Agent borrows 3 USDC');
-  const borrowHash = await contracts.vaultV2BorrowFromVault(BORROW_AMOUNT);
+  const borrowHash = await contracts.vaultV4BorrowFromVault(BORROW_AMOUNT);
   txLog.push({ step: 'Agent borrow 3 USDC', hash: borrowHash });
   console.log(`  tx: ${link(borrowHash)}\n`);
 
@@ -183,7 +183,7 @@ async function main() {
   // Step 7: Agent returns USDC to vault
   // -----------------------------------------------------------------
   console.log('Step 7: Agent returns USDC to vault');
-  const returnHash = await contracts.vaultV2ReturnToVault(usdcBack);
+  const returnHash = await contracts.vaultV4ReturnToVault(usdcBack);
   txLog.push({ step: 'Agent return USDC', hash: returnHash });
   console.log(`  tx: ${link(returnHash)}`);
   console.log(`  USDC returned: ${formatUsdc(usdcBack)}\n`);

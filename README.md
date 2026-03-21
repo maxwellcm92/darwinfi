@@ -6,7 +6,7 @@ DarwinFi is an autonomous DeFi trading agent that applies Darwinian natural sele
 
 The Golden Rule: every module, every parameter, every decision exists to serve one objective -- **increase profits and win rate**. If DarwinFi were left running with no human input, it should continuously get better at turning money into more money.
 
-Built for the [Synthesis Hackathon](https://synthesis.md/), "Agents that Pay" track.
+Built for the [Synthesis Hackathon](https://synthesis.md/) -- competing across 8 tracks including Autonomous Trading Agent (Base), Private Agents (Venice), Let the Agent Cook (Protocol Labs), and more.
 
 **Live Dashboard**: [https://corduroycloud.com/darwinfi/](https://corduroycloud.com/darwinfi/)
 
@@ -75,7 +75,7 @@ The code evolution engine (11 modules, 2,114 LOC) gives DarwinFi the ability to 
 2. **AI Proposal**: Venice AI (Llama 3.3 70B) generates code mutations
 3. **Static Validation**: Ring checks prevent mutations to critical infrastructure
 4. **Sandbox**: Git worktree isolation + TypeScript compilation
-5. **Test Gate**: All 325 tests must pass
+5. **Test Gate**: All 423 tests must pass
 6. **Canary Deploy**: 4-hour minimum monitoring with 60-second health checks
 7. **Promote or Rollback**: If canary degrades performance, automatic git rollback
 
@@ -228,6 +228,20 @@ npm start
 | **Storacha/IPFS** | Genome pinning, immutable evolution audit trail |
 | **Lit Protocol** | PKP trading guardrails (cryptographic policy enforcement) |
 | **ENS/Basenames** | darwinfi.base.eth agent identity |
+
+---
+
+## Why Venice AI
+
+DarwinFi uses Venice AI (Llama 3.3 70B) for two critical functions where privacy and uncensored inference are non-negotiable:
+
+1. **Trading Signal Generation**: Financial analysis requests are frequently refused by safety-filtered models ("I can't provide financial advice"). Venice's uncensored inference means DarwinFi always gets actionable signals, not refusals.
+
+2. **Strategy Evolution Proposals**: The evolution engine asks AI to propose code mutations to trading strategies. Safety-filtered models refuse to modify financial code. Venice treats this as a legitimate engineering task.
+
+3. **Private Inference**: Trading strategies are alpha. If competitors can observe what signals DarwinFi requests, they can front-run or copy the strategy. Venice's privacy-preserving inference ensures no one sees DarwinFi's queries -- not even Venice.
+
+Venice powers `src/agent/venice-engine.ts` (real-time execution signals) and `src/evolution/proposal.ts` (code mutation proposals). The AI Router (`src/agent/ai-router.ts`) health-checks the GPU node first, falls back to Venice for quality-critical inference, and uses Claude CLI as last resort.
 
 ---
 

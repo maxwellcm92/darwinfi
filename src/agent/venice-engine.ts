@@ -31,6 +31,8 @@ export interface MarketSnapshot {
   macdSignal?: number;
   atr?: number;
   adx?: number;
+  instinctPrediction?: string;
+  instinctSentiment?: string;
 }
 
 export interface EntrySignal {

@@ -600,9 +600,7 @@ export class DarwinAgent {
         const pred5m = tokenInstinct.predictions['5m'];
         const sentiment = tokenInstinct.sentiment;
         if (pred5m) {
-          // @ts-expect-error Extending MarketSnapshot with instinct data
           snapshot.instinctPrediction = `${pred5m.direction} (conf: ${pred5m.confidence}%, close: $${pred5m.predictedClose.toFixed(4)})`;
-          // @ts-expect-error
           snapshot.instinctSentiment = `${sentiment.score.toFixed(2)} (${sentiment.topEvents.slice(0, 2).join('; ')})`;
         }
       }

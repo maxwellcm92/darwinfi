@@ -6,12 +6,20 @@
  */
 
 import OpenAI from 'openai';
+import type { ChatCompletionCreateParamsNonStreaming } from 'openai/resources/chat/completions';
 import { randomUUID } from 'crypto';
 import { WorldEvent, SourceConfig } from '../types';
 import { ALL_TOKENS } from '../data/pool-registry';
 
 const VENICE_BASE_URL = 'https://api.venice.ai/api/v1';
 const GROK_MODEL = 'grok-41-fast';
+
+/** Venice API extends OpenAI params with vendor-specific fields */
+interface VeniceCreateParams extends ChatCompletionCreateParamsNonStreaming {
+  venice_parameters?: {
+    enable_web_search?: string;
+  };
+}
 
 interface GrokSourceConfig {
   veniceApiKey: string;
@@ -88,7 +96,7 @@ Also check for general crypto macro events that could affect Base tokens (ETH mo
 
 Return a JSON array of events. If nothing significant, return [].`;
 
-    const response = await this.client.chat.completions.create({
+    const params: VeniceCreateParams = {
       model: GROK_MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
@@ -96,11 +104,12 @@ Return a JSON array of events. If nothing significant, return [].`;
       ],
       max_tokens: 2048,
       temperature: 0.3,
-      // @ts-expect-error Venice-specific parameter for X search
       venice_parameters: {
         enable_web_search: 'always',
       },
-    });
+    };
+
+    const response = await this.client.chat.completions.create(params);
 
     const content = response.choices[0]?.message?.content ?? '[]';
     return this.parseEvents(content, tokens);

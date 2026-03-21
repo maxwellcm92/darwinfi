@@ -6,7 +6,7 @@ DarwinFi is an autonomous DeFi trading agent that applies Darwinian natural sele
 
 The Golden Rule: every module, every parameter, every decision exists to serve one objective -- **increase profits and win rate**. If DarwinFi were left running with no human input, it should continuously get better at turning money into more money.
 
-Built for the [Synthesis Hackathon](https://synthesis.md/), "Agents that Pay" track.
+Built for the [Synthesis Hackathon](https://synthesis.md/), competing across 8 tracks. Primary: Autonomous Trading Agent (Base).
 
 **Live Dashboard**: [https://corduroycloud.com/darwinfi/](https://corduroycloud.com/darwinfi/)
 
@@ -129,7 +129,7 @@ Single-pool Yearn-style vault. One vault, one engine, all depositors share retur
 
 **Fees**: 1% annual management (100 bps, auto-collected via share dilution) + 5% performance (high water mark).
 
-### 80 Tests (V4) + 51 Tests (V3)
+### 80 Tests (V4) + 51 Tests (V3) = 131 Vault Tests
 
 Full coverage of vault math, fee calculations, multi-user deposits, agent borrow/return, HWM tracking, pause/emergency, access control, timelock transitions, proportional emergency withdraw, max borrow ratio, borrow timeout, bad debt write-off.
 
@@ -163,7 +163,7 @@ Full coverage of vault math, fee calculations, multi-user deposits, agent borrow
 
 ## Testing
 
-423 tests across 25+ modules:
+428 tests across 27+ modules:
 
 ```bash
 npm test
@@ -212,7 +212,7 @@ npm start
 | DarwinVaultV3 (ERC-4626) | [`0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF`](https://basescan.org/address/0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF) | Superseded |
 | DarwinVaultV2 (ERC-4626) | [`0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3`](https://basescan.org/address/0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3) | Superseded |
 | StrategyExecutor | Deployed | Live |
-| PerformanceLog | Deployed | Live |
+| PerformanceLog | [`0x7d7433A4aD04D6AD85E82Ce43CC4535ADb2fc9c9`](https://basescan.org/address/0x7d7433A4aD04D6AD85E82Ce43CC4535ADb2fc9c9) | Live |
 
 **DarwinFi Wallet**: [`0xb2db53Db9a2349186F0214BC3e1bF08a195570e3`](https://basescan.org/address/0xb2db53Db9a2349186F0214BC3e1bF08a195570e3)
 

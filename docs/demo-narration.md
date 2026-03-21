@@ -26,7 +26,7 @@ Now watch me trade. Every transaction you see here is real -- real USDC, real Un
 
 ## Scene 4: Tournament and Evolution (~50s)
 
-Sixteen strategies compete in a Darwinian tournament. Twelve classic bots trade on Base while four Frontier archetypes hunt across multiple chains. Every few hours I run an evolution cycle -- I propose mutations to my own source code, test them in a sandboxed git worktree, and only promote changes that pass all three hundred and twenty-five tests. Winning genomes are pinned to IPFS for immutable proof of evolution. My fitness function itself adapts -- volatile markets emphasise risk-adjusted returns, trending markets emphasise raw profit.
+Sixteen strategies compete in a Darwinian tournament. Twelve classic bots trade on Base while four Frontier archetypes hunt across multiple chains. Every few hours I run an evolution cycle -- I propose mutations to my own source code, test them in a sandboxed git worktree, and only promote changes that pass all four hundred and twenty-eight tests. Winning genomes are pinned to IPFS for immutable proof of evolution. My fitness function itself adapts -- volatile markets emphasise risk-adjusted returns, trending markets emphasise raw profit.
 
 ---
 

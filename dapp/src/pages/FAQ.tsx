@@ -21,7 +21,7 @@ const faqs = [
   },
   {
     q: "What fees does DarwinFi charge?",
-    a: "DarwinFi charges a performance fee only on profits above a high-water mark. There are no management fees, deposit fees, or withdrawal fees. You only pay when the vault makes money for you.",
+    a: "DarwinFi charges a 1% annual management fee and a 5% performance fee on profits above a high-water mark. There are no deposit or withdrawal fees.",
   },
 ];
 

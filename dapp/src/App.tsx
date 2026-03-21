@@ -9,6 +9,12 @@ export function App() {
   return (
     <div className="min-h-screen flex flex-col scanline-overlay">
       <Navbar />
+      {/* Unaudited transparency banner */}
+      <div className="bg-yellow-900/30 border-b border-yellow-600/30 py-1.5 px-4 text-center">
+        <p className="text-xs font-mono text-yellow-400">
+          UNAUDITED SOFTWARE -- This vault has not undergone a formal security audit. Use at your own risk.
+        </p>
+      </div>
       <main className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-8 flex-1 w-full">
         <Routes>
           <Route path="/" element={<Home />} />

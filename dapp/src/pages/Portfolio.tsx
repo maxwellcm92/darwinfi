@@ -2,7 +2,7 @@ import { useAccount } from "wagmi";
 import { PortfolioCard } from "../components/PortfolioCard";
 import { DepositCard } from "../components/DepositCard";
 import { WithdrawCard } from "../components/WithdrawCard";
-import { VAULT_ADDRESS } from "../lib/contracts";
+import { VAULT_ADDRESS, BASENAME } from "../lib/constants";
 
 export function Portfolio() {
   const { isConnected } = useAccount();
@@ -51,7 +51,7 @@ export function Portfolio() {
                 rel="noopener noreferrer"
                 className="text-sm font-mono text-darwin-purple hover:text-darwin-accent transition-colors"
               >
-                {"View all transactions on BaseScan ->"}
+                {`View all ${BASENAME} transactions on BaseScan ->`}
               </a>
             </div>
           </div>

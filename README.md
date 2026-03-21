@@ -206,6 +206,15 @@ npm start
 
 ---
 
+## Documentation
+
+- [Competitor Analysis](docs/competitor-analysis.md) -- How DarwinFi compares to Yearn, dHEDGE, Enzyme, and others
+- [Devfolio Submission](docs/devfolio-submission.md) -- Full hackathon submission details
+- [Development Log](docs/development-log.md) -- Build diary
+- [Trade Proof](docs/trade-proof.md) -- On-chain transaction verification
+
+---
+
 ## On-Chain Artifacts (Base Mainnet)
 
 | Contract | Address | Status |

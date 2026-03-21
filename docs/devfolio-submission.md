@@ -228,6 +228,12 @@ Venice AI is not just a fallback -- it is DarwinFi's uncensored evolution brain:
 - **DApp integration:** ENS name displayed in the UI for agent identity
 - **Registration TX:** `0x204bec5eab443cd8839aef764ce27325fc97d68db17d2f8dc03187d47775bd98` ([View](https://basescan.org/tx/0x204bec5eab443cd8839aef764ce27325fc97d68db17d2f8dc03187d47775bd98))
 
+## Competitor Landscape
+
+DarwinFi competes in the autonomous DeFi trading space alongside Yearn (static vault strategies), dHEDGE (manager-dependent funds), Enzyme (fund manager platforms), TokenSets (rebalancing), and Gauntlet (risk modeling). See [competitor-analysis.md](competitor-analysis.md) for the full comparison.
+
+DarwinFi's moat: it is the only protocol where trading logic evolves autonomously through Darwinian selection. Others optimize parameters or require human managers. DarwinFi evolves the strategies themselves -- AI-proposed code mutations, sandboxed in git worktrees, tested against 488 tests, deployed via canary with auto-rollback. Every mutation is audited and stored on IPFS via Storacha.
+
 ## Current Status (March 21, 2026)
 
 **Completed:**

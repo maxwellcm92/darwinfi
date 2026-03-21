@@ -39,10 +39,10 @@ export function ReturnsChart() {
     return (
       <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-mono text-darwin-text-dim uppercase tracking-wider">Cumulative Returns</span>
+          <span className="text-sm font-mono text-darwin-text-dim uppercase tracking-wider">Cumulative Returns</span>
         </div>
         <div className="h-24 flex items-center justify-center">
-          <span className="text-xs font-mono text-darwin-text-dim">
+          <span className="text-sm font-mono text-darwin-text-dim">
             {loading ? "Loading..." : "Collecting data..."}
           </span>
         </div>
@@ -79,8 +79,8 @@ export function ReturnsChart() {
   return (
     <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-4 transition-all duration-300 hover:border-darwin-border/80">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-mono text-darwin-text-dim uppercase tracking-wider">Cumulative Returns</span>
-        <span className={`text-sm font-mono font-bold ${isPositive ? "text-darwin-accent" : "text-darwin-danger"}`}>
+        <span className="text-sm font-mono text-darwin-text-dim uppercase tracking-wider">Cumulative Returns</span>
+        <span className={`text-base font-mono font-bold ${isPositive ? "text-darwin-accent" : "text-darwin-danger"}`}>
           {isPositive ? "+" : ""}{lastReturn.toFixed(2)}%
         </span>
       </div>

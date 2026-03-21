@@ -50,7 +50,7 @@ export function FeatureCard({
       <h3 className="font-semibold text-darwin-text-bright text-lg mb-2">
         {title}
       </h3>
-      <p className="text-darwin-text-dim text-sm leading-relaxed">
+      <p className="text-darwin-text-dim text-base leading-relaxed">
         {description}
       </p>
     </div>

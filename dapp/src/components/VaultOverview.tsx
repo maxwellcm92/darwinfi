@@ -24,7 +24,7 @@ function StatCard({
 }) {
   return (
     <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 transition-all duration-300 hover:border-darwin-border/80 hover:shadow-lg hover:shadow-black/20">
-      <p className="text-darwin-text-dim text-xs font-mono uppercase tracking-wider mb-2">
+      <p className="text-darwin-text-dim text-sm font-mono uppercase tracking-wider mb-2">
         {label}
       </p>
       <p
@@ -34,7 +34,7 @@ function StatCard({
       >
         {value}
         {suffix && (
-          <span className="text-sm text-darwin-text-dim ml-1">{suffix}</span>
+          <span className="text-base text-darwin-text-dim ml-1">{suffix}</span>
         )}
       </p>
     </div>
@@ -80,7 +80,7 @@ export function VaultOverview() {
           VAULT STATUS
         </h2>
         {paused && (
-          <span className="px-3 py-1 bg-darwin-danger/20 text-darwin-danger text-xs font-mono rounded border border-darwin-danger/40 animate-pulse-glow">
+          <span className="px-3 py-1 bg-darwin-danger/20 text-darwin-danger text-sm font-mono rounded border border-darwin-danger/40 animate-pulse-glow">
             PAUSED
           </span>
         )}
@@ -89,32 +89,32 @@ export function VaultOverview() {
       {/* Vault identity */}
       <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-4 flex flex-wrap items-center gap-x-6 gap-y-2">
         <div>
-          <span className="text-xs font-mono text-darwin-text-dim mr-2">Vault:</span>
+          <span className="text-sm font-mono text-darwin-text-dim mr-2">Vault:</span>
           <a
             href={`https://basescan.org/address/${VAULT_ADDRESS}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-mono text-darwin-accent hover:underline"
+            className="text-base font-mono text-darwin-accent hover:underline"
             title={String(VAULT_ADDRESS)}
           >
             {BASENAME}
           </a>
-          <span className="text-xs font-mono text-darwin-text-dim ml-2">
+          <span className="text-sm font-mono text-darwin-text-dim ml-2">
             ({String(VAULT_ADDRESS).slice(0, 6)}...{String(VAULT_ADDRESS).slice(-4)})
           </span>
         </div>
         <div>
-          <span className="text-xs font-mono text-darwin-text-dim mr-2">Agent:</span>
+          <span className="text-sm font-mono text-darwin-text-dim mr-2">Agent:</span>
           <a
             href={`https://basescan.org/address/${AGENT_ADDRESS}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-mono text-darwin-accent hover:underline"
+            className="text-base font-mono text-darwin-accent hover:underline"
             title={AGENT_ADDRESS}
           >
             {BASENAME}
           </a>
-          <span className="text-xs font-mono text-darwin-text-dim ml-2">
+          <span className="text-sm font-mono text-darwin-text-dim ml-2">
             ({AGENT_ADDRESS.slice(0, 6)}...{AGENT_ADDRESS.slice(-4)})
           </span>
         </div>
@@ -159,10 +159,10 @@ export function VaultOverview() {
       {/* Utilization bar */}
       <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 transition-all duration-300 hover:border-darwin-border/80">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-mono text-darwin-text-dim uppercase">
+          <span className="text-sm font-mono text-darwin-text-dim uppercase">
             Vault Utilization
           </span>
-          <span className="text-xs font-mono text-darwin-text">
+          <span className="text-sm font-mono text-darwin-text">
             {utilizationPct != null ? `${utilizationPct}%` : "--"} borrowed
             {" / "}
             {capacityPct != null ? `${capacityPct}%` : "--"} filled
@@ -177,7 +177,7 @@ export function VaultOverview() {
           />
         </div>
         {feeBps != null && (
-          <p className="text-xs font-mono text-darwin-text-dim mt-2">
+          <p className="text-sm font-mono text-darwin-text-dim mt-2">
             Performance Fee: {(feeBps / 100).toFixed(1)}%
           </p>
         )}

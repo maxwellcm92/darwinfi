@@ -37,23 +37,23 @@ export function Portfolio() {
         </h3>
 
         {!isConnected ? (
-          <p className="text-sm font-mono text-darwin-text-dim text-center py-4">
+          <p className="text-base font-mono text-darwin-text-dim text-center py-4">
             Connect wallet to view transaction history.
           </p>
         ) : (
           <div className="space-y-2">
             <div className="grid grid-cols-4 gap-2 px-3 py-2 border-b border-darwin-border/50">
-              <span className="text-xs font-mono text-darwin-text-dim uppercase">Type</span>
-              <span className="text-xs font-mono text-darwin-text-dim uppercase">Amount</span>
-              <span className="text-xs font-mono text-darwin-text-dim uppercase">Shares</span>
-              <span className="text-xs font-mono text-darwin-text-dim uppercase text-right">Date</span>
+              <span className="text-sm font-mono text-darwin-text-dim uppercase">Type</span>
+              <span className="text-sm font-mono text-darwin-text-dim uppercase">Amount</span>
+              <span className="text-sm font-mono text-darwin-text-dim uppercase">Shares</span>
+              <span className="text-sm font-mono text-darwin-text-dim uppercase text-right">Date</span>
             </div>
             <div className="text-center py-8">
               <a
                 href={`https://basescan.org/address/${VAULT_ADDRESS}#events`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-mono text-darwin-purple hover:text-darwin-accent transition-colors"
+                className="text-base font-mono text-darwin-purple hover:text-darwin-accent transition-colors"
               >
                 {`View all ${BASENAME} transactions on BaseScan ->`}
               </a>

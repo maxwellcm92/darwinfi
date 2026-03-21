@@ -42,14 +42,14 @@ export function WhaleActivityFeed({
         <h3 className="section-header text-darwin-text-bright">
           WHALE ACTIVITY
         </h3>
-        <span className="text-[10px] font-mono text-darwin-text-dim">
+        <span className="text-xs font-mono text-darwin-text-dim">
           {data.topWhales?.length ?? 0} whales tracked
         </span>
       </div>
 
       {activities.length === 0 ? (
         <div className="p-8 text-center">
-          <p className="text-sm font-mono text-darwin-text-dim">
+          <p className="text-base font-mono text-darwin-text-dim">
             No recent whale activity
           </p>
         </div>
@@ -64,7 +64,7 @@ export function WhaleActivityFeed({
                 <div className="flex items-center gap-3">
                   {/* Action indicator */}
                   <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
                       activity.action === "buy"
                         ? "bg-darwin-accent/20 text-darwin-accent"
                         : "bg-darwin-danger/20 text-darwin-danger"
@@ -75,11 +75,11 @@ export function WhaleActivityFeed({
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-darwin-text-bright">
+                      <span className="text-sm font-mono text-darwin-text-bright">
                         {shortenAddress(activity.whaleAddress)}
                       </span>
                       <span
-                        className={`text-[10px] font-mono ${
+                        className={`text-xs font-mono ${
                           activity.action === "buy"
                             ? "text-darwin-accent"
                             : "text-darwin-danger"
@@ -89,17 +89,17 @@ export function WhaleActivityFeed({
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] font-mono text-darwin-text-dim">
+                      <span className="text-xs font-mono text-darwin-text-dim">
                         ${activity.amountUsd.toLocaleString()}
                       </span>
-                      <span className="text-[10px] font-mono text-darwin-text-dim">
+                      <span className="text-xs font-mono text-darwin-text-dim">
                         {activity.chainName}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <span className="text-[10px] font-mono text-darwin-text-dim">
+                <span className="text-xs font-mono text-darwin-text-dim">
                   {formatTime(activity.timestamp)}
                 </span>
               </div>

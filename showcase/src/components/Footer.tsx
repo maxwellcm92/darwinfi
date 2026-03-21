@@ -13,7 +13,7 @@ export function Footer() {
                 DarwinFi
               </span>
             </div>
-            <p className="text-darwin-text-dim text-sm max-w-md">
+            <p className="text-darwin-text-dim text-base max-w-md">
               Autonomous, self-evolving DeFi vault. 12 strategies compete via
               Darwinian selection on Base L2. Built for the Synthesis Hackathon.
             </p>
@@ -24,13 +24,13 @@ export function Footer() {
               Navigate
             </h4>
             <div className="flex flex-col gap-2">
-              <Link href="/results" className="text-sm text-darwin-text hover:text-darwin-accent transition-colors">
+              <Link href="/results" className="text-base text-darwin-text hover:text-darwin-accent transition-colors">
                 Live Results
               </Link>
-              <Link href="/story" className="text-sm text-darwin-text hover:text-darwin-accent transition-colors">
+              <Link href="/story" className="text-base text-darwin-text hover:text-darwin-accent transition-colors">
                 Build Story
               </Link>
-              <Link href="/product" className="text-sm text-darwin-text hover:text-darwin-accent transition-colors">
+              <Link href="/product" className="text-base text-darwin-text hover:text-darwin-accent transition-colors">
                 Product
               </Link>
             </div>
@@ -45,7 +45,7 @@ export function Footer() {
                 href={`https://basescan.org/address/${VAULT_ADDRESS}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-darwin-text hover:text-darwin-accent transition-colors"
+                className="text-base text-darwin-text hover:text-darwin-accent transition-colors"
               >
                 Vault Contract
               </a>
@@ -53,7 +53,7 @@ export function Footer() {
                 href="https://corduroycloud.com/darwinfi/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-darwin-text hover:text-darwin-accent transition-colors"
+                className="text-base text-darwin-text hover:text-darwin-accent transition-colors"
               >
                 Launch DApp
               </a>
@@ -61,7 +61,7 @@ export function Footer() {
                 href="https://github.com/maxwellcm92/darwinfi"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-darwin-text hover:text-darwin-accent transition-colors"
+                className="text-base text-darwin-text hover:text-darwin-accent transition-colors"
               >
                 GitHub
               </a>
@@ -70,11 +70,11 @@ export function Footer() {
         </div>
 
         <div className="mt-10 pt-6 border-t border-darwin-border/20 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-darwin-text-dim text-xs">
+          <p className="text-darwin-text-dim text-sm">
             Built by Maxwell Morgan for the Synthesis Hackathon 2026. Agent
             harness: Claude Code.
           </p>
-          <p className="text-darwin-text-dim text-xs font-mono">
+          <p className="text-darwin-text-dim text-sm font-mono">
             darwinfi.base.eth
           </p>
         </div>

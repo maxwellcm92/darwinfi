@@ -76,7 +76,7 @@ export function InstinctSummary({ instinctState, loading }: InstinctSummaryProps
             }`}
           />
           <span
-            className={`text-xs font-mono uppercase ${
+            className={`text-sm font-mono uppercase ${
               isActive ? "text-darwin-purple" : "text-darwin-text-dim"
             }`}
           >
@@ -87,35 +87,35 @@ export function InstinctSummary({ instinctState, loading }: InstinctSummaryProps
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-darwin-bg rounded-lg p-4">
-          <p className="text-xs font-mono text-darwin-text-dim mb-1">Confidence</p>
-          <p className="text-sm font-mono text-darwin-purple font-medium text-glow-purple">
+          <p className="text-sm font-mono text-darwin-text-dim mb-1">Confidence</p>
+          <p className="text-base font-mono text-darwin-purple font-medium text-glow-purple">
             {health ? `${health.overallConfidence}%` : "--"}
           </p>
         </div>
 
         <div className="bg-darwin-bg rounded-lg p-4">
-          <p className="text-xs font-mono text-darwin-text-dim mb-1">Sentiment</p>
-          <p className={`text-sm font-mono font-medium ${sentimentInfo.color}`}>
+          <p className="text-sm font-mono text-darwin-text-dim mb-1">Sentiment</p>
+          <p className={`text-base font-mono font-medium ${sentimentInfo.color}`}>
             {sentimentCount > 0 ? sentimentInfo.label : "--"}
           </p>
         </div>
 
         <div className="bg-darwin-bg rounded-lg p-4">
-          <p className="text-xs font-mono text-darwin-text-dim mb-1">Top Signal</p>
-          <p className="text-sm font-mono text-darwin-text-bright font-medium truncate">
+          <p className="text-sm font-mono text-darwin-text-dim mb-1">Top Signal</p>
+          <p className="text-base font-mono text-darwin-text-bright font-medium truncate">
             {bestConfidence > 0 ? `${bestToken} ${bestDirection}` : "--"}
           </p>
         </div>
 
         <div className="bg-darwin-bg rounded-lg p-4">
-          <p className="text-xs font-mono text-darwin-text-dim mb-1">Sources</p>
-          <p className="text-sm font-mono text-darwin-text-bright font-medium">
+          <p className="text-sm font-mono text-darwin-text-dim mb-1">Sources</p>
+          <p className="text-base font-mono text-darwin-text-bright font-medium">
             {health ? `${health.sensesActive} active` : "--"}
           </p>
         </div>
       </div>
 
-      <p className="mt-3 text-xs font-mono text-darwin-text-dim group-hover:text-darwin-purple transition-colors">
+      <p className="mt-3 text-sm font-mono text-darwin-text-dim group-hover:text-darwin-purple transition-colors">
         {tokenNames.length} tokens tracked {"->"} View details
       </p>
     </Link>

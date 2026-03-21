@@ -33,7 +33,10 @@ Three AI inference providers (local GPU via MCF, Venice AI, Claude CLI) with aut
 ### 4. Outcome Attribution Feedback
 After every trade, DarwinFi decomposes the result into entry timing, exit timing, slippage, and market regime scores. This feedback goes directly into the evolution engine -- strategies don't just compete on PnL, they compete on *why* they won or lost.
 
-### 5. $0 Compute Cost at Launch
+### 5. Immutable Genome Audit Trail (IPFS via Storacha)
+Every evolved genome is pinned to IPFS via Storacha, creating an immutable, verifiable record of Darwinian selection. No other protocol provides cryptographic proof that its strategies evolved autonomously.
+
+### 6. $0 Compute Cost at Launch
 Murphy Compute Fabric routes inference to a self-hosted RTX 3090 via Tailscale. Yearn, dHEDGE, and Enzyme all depend on external infrastructure. DarwinFi's inference costs $0/month at hackathon scale, scaling to cloud GPUs only when AUM warrants it.
 
 ## Key Differentiator

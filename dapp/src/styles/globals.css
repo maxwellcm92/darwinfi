@@ -32,6 +32,7 @@ html {
   font-family: var(--font-sans);
   background-color: var(--color-darwin-bg);
   color: var(--color-darwin-text);
+  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -141,8 +142,8 @@ input[type="number"] {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  font-size: 0.75rem;
-  line-height: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 
 /* Shimmer skeleton loading */
@@ -226,4 +227,13 @@ input[type="number"] {
 
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
+}
+
+/* Connect button hover polish */
+button[data-testid="rk-connect-button"] {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+button[data-testid="rk-connect-button"]:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 20px rgba(255, 176, 32, 0.3);
 }

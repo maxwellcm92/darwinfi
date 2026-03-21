@@ -56,7 +56,7 @@ export function CrossChainTradeFlow({
 
       <div className="p-5">
         {activeChainIds.length === 0 ? (
-          <p className="text-sm font-mono text-darwin-text-dim text-center py-4">
+          <p className="text-base font-mono text-darwin-text-dim text-center py-4">
             No cross-chain activity yet
           </p>
         ) : (
@@ -78,10 +78,10 @@ export function CrossChainTradeFlow({
                       }`}
                     >
                       <div className="text-center">
-                        <p className="text-xs font-mono font-bold text-darwin-text-bright">
+                        <p className="text-sm font-mono font-bold text-darwin-text-bright">
                           {label}
                         </p>
-                        <p className="text-[9px] font-mono text-darwin-text-dim">
+                        <p className="text-xs font-mono text-darwin-text-dim">
                           {activity.trades} trades
                         </p>
                       </div>
@@ -104,7 +104,7 @@ export function CrossChainTradeFlow({
                   {idx < activeChainIds.length - 1 && (
                     <div className="flex items-center text-darwin-text-dim">
                       <div className="w-8 h-px bg-darwin-border/50" />
-                      <span className="text-xs mx-1">{"->"}</span>
+                      <span className="text-sm mx-1">{"->"}</span>
                       <div className="w-8 h-px bg-darwin-border/50" />
                     </div>
                   )}

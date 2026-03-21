@@ -62,10 +62,10 @@ export function BotCard({
             {icon}
           </div>
           <div>
-            <h3 className={`text-sm font-mono font-bold ${colorClass}`}>
+            <h3 className={`text-base font-mono font-bold ${colorClass}`}>
               {strategy.name}
             </h3>
-            <p className="text-[10px] font-mono text-darwin-text-dim">
+            <p className="text-xs font-mono text-darwin-text-dim">
               {description}
             </p>
           </div>
@@ -73,7 +73,7 @@ export function BotCard({
 
         {/* Rank badge */}
         <div
-          className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+          className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${
             rank === 1
               ? "bg-darwin-accent/20 text-darwin-accent"
               : "bg-darwin-card-hover text-darwin-text-dim"
@@ -86,7 +86,7 @@ export function BotCard({
       {/* Status */}
       <div className="flex items-center gap-2 mb-3">
         <span
-          className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+          className={`px-2 py-0.5 rounded-full text-xs font-mono ${
             strategy.status === "live"
               ? "bg-darwin-accent/20 text-darwin-accent"
               : strategy.status === "sell_only"
@@ -96,7 +96,7 @@ export function BotCard({
         >
           {strategy.status.toUpperCase()}
         </span>
-        <span className="text-[10px] font-mono text-darwin-text-dim">
+        <span className="text-xs font-mono text-darwin-text-dim">
           Gen {strategy.generation}
         </span>
       </div>
@@ -104,34 +104,34 @@ export function BotCard({
       {/* Metrics grid */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <p className="text-[10px] font-mono text-darwin-text-dim mb-0.5">
+          <p className="text-xs font-mono text-darwin-text-dim mb-0.5">
             Score
           </p>
-          <p className="text-sm font-mono text-darwin-text-bright font-bold">
+          <p className="text-base font-mono text-darwin-text-bright font-bold">
             {strategy.score.toFixed(3)}
           </p>
         </div>
         <div>
-          <p className="text-[10px] font-mono text-darwin-text-dim mb-0.5">
+          <p className="text-xs font-mono text-darwin-text-dim mb-0.5">
             PnL
           </p>
-          <p className={`text-sm font-mono font-bold ${pnlColor}`}>
+          <p className={`text-base font-mono font-bold ${pnlColor}`}>
             ${strategy.pnl.toFixed(2)}
           </p>
         </div>
         <div>
-          <p className="text-[10px] font-mono text-darwin-text-dim mb-0.5">
+          <p className="text-xs font-mono text-darwin-text-dim mb-0.5">
             Win Rate
           </p>
-          <p className="text-sm font-mono text-darwin-text-bright">
+          <p className="text-base font-mono text-darwin-text-bright">
             {(strategy.winRate * 100).toFixed(1)}%
           </p>
         </div>
         <div>
-          <p className="text-[10px] font-mono text-darwin-text-dim mb-0.5">
+          <p className="text-xs font-mono text-darwin-text-dim mb-0.5">
             Trades
           </p>
-          <p className="text-sm font-mono text-darwin-text-bright">
+          <p className="text-base font-mono text-darwin-text-bright">
             {strategy.trades}
           </p>
         </div>
@@ -140,14 +140,14 @@ export function BotCard({
       {/* Chain preferences */}
       {strategy.chainPreferences && strategy.chainPreferences.length > 0 && (
         <div className="mt-3 pt-3 border-t border-darwin-border/30">
-          <p className="text-[10px] font-mono text-darwin-text-dim mb-1">
+          <p className="text-xs font-mono text-darwin-text-dim mb-1">
             Chains
           </p>
           <div className="flex gap-1">
             {strategy.chainPreferences.map((chainId) => (
               <span
                 key={chainId}
-                className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-darwin-card-hover text-darwin-text-dim"
+                className="px-1.5 py-0.5 rounded text-xs font-mono bg-darwin-card-hover text-darwin-text-dim"
               >
                 {chainId === 8453
                   ? "Base"

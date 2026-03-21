@@ -306,7 +306,7 @@ export default function StoryPage() {
                   <p className="text-2xl md:text-3xl font-bold text-darwin-accent font-mono">
                     {stat.value}
                   </p>
-                  <p className="text-xs text-darwin-text-dim font-mono uppercase tracking-wider">
+                  <p className="text-sm text-darwin-text-dim font-mono uppercase tracking-wider">
                     {stat.label}
                   </p>
                 </div>
@@ -328,7 +328,7 @@ export default function StoryPage() {
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-2">
                 <span className={`w-3 h-3 rounded-full ${item.color}`} />
-                <span className="text-sm text-darwin-text-dim font-mono">{item.label}</span>
+                <span className="text-base text-darwin-text-dim font-mono">{item.label}</span>
               </div>
             ))}
           </div>

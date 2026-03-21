@@ -115,11 +115,11 @@ export function PnLChart() {
       )}
       {data && (
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-darwin-border/30">
-          <span className="text-xs text-darwin-text-dim font-mono">
+          <span className="text-sm text-darwin-text-dim font-mono">
             Total PnL
           </span>
           <span
-            className={`text-sm font-mono font-bold ${
+            className={`text-base font-mono font-bold ${
               (data.totalPnl ?? 0) >= 0
                 ? "text-darwin-success"
                 : "text-darwin-danger"

@@ -141,7 +141,7 @@ export default function ProductPage() {
                   <div
                     className={`w-full h-40 rounded-lg mb-4 bg-gradient-to-br ${f.gradient} border border-darwin-border/30 flex items-center justify-center`}
                   >
-                    <span className="text-darwin-text-dim text-sm font-mono">
+                    <span className="text-darwin-text-dim text-base font-mono">
                       Screenshot pending
                     </span>
                   </div>
@@ -150,7 +150,7 @@ export default function ProductPage() {
                   <h3 className="font-semibold text-darwin-text-bright text-xl mb-2">
                     {f.title}
                   </h3>
-                  <p className="text-darwin-text-dim text-sm leading-relaxed mb-4">
+                  <p className="text-darwin-text-dim text-base leading-relaxed mb-4">
                     {f.description}
                   </p>
 
@@ -158,7 +158,7 @@ export default function ProductPage() {
                     {f.capabilities.map((cap) => (
                       <li
                         key={cap}
-                        className="text-xs text-darwin-text-dim flex items-start gap-2"
+                        className="text-sm text-darwin-text-dim flex items-start gap-2"
                       >
                         <span className="text-darwin-accent mt-0.5">+</span>
                         {cap}
@@ -184,11 +184,11 @@ export default function ProductPage() {
             <div className="darwin-card">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-darwin-text-bright">DarwinVaultV2 (ERC-4626)</h3>
-                <span className="text-xs font-mono text-darwin-accent bg-darwin-accent/10 px-2 py-0.5 rounded">
+                <span className="text-sm font-mono text-darwin-accent bg-darwin-accent/10 px-2 py-0.5 rounded">
                   Live
                 </span>
               </div>
-              <p className="font-mono text-sm text-darwin-text-dim mb-2 break-all">
+              <p className="font-mono text-base text-darwin-text-dim mb-2 break-all">
                 {VAULT_ADDRESS}
               </p>
               <div className="flex gap-3">
@@ -196,7 +196,7 @@ export default function ProductPage() {
                   href={`https://basescan.org/address/${VAULT_ADDRESS}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-darwin-accent hover:text-darwin-accent-dim transition-colors"
+                  className="text-sm text-darwin-accent hover:text-darwin-accent-dim transition-colors"
                 >
                   View on Basescan
                 </a>
@@ -206,11 +206,11 @@ export default function ProductPage() {
             <div className="darwin-card">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-darwin-text-bright">DarwinVaultV3 (Fee Model)</h3>
-                <span className="text-xs font-mono text-darwin-purple bg-darwin-purple/10 px-2 py-0.5 rounded">
+                <span className="text-sm font-mono text-darwin-purple bg-darwin-purple/10 px-2 py-0.5 rounded">
                   Built
                 </span>
               </div>
-              <p className="text-sm text-darwin-text-dim mb-2">
+              <p className="text-base text-darwin-text-dim mb-2">
                 1% management fee + 5% performance fee (high water mark). 325 passing tests. Ready for mainnet deployment.
               </p>
             </div>
@@ -219,14 +219,14 @@ export default function ProductPage() {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-darwin-text-bright">Deployer Wallet</h3>
               </div>
-              <p className="font-mono text-sm text-darwin-text-dim mb-2 break-all">
+              <p className="font-mono text-base text-darwin-text-dim mb-2 break-all">
                 {DEPLOYER_ADDRESS}
               </p>
               <a
                 href={`https://basescan.org/address/${DEPLOYER_ADDRESS}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-darwin-accent hover:text-darwin-accent-dim transition-colors"
+                className="text-sm text-darwin-accent hover:text-darwin-accent-dim transition-colors"
               >
                 View on Basescan
               </a>
@@ -236,7 +236,7 @@ export default function ProductPage() {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-darwin-text-bright">ENS Identity</h3>
               </div>
-              <p className="font-mono text-sm text-darwin-accent">darwinfi.base.eth</p>
+              <p className="font-mono text-base text-darwin-accent">darwinfi.base.eth</p>
             </div>
           </div>
         </AnimatedSection>
@@ -253,14 +253,14 @@ export default function ProductPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
             {techStack.map((group) => (
               <div key={group.category} className="darwin-card">
-                <h3 className="font-semibold text-darwin-text-bright text-sm mb-3">
+                <h3 className="font-semibold text-darwin-text-bright text-base mb-3">
                   {group.category}
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {group.items.map((item) => (
                     <span
                       key={item}
-                      className="text-xs font-mono text-darwin-text-dim bg-darwin-border/30 px-2 py-1 rounded"
+                      className="text-sm font-mono text-darwin-text-dim bg-darwin-border/30 px-2 py-1 rounded"
                     >
                       {item}
                     </span>

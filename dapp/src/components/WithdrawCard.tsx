@@ -57,14 +57,14 @@ export function WithdrawCard() {
       {/* User position summary */}
       <div className="bg-darwin-bg rounded-lg p-4 mb-4 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-mono text-darwin-text-dim">Your dvUSDC</span>
-          <span className="text-sm font-mono text-darwin-text-bright">
+          <span className="text-sm font-mono text-darwin-text-dim">Your dvUSDC</span>
+          <span className="text-base font-mono text-darwin-text-bright">
             {userShares ? parseFloat(userShares).toLocaleString("en-US", { maximumFractionDigits: 6 }) : "0.00"}
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs font-mono text-darwin-text-dim">Estimated Value</span>
-          <span className="text-sm font-mono text-darwin-accent">
+          <span className="text-sm font-mono text-darwin-text-dim">Estimated Value</span>
+          <span className="text-base font-mono text-darwin-accent">
             ${userShareValue ? parseFloat(userShareValue).toLocaleString("en-US", { maximumFractionDigits: 2 }) : "0.00"}
           </span>
         </div>
@@ -73,7 +73,7 @@ export function WithdrawCard() {
       {/* Lock warning */}
       {isLocked && unlockTime && (
         <div className="mb-4 p-3 bg-darwin-warning/10 border border-darwin-warning/30 rounded-lg">
-          <p className="text-xs font-mono text-darwin-warning">
+          <p className="text-sm font-mono text-darwin-warning">
             Funds locked until {unlockTime.toLocaleString()}
           </p>
         </div>
@@ -82,7 +82,7 @@ export function WithdrawCard() {
       {/* Amount Input */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1">
-          <label className="text-xs font-mono text-darwin-text-dim">USDC to Withdraw</label>
+          <label className="text-sm font-mono text-darwin-text-dim">USDC to Withdraw</label>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex-1 relative">
@@ -97,7 +97,7 @@ export function WithdrawCard() {
                 disabled:opacity-50 disabled:cursor-not-allowed
                 placeholder:text-darwin-text-dim/40"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-darwin-text-dim text-sm font-mono">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-darwin-text-dim text-base font-mono">
               USDC
             </span>
           </div>
@@ -105,7 +105,7 @@ export function WithdrawCard() {
             onClick={handleMax}
             disabled={isRedeeming || isSuccess || !userShares}
             className="px-3 py-3 bg-darwin-purple/10 text-darwin-purple border border-darwin-purple/30 rounded-lg
-              text-xs font-mono uppercase tracking-wider
+              text-sm font-mono uppercase tracking-wider
               hover:bg-darwin-purple/20 transition-all active:scale-[0.97]
               disabled:opacity-30 disabled:cursor-not-allowed"
           >
@@ -113,7 +113,7 @@ export function WithdrawCard() {
           </button>
         </div>
         {amount && usdcAmount > 0 && sharePriceNum > 0 && (
-          <p className="text-xs font-mono text-darwin-text-dim mt-1">
+          <p className="text-sm font-mono text-darwin-text-dim mt-1">
             ~{sharesToRedeem.toFixed(6)} dvUSDC shares will be redeemed
           </p>
         )}
@@ -121,12 +121,12 @@ export function WithdrawCard() {
 
       {/* Action Button */}
       {!isConnected ? (
-        <div className="text-center py-3 text-darwin-text-dim text-sm font-mono">
+        <div className="text-center py-3 text-darwin-text-dim text-base font-mono">
           Connect wallet to withdraw
         </div>
       ) : isSuccess ? (
         <div className="space-y-3">
-          <div className="text-center py-3 text-darwin-accent font-mono text-sm glow-accent rounded-lg border border-darwin-accent/30 bg-darwin-accent/5">
+          <div className="text-center py-3 text-darwin-accent font-mono text-base glow-accent rounded-lg border border-darwin-accent/30 bg-darwin-accent/5">
             Withdrawal successful!
           </div>
           {redeemTxHash && (
@@ -134,7 +134,7 @@ export function WithdrawCard() {
               href={`https://basescan.org/tx/${redeemTxHash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="block text-center text-xs font-mono text-darwin-purple hover:text-darwin-accent transition-colors"
+              className="block text-center text-sm font-mono text-darwin-purple hover:text-darwin-accent transition-colors"
             >
               {"View on BaseScan ->"}
             </a>
@@ -142,7 +142,7 @@ export function WithdrawCard() {
           <button
             onClick={handleReset}
             className="w-full py-3 bg-darwin-card-hover text-darwin-text border border-darwin-border rounded-lg
-              font-mono text-sm hover:border-darwin-purple/30 transition-all active:scale-[0.97]"
+              font-mono text-base hover:border-darwin-purple/30 transition-all active:scale-[0.97]"
           >
             New Withdrawal
           </button>
@@ -157,7 +157,7 @@ export function WithdrawCard() {
             parseFloat(amount) <= 0 ||
             (userShareValue != null && usdcAmount > parseFloat(userShareValue))
           }
-          className="w-full py-3 rounded-lg font-mono text-sm font-bold uppercase tracking-wider transition-all duration-200
+          className="w-full py-3 rounded-lg font-mono text-base font-bold uppercase tracking-wider transition-all duration-200
             bg-darwin-purple text-darwin-text-bright btn-shine
             hover:shadow-lg hover:shadow-darwin-purple/20
             active:scale-[0.97]
@@ -174,12 +174,12 @@ export function WithdrawCard() {
       {/* Error display */}
       {error && (
         <div className="mt-3 p-3 bg-darwin-danger/10 border border-darwin-danger/30 rounded-lg">
-          <p className="text-darwin-danger text-xs font-mono break-all">
+          <p className="text-darwin-danger text-sm font-mono break-all">
             {error.length > 200 ? error.substring(0, 200) + "..." : error}
           </p>
           <button
             onClick={handleReset}
-            className="mt-2 text-xs font-mono text-darwin-text-dim hover:text-darwin-text transition-colors"
+            className="mt-2 text-sm font-mono text-darwin-text-dim hover:text-darwin-text transition-colors"
           >
             Try again
           </button>

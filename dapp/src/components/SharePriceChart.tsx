@@ -38,10 +38,10 @@ export function SharePriceChart() {
     return (
       <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-mono text-darwin-text-dim uppercase tracking-wider">Share Price</span>
+          <span className="text-sm font-mono text-darwin-text-dim uppercase tracking-wider">Share Price</span>
         </div>
         <div className="h-24 flex items-center justify-center">
-          <span className="text-xs font-mono text-darwin-text-dim">
+          <span className="text-sm font-mono text-darwin-text-dim">
             {loading ? "Loading..." : "Collecting data..."}
           </span>
         </div>
@@ -84,12 +84,12 @@ export function SharePriceChart() {
   return (
     <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-4 transition-all duration-300 hover:border-darwin-border/80">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-mono text-darwin-text-dim uppercase tracking-wider">Share Price</span>
+        <span className="text-sm font-mono text-darwin-text-dim uppercase tracking-wider">Share Price</span>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-mono text-darwin-text-bright font-bold">
+          <span className="text-base font-mono text-darwin-text-bright font-bold">
             ${lastPrice.toFixed(6)}
           </span>
-          <span className={`text-xs font-mono ${isPositive ? "text-darwin-accent" : "text-darwin-danger"}`}>
+          <span className={`text-sm font-mono ${isPositive ? "text-darwin-accent" : "text-darwin-danger"}`}>
             {isPositive ? "+" : ""}{pctChange.toFixed(2)}%
           </span>
         </div>

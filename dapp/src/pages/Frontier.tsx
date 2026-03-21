@@ -29,14 +29,14 @@ export function Frontier() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="section-header text-darwin-text-bright text-sm">
+          <h1 className="section-header text-darwin-text-bright text-base">
             FRONTIER
           </h1>
-          <p className="text-xs font-mono text-darwin-text-dim mt-1">
+          <p className="text-sm font-mono text-darwin-text-dim mt-1">
             Team 4 -- Cross-Chain Evolutionary Trading
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-mono text-darwin-text-dim">
+        <div className="flex items-center gap-2 text-sm font-mono text-darwin-text-dim">
           <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse-glow" />
           {strategies.length} bots active
         </div>
@@ -47,7 +47,7 @@ export function Frontier() {
 
       {/* Bot Cards Grid */}
       <div>
-        <h2 className="section-header text-darwin-text-bright text-xs mb-4">
+        <h2 className="section-header text-darwin-text-bright text-sm mb-4">
           FRONTIER BOTS
         </h2>
         {strategiesLoading && strategies.length === 0 ? (
@@ -96,7 +96,7 @@ export function Frontier() {
               INTERNAL COMPETITION
             </h3>
             {competition.teamWinner && (
-              <span className="text-xs font-mono text-darwin-accent">
+              <span className="text-sm font-mono text-darwin-accent">
                 Team Winner: {competition.teamWinner.botId}
               </span>
             )}
@@ -109,7 +109,7 @@ export function Frontier() {
               >
                 <div className="flex items-center gap-3">
                   <span
-                    className={`text-xs font-mono font-bold ${
+                    className={`text-sm font-mono font-bold ${
                       idx === 0
                         ? "text-darwin-accent"
                         : "text-darwin-text-dim"
@@ -117,15 +117,15 @@ export function Frontier() {
                   >
                     #{idx + 1}
                   </span>
-                  <span className="text-xs font-mono text-darwin-text-bright">
+                  <span className="text-sm font-mono text-darwin-text-bright">
                     {entry.name}
                   </span>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-xs font-mono text-darwin-text-dim">
+                  <span className="text-sm font-mono text-darwin-text-dim">
                     {entry.trades} trades
                   </span>
-                  <span className="text-xs font-mono text-darwin-text-bright font-bold">
+                  <span className="text-sm font-mono text-darwin-text-bright font-bold">
                     {entry.score.toFixed(3)}
                   </span>
                 </div>

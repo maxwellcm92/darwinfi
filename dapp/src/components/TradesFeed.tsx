@@ -43,7 +43,7 @@ export function TradesFeed({ trades, loading, maxItems = 20 }: TradesFeedProps) 
         </h3>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-darwin-accent animate-pulse-glow" />
-          <span className="text-xs font-mono text-darwin-text-dim">LIVE</span>
+          <span className="text-sm font-mono text-darwin-text-dim">LIVE</span>
         </div>
       </div>
 
@@ -67,7 +67,7 @@ export function TradesFeed({ trades, loading, maxItems = 20 }: TradesFeedProps) 
         </div>
       ) : displayed.length === 0 ? (
         <div className="p-8 text-center">
-          <p className="font-mono text-darwin-text-dim text-sm">
+          <p className="font-mono text-darwin-text-dim text-base">
             No trades yet. The agent is warming up.
           </p>
         </div>
@@ -82,7 +82,7 @@ export function TradesFeed({ trades, loading, maxItems = 20 }: TradesFeedProps) 
                 <div className="flex items-center gap-3">
                   {/* Action badge */}
                   <span
-                    className={`inline-block w-12 text-center px-2 py-0.5 text-xs font-mono font-bold rounded ${
+                    className={`inline-block w-12 text-center px-2 py-0.5 text-sm font-mono font-bold rounded ${
                       trade.action === "BUY"
                         ? "bg-darwin-accent/20 text-darwin-accent border border-darwin-accent/30"
                         : "bg-darwin-danger/20 text-darwin-danger border border-darwin-danger/30"
@@ -93,30 +93,30 @@ export function TradesFeed({ trades, loading, maxItems = 20 }: TradesFeedProps) 
 
                   {/* Token + Strategy */}
                   <div>
-                    <p className="text-sm font-mono text-darwin-text-bright font-medium">
+                    <p className="text-base font-mono text-darwin-text-bright font-medium">
                       {trade.token}
                     </p>
-                    <p className="text-xs font-mono text-darwin-text-dim">
+                    <p className="text-sm font-mono text-darwin-text-dim">
                       {trade.strategy}
                     </p>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <p className="text-sm font-mono text-darwin-text-bright">
+                  <p className="text-base font-mono text-darwin-text-bright">
                     ${trade.price.toFixed(4)}
                   </p>
                   <div className="flex items-center gap-2 justify-end">
                     {trade.pnl != null && (
                       <span
-                        className={`text-xs font-mono ${
+                        className={`text-sm font-mono ${
                           trade.pnl >= 0 ? "text-darwin-accent" : "text-darwin-danger"
                         }`}
                       >
                         {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
                       </span>
                     )}
-                    <span className="text-xs font-mono text-darwin-text-dim">
+                    <span className="text-sm font-mono text-darwin-text-dim">
                       {formatDate(trade.timestamp)} {formatTime(trade.timestamp)}
                     </span>
                   </div>

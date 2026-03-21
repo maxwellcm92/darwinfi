@@ -31,7 +31,7 @@ export function ChatBubble() {
         {/* Teaser tooltip */}
         {showTeaser && !isOpen && (
           <div className="absolute bottom-full right-0 mb-3 w-56 animate-fade-in">
-            <div className="relative bg-darwin-card border border-darwin-border/60 rounded-xl px-3.5 py-2.5 text-xs text-darwin-text shadow-lg">
+            <div className="relative bg-darwin-card border border-darwin-border/60 rounded-xl px-3.5 py-2.5 text-sm text-darwin-text shadow-lg">
               <button
                 onClick={() => {
                   setShowTeaser(false);

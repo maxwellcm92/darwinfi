@@ -76,7 +76,7 @@ void main() {
   fragColor = vec4(color, 1.0);
 }`;
 
-export function ShaderHero() {
+export function ShaderHero({ children }: { children?: React.ReactNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
 
@@ -144,41 +144,23 @@ export function ShaderHero() {
   }, []);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: "16 / 5", minHeight: "140px" }}>
+    <div className="relative w-full min-h-[50vh] sm:min-h-[60vh] overflow-hidden">
       {/* WebGL Canvas */}
       <canvas
         ref={canvasRef}
-        width={320}
-        height={180}
-        className="absolute inset-0 w-full h-full"
+        width={640}
+        height={360}
+        className="absolute inset-0 w-full h-full pointer-events-none"
         style={{ imageRendering: "auto" }}
       />
 
-      {/* Overlay content */}
-      <div className="absolute inset-0 flex items-center justify-between px-10 md:px-14 lg:px-16">
-        {/* Left: text */}
-        <div className="relative z-10 max-w-lg">
-          <h1 className="font-serif text-xl md:text-2xl lg:text-3xl font-bold text-darwin-text-bright mb-2 tracking-tight">
-            Autonomous DeFi Vault
-          </h1>
-          <p className="font-sans text-sm md:text-base text-darwin-text/80">
-            AI-managed trading strategies competing for your yield on Base L2
-          </p>
-        </div>
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-darwin-bg pointer-events-none" />
 
-        {/* Right: logo (desktop) */}
-        <div className="hidden lg:block relative z-10">
-          <img
-            src="/darwinfi/darwinfi-logo-bg.png"
-            alt=""
-            className="h-36 w-auto opacity-80 rounded-2xl shadow-lg shadow-darwin-accent/20"
-            aria-hidden="true"
-          />
-        </div>
+      {/* Centered children */}
+      <div className="relative z-10 flex items-center justify-center min-h-[50vh] sm:min-h-[60vh]">
+        {children}
       </div>
-
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-darwin-bg to-transparent" />
     </div>
   );
 }

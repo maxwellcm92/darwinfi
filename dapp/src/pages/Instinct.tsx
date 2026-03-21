@@ -32,11 +32,11 @@ export function Instinct() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="section-header text-darwin-text-bright text-sm">
+        <h1 className="section-header text-darwin-text-bright text-base">
           INSTINCT
         </h1>
         {health && (
-          <div className="flex items-center gap-4 text-xs font-mono text-darwin-text-dim">
+          <div className="flex items-center gap-4 text-sm font-mono text-darwin-text-dim">
             <span>Sources: {health.sensesActive}</span>
             <span>Strategies: {health.reflexesActive}</span>
             <span className="text-darwin-purple text-glow-purple">
@@ -55,7 +55,7 @@ export function Instinct() {
             <button
               key={token}
               onClick={() => setSelectedToken(token)}
-              className={`px-3 py-1.5 rounded-full text-xs font-mono transition-all border active:scale-[0.97] ${
+              className={`px-3 py-1.5 rounded-full text-sm font-mono transition-all border active:scale-[0.97] ${
                 selectedToken === token
                   ? "bg-darwin-accent/20 text-darwin-accent border-darwin-accent/40 nav-pill-active"
                   : "bg-darwin-card/70 text-darwin-text hover:text-darwin-text-bright border-darwin-border/50 hover:border-darwin-accent/20"
@@ -86,7 +86,7 @@ export function Instinct() {
           <button
             key={res}
             onClick={() => setSelectedResolution(res)}
-            className={`px-4 py-2 rounded-full text-xs font-mono transition-all border active:scale-[0.97] ${
+            className={`px-4 py-2 rounded-full text-sm font-mono transition-all border active:scale-[0.97] ${
               selectedResolution === res
                 ? "bg-darwin-purple/20 text-darwin-purple border-darwin-purple/40 nav-pill-active"
                 : "text-darwin-text-dim hover:text-darwin-text border-transparent"
@@ -117,16 +117,16 @@ export function Instinct() {
             {RESOLUTIONS.map((res) => {
               const pred = tokenInstinct?.predictions?.[res as keyof typeof tokenInstinct.predictions];
               if (!pred) return (
-                <div key={res} className="flex items-center justify-between text-xs font-mono text-darwin-text-dim">
+                <div key={res} className="flex items-center justify-between text-sm font-mono text-darwin-text-dim">
                   <span>{res.toUpperCase()}</span>
                   <span>No data</span>
                 </div>
               );
               return (
                 <div key={res} className="flex items-center justify-between">
-                  <span className="text-xs font-mono text-darwin-text-dim w-8">{res.toUpperCase()}</span>
+                  <span className="text-sm font-mono text-darwin-text-dim w-8">{res.toUpperCase()}</span>
                   <span
-                    className={`px-2 py-0.5 text-xs font-mono rounded ${
+                    className={`px-2 py-0.5 text-sm font-mono rounded ${
                       pred.direction === "up"
                         ? "bg-darwin-accent/20 text-darwin-accent"
                         : pred.direction === "down"
@@ -136,10 +136,10 @@ export function Instinct() {
                   >
                     {pred.direction.toUpperCase()}
                   </span>
-                  <span className="text-xs font-mono text-darwin-text">
+                  <span className="text-sm font-mono text-darwin-text">
                     ${pred.predictedClose.toFixed(pred.predictedClose > 10 ? 2 : 6)}
                   </span>
-                  <span className="text-xs font-mono text-darwin-text-dim">
+                  <span className="text-sm font-mono text-darwin-text-dim">
                     {pred.confidence}%
                   </span>
                 </div>
@@ -160,14 +160,14 @@ export function Instinct() {
               const bar = getSentimentBar(s.score);
               return (
                 <div key={token} className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-darwin-text-dim w-14">{token}</span>
+                  <span className="text-sm font-mono text-darwin-text-dim w-14">{token}</span>
                   <div className="flex-1 h-2 bg-darwin-bg rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full ${bar.color} transition-all`}
                       style={{ width: bar.width, marginLeft: s.score < 0 ? "auto" : undefined }}
                     />
                   </div>
-                  <span className={`text-xs font-mono w-10 text-right ${
+                  <span className={`text-sm font-mono w-10 text-right ${
                     s.score > 0.3 ? "text-darwin-accent" :
                     s.score < -0.3 ? "text-darwin-danger" : "text-darwin-text-dim"
                   }`}>
@@ -177,16 +177,16 @@ export function Instinct() {
               );
             })}
             {Object.keys(allTokens).length === 0 && (
-              <p className="text-xs font-mono text-darwin-text-dim">No sentiment data yet</p>
+              <p className="text-sm font-mono text-darwin-text-dim">No sentiment data yet</p>
             )}
           </div>
 
           {/* Top Events */}
           {tokenInstinct?.sentiment?.topEvents && tokenInstinct.sentiment.topEvents.length > 0 && (
             <div className="mt-4 pt-3 border-t border-darwin-border/50">
-              <p className="text-xs font-mono text-darwin-text-dim mb-2">Recent Events</p>
+              <p className="text-sm font-mono text-darwin-text-dim mb-2">Recent Events</p>
               {tokenInstinct.sentiment.topEvents.slice(0, 3).map((event, i) => (
-                <p key={i} className="text-xs font-mono text-darwin-text truncate mb-1">
+                <p key={i} className="text-sm font-mono text-darwin-text truncate mb-1">
                   {event}
                 </p>
               ))}
@@ -203,27 +203,27 @@ export function Instinct() {
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs font-mono text-darwin-accent mb-2">Support</p>
+              <p className="text-sm font-mono text-darwin-accent mb-2">Support</p>
               <div className="space-y-1">
                 {tokenInstinct.keyLevels.support.length > 0
                   ? tokenInstinct.keyLevels.support.map((level, i) => (
-                      <p key={i} className="text-sm font-mono text-darwin-text">
+                      <p key={i} className="text-base font-mono text-darwin-text">
                         ${level.toFixed(level > 10 ? 2 : 6)}
                       </p>
                     ))
-                  : <p className="text-xs font-mono text-darwin-text-dim">--</p>}
+                  : <p className="text-sm font-mono text-darwin-text-dim">--</p>}
               </div>
             </div>
             <div>
-              <p className="text-xs font-mono text-darwin-danger mb-2">Resistance</p>
+              <p className="text-sm font-mono text-darwin-danger mb-2">Resistance</p>
               <div className="space-y-1">
                 {tokenInstinct.keyLevels.resistance.length > 0
                   ? tokenInstinct.keyLevels.resistance.map((level, i) => (
-                      <p key={i} className="text-sm font-mono text-darwin-text">
+                      <p key={i} className="text-base font-mono text-darwin-text">
                         ${level.toFixed(level > 10 ? 2 : 6)}
                       </p>
                     ))
-                  : <p className="text-xs font-mono text-darwin-text-dim">--</p>}
+                  : <p className="text-sm font-mono text-darwin-text-dim">--</p>}
               </div>
             </div>
           </div>

@@ -407,12 +407,12 @@ export function OrganismDiagram() {
             <p className="section-header mb-1" style={{ color: activeOrgan.color }}>
               {activeOrgan.role}
             </p>
-            <p className="text-sm text-darwin-text leading-relaxed">
+            <p className="text-base text-darwin-text leading-relaxed">
               {activeOrgan.description}
             </p>
           </>
         ) : (
-          <p className="text-sm text-darwin-text-dim italic">
+          <p className="text-base text-darwin-text-dim italic">
             Hover or tap an organ to explore the anatomy
           </p>
         )}

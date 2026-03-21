@@ -26,7 +26,7 @@ function getEventIcon(event: string): string {
 
 function AuditRow({ entry }: { entry: AuditEntry }) {
   return (
-    <div className="flex items-start gap-3 text-xs font-mono py-2 border-b border-darwin-border/20 last:border-0">
+    <div className="flex items-start gap-3 text-sm font-mono py-2 border-b border-darwin-border/20 last:border-0">
       <span className="text-darwin-text-dim whitespace-nowrap">
         {formatTimestamp(entry.timestamp)}
       </span>
@@ -55,7 +55,7 @@ export function EvolutionAudit() {
 
   if (auditLoading) {
     return (
-      <div className="text-center text-darwin-text-dim font-mono text-sm py-8">
+      <div className="text-center text-darwin-text-dim font-mono text-base py-8">
         Loading audit trail...
       </div>
     );
@@ -63,7 +63,7 @@ export function EvolutionAudit() {
 
   if (audit.length === 0) {
     return (
-      <div className="text-center text-darwin-text-dim font-mono text-sm py-8">
+      <div className="text-center text-darwin-text-dim font-mono text-base py-8">
         No evolution activity yet. The engine runs every 6 hours.
       </div>
     );
@@ -72,10 +72,10 @@ export function EvolutionAudit() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-darwin-text-dim font-mono text-xs uppercase tracking-wider">
+        <h3 className="text-darwin-text-dim font-mono text-sm uppercase tracking-wider">
           Audit Trail
         </h3>
-        <span className="text-darwin-text-dim text-xs font-mono">
+        <span className="text-darwin-text-dim text-sm font-mono">
           {audit.length} entries
         </span>
       </div>

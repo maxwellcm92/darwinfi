@@ -52,7 +52,7 @@ function EvolutionTimeline({ entries, loading }: { entries: EvolutionEntry[]; lo
 
       {sorted.length === 0 ? (
         <div className="p-8 text-center">
-          <p className="text-sm font-mono text-darwin-text-dim">
+          <p className="text-base font-mono text-darwin-text-dim">
             No evolution cycles recorded yet.
           </p>
         </div>
@@ -67,23 +67,23 @@ function EvolutionTimeline({ entries, loading }: { entries: EvolutionEntry[]; lo
                 <div className="flex items-start gap-3">
                   {/* Cycle number */}
                   <div className="w-10 h-10 rounded-lg bg-darwin-purple/20 border border-darwin-purple/30 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-mono text-darwin-purple font-bold">
+                    <span className="text-sm font-mono text-darwin-purple font-bold">
                       {entry.cycle}
                     </span>
                   </div>
 
                   <div>
-                    <p className="text-sm font-mono text-darwin-text-bright">
+                    <p className="text-base font-mono text-darwin-text-bright">
                       Champion: <span className="text-darwin-accent">{entry.champion}</span>
                     </p>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {entry.promoted && (
-                        <span className="text-xs font-mono text-darwin-accent bg-darwin-accent/10 px-2 py-0.5 rounded">
+                        <span className="text-sm font-mono text-darwin-accent bg-darwin-accent/10 px-2 py-0.5 rounded">
                           Promoted: {entry.promoted}
                         </span>
                       )}
                       {entry.eliminated && (
-                        <span className="text-xs font-mono text-darwin-danger bg-darwin-danger/10 px-2 py-0.5 rounded">
+                        <span className="text-sm font-mono text-darwin-danger bg-darwin-danger/10 px-2 py-0.5 rounded">
                           Eliminated: {entry.eliminated}
                         </span>
                       )}
@@ -91,7 +91,7 @@ function EvolutionTimeline({ entries, loading }: { entries: EvolutionEntry[]; lo
                   </div>
                 </div>
 
-                <span className="text-xs font-mono text-darwin-text-dim flex-shrink-0 ml-2">
+                <span className="text-sm font-mono text-darwin-text-dim flex-shrink-0 ml-2">
                   {formatTimestamp(entry.timestamp)}
                 </span>
               </div>
@@ -111,10 +111,10 @@ export function Tournament() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="section-header text-darwin-text-bright text-sm">
+        <h1 className="section-header text-darwin-text-bright text-base">
           TOURNAMENT
         </h1>
-        <div className="flex items-center gap-2 text-xs font-mono text-darwin-text-dim">
+        <div className="flex items-center gap-2 text-sm font-mono text-darwin-text-dim">
           <span className="w-2 h-2 rounded-full bg-darwin-accent animate-pulse-glow" />
           {strategies.length} strategies competing
         </div>

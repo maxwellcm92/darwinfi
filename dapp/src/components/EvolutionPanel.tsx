@@ -19,12 +19,12 @@ function CanaryCard({ canary }: { canary: CanaryState }) {
   return (
     <div className="bg-darwin-card border border-darwin-accent/30 rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-darwin-accent font-mono text-sm font-bold">ACTIVE CANARY</h3>
-        <span className="text-xs bg-darwin-accent/20 text-darwin-accent px-2 py-0.5 rounded-full animate-pulse">
+        <h3 className="text-darwin-accent font-mono text-base font-bold">ACTIVE CANARY</h3>
+        <span className="text-sm bg-darwin-accent/20 text-darwin-accent px-2 py-0.5 rounded-full animate-pulse">
           LIVE
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+      <div className="grid grid-cols-2 gap-3 text-sm font-mono">
         <div>
           <span className="text-darwin-text-dim">Proposal</span>
           <p className="text-darwin-text-bright truncate">{canary.proposalId.slice(0, 12)}...</p>
@@ -64,10 +64,10 @@ function BackoffTable({ backoff }: { backoff: Record<string, ZoneBackoff> }) {
 
   return (
     <div className="space-y-2">
-      <h3 className="text-darwin-text-dim font-mono text-xs uppercase tracking-wider">Zone Backoff</h3>
+      <h3 className="text-darwin-text-dim font-mono text-sm uppercase tracking-wider">Zone Backoff</h3>
       <div className="space-y-1">
         {entries.map((z) => (
-          <div key={z.zone} className="flex items-center justify-between text-xs font-mono bg-darwin-card rounded px-3 py-1.5">
+          <div key={z.zone} className="flex items-center justify-between text-sm font-mono bg-darwin-card rounded px-3 py-1.5">
             <span className="text-darwin-text">{z.zone}</span>
             <span className="text-red-400">{z.consecutiveFailures} failures</span>
             <span className="text-darwin-text-dim">
@@ -89,7 +89,7 @@ export function EvolutionPanel() {
 
   if (statusLoading) {
     return (
-      <div className="text-center text-darwin-text-dim font-mono text-sm py-12">
+      <div className="text-center text-darwin-text-dim font-mono text-base py-12">
         Loading evolution status...
       </div>
     );
@@ -97,7 +97,7 @@ export function EvolutionPanel() {
 
   if (statusError) {
     return (
-      <div className="text-center text-red-400 font-mono text-sm py-12">
+      <div className="text-center text-red-400 font-mono text-base py-12">
         Error: {statusError}
       </div>
     );
@@ -129,13 +129,13 @@ export function EvolutionPanel() {
       <div className="flex gap-3">
         <button
           onClick={pauseEvolution}
-          className="px-4 py-2 text-xs font-mono rounded-lg border border-darwin-border hover:border-yellow-500 hover:text-yellow-400 text-darwin-text transition-colors"
+          className="px-4 py-2 text-sm font-mono rounded-lg border border-darwin-border hover:border-yellow-500 hover:text-yellow-400 text-darwin-text transition-colors"
         >
           Pause Evolution
         </button>
         <button
           onClick={resumeEvolution}
-          className="px-4 py-2 text-xs font-mono rounded-lg border border-darwin-border hover:border-darwin-accent hover:text-darwin-accent text-darwin-text transition-colors"
+          className="px-4 py-2 text-sm font-mono rounded-lg border border-darwin-border hover:border-darwin-accent hover:text-darwin-accent text-darwin-text transition-colors"
         >
           Resume
         </button>
@@ -145,7 +145,7 @@ export function EvolutionPanel() {
               triggerRollback();
             }
           }}
-          className="px-4 py-2 text-xs font-mono rounded-lg border border-red-500/30 hover:border-red-500 hover:text-red-400 text-darwin-text transition-colors"
+          className="px-4 py-2 text-sm font-mono rounded-lg border border-red-500/30 hover:border-red-500 hover:text-red-400 text-darwin-text transition-colors"
         >
           Manual Rollback
         </button>
@@ -157,14 +157,14 @@ export function EvolutionPanel() {
       {/* Recent Memory Entries */}
       {memory && memory.recentEntries.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-darwin-text-dim font-mono text-xs uppercase tracking-wider">
+          <h3 className="text-darwin-text-dim font-mono text-sm uppercase tracking-wider">
             Recent Proposals ({memory.totalEntries} total)
           </h3>
           <div className="space-y-1 max-h-64 overflow-y-auto">
             {memory.recentEntries.slice().reverse().map((entry, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between text-xs font-mono bg-darwin-card rounded px-3 py-2"
+                className="flex items-center justify-between text-sm font-mono bg-darwin-card rounded px-3 py-2"
               >
                 <span className="text-darwin-text-dim">{formatTimestamp(entry.timestamp)}</span>
                 <span className="text-darwin-text">{entry.zone}</span>
@@ -191,7 +191,7 @@ export function EvolutionPanel() {
 function StatCard({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="bg-darwin-card rounded-xl p-4 border border-darwin-border/30">
-      <p className="text-darwin-text-dim text-xs font-mono mb-1">{label}</p>
+      <p className="text-darwin-text-dim text-sm font-mono mb-1">{label}</p>
       <p className={`text-lg font-mono font-bold ${accent ? "text-darwin-accent" : "text-darwin-text-bright"}`}>
         {value}
       </p>

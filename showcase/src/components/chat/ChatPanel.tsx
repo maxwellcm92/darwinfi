@@ -92,10 +92,10 @@ export function ChatPanel() {
               </svg>
             </div>
             <div>
-              <span className="text-sm font-semibold text-darwin-text-bright">
+              <span className="text-base font-semibold text-darwin-text-bright">
                 Darwin
               </span>
-              <span className="ml-2 text-[10px] font-mono text-darwin-accent/70">
+              <span className="ml-2 text-xs font-mono text-darwin-accent/70">
                 AI Guide
               </span>
             </div>
@@ -181,7 +181,7 @@ export function ChatPanel() {
               onChange={(e) => setInput(e.target.value)}
               placeholder={isStreaming ? "Darwin is typing..." : "Ask Darwin anything..."}
               disabled={isStreaming}
-              className="flex-1 px-3 py-2 text-sm bg-darwin-bg border border-darwin-border/50 rounded-lg text-darwin-text-bright placeholder:text-darwin-text-dim/50 focus:outline-none focus:border-darwin-accent/50 disabled:opacity-50 transition-colors"
+              className="flex-1 px-3 py-2 text-base bg-darwin-bg border border-darwin-border/50 rounded-lg text-darwin-text-bright placeholder:text-darwin-text-dim/50 focus:outline-none focus:border-darwin-accent/50 disabled:opacity-50 transition-colors"
             />
             <button
               type="submit"

@@ -61,7 +61,7 @@ export default function HomePage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-darwin-accent opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-darwin-accent" />
             </span>
-            <span className="text-xs font-mono font-medium text-darwin-accent tracking-wider uppercase">
+            <span className="text-sm font-mono font-medium text-darwin-accent tracking-wider uppercase">
               Live on Base L2
             </span>
           </div>
@@ -76,7 +76,7 @@ export default function HomePage() {
             12 strategies compete. AI mutates the winners. Natural selection
             picks your yield.
           </p>
-          <p className="font-mono text-xs text-darwin-text-dim max-w-lg mx-auto mb-10 tracking-wide">
+          <p className="font-mono text-sm text-darwin-text-dim max-w-lg mx-auto mb-10 tracking-wide">
             ERC-4626 Vault &middot; Lit Protocol Guardrails &middot; Multi-AI
             Consensus &middot; Base Mainnet
           </p>
@@ -101,8 +101,8 @@ export default function HomePage() {
 
           {/* Vault address badge */}
           <div className="mt-8 inline-flex items-center gap-2 text-darwin-text-dim">
-            <span className="text-[10px] font-mono opacity-60">Vault:</span>
-            <code className="text-[10px] font-mono opacity-40 hover:opacity-80 transition-opacity">
+            <span className="text-xs font-mono opacity-60">Vault:</span>
+            <code className="text-xs font-mono opacity-40 hover:opacity-80 transition-opacity">
               {VAULT_ADDRESS}
             </code>
           </div>
@@ -270,7 +270,7 @@ export default function HomePage() {
             <p className="section-header text-darwin-accent text-center mb-2">
               Live Vault Telemetry
             </p>
-            <p className="text-darwin-text-dim text-center text-xs mb-8">
+            <p className="text-darwin-text-dim text-center text-sm mb-8">
               Polling every 8 seconds from{" "}
               <span className="font-mono text-darwin-text-dim/80">
                 /api/state
@@ -303,7 +303,7 @@ export default function HomePage() {
 
             {/* Win rate and uptime sub-stats */}
             {state && (
-              <div className="mt-8 pt-6 border-t border-darwin-border/20 flex flex-wrap items-center justify-center gap-6 text-xs font-mono text-darwin-text-dim">
+              <div className="mt-8 pt-6 border-t border-darwin-border/20 flex flex-wrap items-center justify-center gap-6 text-sm font-mono text-darwin-text-dim">
                 {state.winRate !== undefined && (
                   <span>
                     Win Rate:{" "}
@@ -495,7 +495,7 @@ export default function HomePage() {
                 <h3 className="font-semibold text-darwin-text-bright text-xl mb-3">
                   {item.title}
                 </h3>
-                <p className="text-darwin-text-dim text-sm leading-relaxed">
+                <p className="text-darwin-text-dim text-base leading-relaxed">
                   {item.desc}
                 </p>
               </div>
@@ -553,9 +553,9 @@ export default function HomePage() {
                 <ChevronIcon open={!!openSections["scoring"]} />
               </button>
               {openSections["scoring"] && (
-                <div className="mt-4 pt-4 border-t border-darwin-border/30 text-sm text-darwin-text leading-relaxed space-y-4">
+                <div className="mt-4 pt-4 border-t border-darwin-border/30 text-base text-darwin-text leading-relaxed space-y-4">
                   <div className="bg-darwin-bg/50 rounded-lg p-4 border border-darwin-border/20">
-                    <p className="font-mono text-darwin-accent text-xs leading-relaxed">
+                    <p className="font-mono text-darwin-accent text-sm leading-relaxed">
                       fitness = (0.35 * pnlNorm) + (0.25 * sharpeNorm) + (0.20 *
                       consistencyNorm) + (0.15 * winRateNorm) + (0.05 *
                       drawdownPenalty)
@@ -567,7 +567,7 @@ export default function HomePage() {
                     directly measure return quality. Consistency rewards
                     strategies that perform steadily rather than spiking.
                   </p>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="bg-darwin-bg/30 rounded p-3 border border-darwin-border/10">
                       <span className="font-mono text-darwin-accent">35%</span>{" "}
                       <span className="text-darwin-text-dim">PnL weight</span>
@@ -585,7 +585,7 @@ export default function HomePage() {
                       <span className="text-darwin-text-dim">Win rate</span>
                     </div>
                   </div>
-                  <p className="text-darwin-text-dim text-xs">
+                  <p className="text-darwin-text-dim text-sm">
                     Drawdown is penalized exponentially -- a 20% drawdown costs
                     4x more than a 10%. This prevents strategies from gambling
                     their way to the top.
@@ -623,7 +623,7 @@ export default function HomePage() {
                 <ChevronIcon open={!!openSections["breakers"]} />
               </button>
               {openSections["breakers"] && (
-                <div className="mt-4 pt-4 border-t border-darwin-border/30 text-sm text-darwin-text leading-relaxed space-y-4">
+                <div className="mt-4 pt-4 border-t border-darwin-border/30 text-base text-darwin-text leading-relaxed space-y-4">
                   <p>
                     Five independent circuit breakers protect the vault:
                   </p>
@@ -660,11 +660,11 @@ export default function HomePage() {
                         className="flex items-start gap-3 bg-darwin-bg/30 rounded-lg p-3 border border-darwin-border/10"
                       >
                         <span
-                          className={`font-mono text-xs font-bold ${breaker.color} shrink-0 mt-0.5`}
+                          className={`font-mono text-sm font-bold ${breaker.color} shrink-0 mt-0.5`}
                         >
                           {breaker.name}
                         </span>
-                        <span className="text-darwin-text-dim text-xs">
+                        <span className="text-darwin-text-dim text-sm">
                           {breaker.rule}
                         </span>
                       </div>
@@ -702,7 +702,7 @@ export default function HomePage() {
                 <ChevronIcon open={!!openSections["lit"]} />
               </button>
               {openSections["lit"] && (
-                <div className="mt-4 pt-4 border-t border-darwin-border/30 text-sm text-darwin-text leading-relaxed space-y-4">
+                <div className="mt-4 pt-4 border-t border-darwin-border/30 text-base text-darwin-text leading-relaxed space-y-4">
                   <p>
                     The vault&apos;s private key is held by a Lit Protocol PKP
                     (Programmable Key Pair). Lit Actions enforce conditions
@@ -727,16 +727,16 @@ export default function HomePage() {
                         key={policy.name}
                         className="flex items-start gap-3 bg-darwin-bg/30 rounded-lg p-3 border border-darwin-border/10"
                       >
-                        <span className="font-mono text-xs font-bold text-darwin-purple shrink-0 mt-0.5">
+                        <span className="font-mono text-sm font-bold text-darwin-purple shrink-0 mt-0.5">
                           {policy.name}
                         </span>
-                        <span className="text-darwin-text-dim text-xs">
+                        <span className="text-darwin-text-dim text-sm">
                           {policy.detail}
                         </span>
                       </div>
                     ))}
                   </div>
-                  <p className="text-darwin-text-dim text-xs border-l-2 border-darwin-purple/30 pl-3">
+                  <p className="text-darwin-text-dim text-sm border-l-2 border-darwin-purple/30 pl-3">
                     Even if the agent is compromised, the PKP policy prevents
                     unauthorized fund movement. The deployer wallet cannot
                     bypass these constraints.
@@ -775,7 +775,7 @@ export default function HomePage() {
                 <ChevronIcon open={!!openSections["tests"]} />
               </button>
               {openSections["tests"] && (
-                <div className="mt-4 pt-4 border-t border-darwin-border/30 text-sm text-darwin-text leading-relaxed space-y-4">
+                <div className="mt-4 pt-4 border-t border-darwin-border/30 text-base text-darwin-text leading-relaxed space-y-4">
                   <p>Every critical path is tested end-to-end:</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
@@ -809,11 +809,11 @@ export default function HomePage() {
                         className="bg-darwin-bg/30 rounded-lg p-3 border border-darwin-border/10"
                       >
                         <span
-                          className={`font-mono text-xs font-bold ${test.color} block mb-1`}
+                          className={`font-mono text-sm font-bold ${test.color} block mb-1`}
                         >
                           {test.layer}
                         </span>
-                        <span className="text-darwin-text-dim text-xs leading-relaxed">
+                        <span className="text-darwin-text-dim text-sm leading-relaxed">
                           {test.detail}
                         </span>
                       </div>

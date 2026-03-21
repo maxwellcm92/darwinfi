@@ -62,14 +62,14 @@ export function VolatilityHeatmap({
         <h3 className="section-header text-darwin-text-bright">
           VOLATILITY HEATMAP
         </h3>
-        <span className="text-[10px] font-mono text-darwin-text-dim">
+        <span className="text-xs font-mono text-darwin-text-dim">
           {events.length} events
         </span>
       </div>
 
       {events.length === 0 ? (
         <div className="p-8 text-center">
-          <p className="text-sm font-mono text-darwin-text-dim">
+          <p className="text-base font-mono text-darwin-text-dim">
             No volatility events detected
           </p>
         </div>
@@ -84,7 +84,7 @@ export function VolatilityHeatmap({
 
             return (
               <div key={chainId}>
-                <p className="text-[10px] font-mono text-darwin-text-dim mb-2 uppercase">
+                <p className="text-xs font-mono text-darwin-text-dim mb-2 uppercase">
                   {chainName}
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
@@ -98,14 +98,14 @@ export function VolatilityHeatmap({
                         className={`rounded-lg border p-3 ${heatColor} transition-all duration-200 hover:scale-105`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-mono font-bold text-darwin-text-bright">
+                          <span className="text-sm font-mono font-bold text-darwin-text-bright">
                             {event.tokenSymbol || "???"}
                           </span>
                           <span className="text-[8px] font-mono text-darwin-text-dim">
                             {heatLabel}
                           </span>
                         </div>
-                        <p className="text-sm font-mono text-darwin-text-bright">
+                        <p className="text-base font-mono text-darwin-text-bright">
                           {event.volRatio.toFixed(1)}x
                         </p>
                         {event.catalyst && (

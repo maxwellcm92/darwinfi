@@ -9,13 +9,7 @@ export function App() {
   return (
     <div className="min-h-screen flex flex-col scanline-overlay">
       <Navbar />
-      {/* Unaudited transparency banner */}
-      <div className="bg-yellow-900/30 border-b border-yellow-600/30 py-1.5 px-4 text-center">
-        <p className="text-xs font-mono text-yellow-400">
-          UNAUDITED SOFTWARE -- This vault has not undergone a formal security audit. Use at your own risk.
-        </p>
-      </div>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1 w-full">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/portfolio" element={<Portfolio />} />
@@ -27,10 +21,14 @@ export function App() {
           <Route path="/frontier" element={<Navigate to="/advanced?tab=frontier" replace />} />
         </Routes>
       </main>
+      {/* Subtle unaudited badge */}
+      <div className="fixed bottom-4 right-4 z-40 px-3 py-1.5 rounded-full text-xs font-mono text-yellow-400/60 bg-darwin-bg/80 backdrop-blur-sm border border-yellow-600/20">
+        UNAUDITED
+      </div>
       <footer className="border-t border-darwin-border/30 py-6 mt-auto">
         <div className="flex items-center justify-center gap-2">
           <img src="/darwinfi/darwinfi-logo.png" alt="" className="h-6 w-auto rounded" />
-          <p className="text-xs font-mono text-darwin-text-dim">
+          <p className="text-sm font-mono text-darwin-text-dim">
             DarwinFi - Autonomous DeFi on Base L2
           </p>
         </div>

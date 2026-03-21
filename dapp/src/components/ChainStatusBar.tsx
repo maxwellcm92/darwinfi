@@ -52,12 +52,12 @@ export function ChainStatusBar({
             {/* Chain info */}
             <div className="flex flex-col">
               <span
-                className="text-xs font-mono font-bold"
+                className="text-sm font-mono font-bold"
                 style={{ color }}
               >
                 {name}
               </span>
-              <div className="flex items-center gap-2 text-[10px] font-mono text-darwin-text-dim">
+              <div className="flex items-center gap-2 text-xs font-mono text-darwin-text-dim">
                 <span>ID: {chain.chainId}</span>
                 {chain.gasPrice && <span>Gas: {chain.gasPrice}</span>}
                 {chain.blockNumber && <span>#{chain.blockNumber}</span>}

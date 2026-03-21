@@ -47,7 +47,7 @@ export function AgentStatus({ agentState, loading }: AgentStatusProps) {
             }`}
           />
           <span
-            className={`text-xs font-mono uppercase ${
+            className={`text-sm font-mono uppercase ${
               isOnline ? "text-darwin-accent" : "text-darwin-danger"
             }`}
           >
@@ -58,30 +58,30 @@ export function AgentStatus({ agentState, loading }: AgentStatusProps) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-darwin-bg rounded-lg p-4">
-          <p className="text-xs font-mono text-darwin-text-dim mb-1">Uptime</p>
-          <p className="text-sm font-mono text-darwin-text-bright font-medium">
+          <p className="text-sm font-mono text-darwin-text-dim mb-1">Uptime</p>
+          <p className="text-base font-mono text-darwin-text-bright font-medium">
             {agentState?.uptimeFormatted ?? formatUptime(agentState?.uptime)}
           </p>
         </div>
 
         <div className="bg-darwin-bg rounded-lg p-4">
-          <p className="text-xs font-mono text-darwin-text-dim mb-1">Champion Strategy</p>
-          <p className="text-sm font-mono text-darwin-accent font-medium truncate">
+          <p className="text-sm font-mono text-darwin-text-dim mb-1">Champion Strategy</p>
+          <p className="text-base font-mono text-darwin-accent font-medium truncate">
             {agentState?.championStrategy ?? "--"}
           </p>
         </div>
 
         <div className="bg-darwin-bg rounded-lg p-4">
-          <p className="text-xs font-mono text-darwin-text-dim mb-1">Evolution Cycle</p>
-          <p className="text-sm font-mono text-darwin-purple font-medium text-glow-purple">
+          <p className="text-sm font-mono text-darwin-text-dim mb-1">Evolution Cycle</p>
+          <p className="text-base font-mono text-darwin-purple font-medium text-glow-purple">
             {agentState?.evolutionCycle ?? "--"}
           </p>
         </div>
 
         <div className="bg-darwin-bg rounded-lg p-4">
-          <p className="text-xs font-mono text-darwin-text-dim mb-1">Total PnL</p>
+          <p className="text-sm font-mono text-darwin-text-dim mb-1">Total PnL</p>
           <p
-            className={`text-sm font-mono font-medium ${
+            className={`text-base font-mono font-medium ${
               (agentState?.totalPnl ?? 0) >= 0 ? "text-darwin-accent" : "text-darwin-danger"
             }`}
           >
@@ -94,7 +94,7 @@ export function AgentStatus({ agentState, loading }: AgentStatusProps) {
 
       {/* Win rate + total trades footer */}
       {(agentState?.winRate != null || agentState?.totalTrades != null) && (
-        <div className="mt-3 flex items-center gap-4 text-xs font-mono text-darwin-text-dim">
+        <div className="mt-3 flex items-center gap-4 text-sm font-mono text-darwin-text-dim">
           {agentState?.winRate != null && (
             <span>Win Rate: {(agentState.winRate * 100).toFixed(1)}%</span>
           )}

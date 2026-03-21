@@ -66,7 +66,7 @@ export function ChatMessageBubble({ message, isStreaming }: ChatMessageProps) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-3`}>
       <div
-        className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+        className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-base leading-relaxed ${
           isUser
             ? "bg-darwin-accent/15 text-darwin-text-bright rounded-br-md"
             : "bg-darwin-card border border-darwin-border/50 text-darwin-text rounded-bl-md"
@@ -84,7 +84,7 @@ export function ChatMessageBubble({ message, isStreaming }: ChatMessageProps) {
             href={message.cta.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-darwin-accent/10 text-darwin-accent border border-darwin-accent/20 hover:bg-darwin-accent/20 transition-colors"
+            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-darwin-accent/10 text-darwin-accent border border-darwin-accent/20 hover:bg-darwin-accent/20 transition-colors"
           >
             {message.cta.label}
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

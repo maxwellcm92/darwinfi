@@ -81,7 +81,7 @@ The code evolution engine (11 modules, 2,114 LOC) gives DarwinFi the ability to 
 6. **Canary Deploy**: 4-hour minimum monitoring with 60-second health checks
 7. **Promote or Rollback**: If canary degrades performance, automatic git rollback
 
-Every evolution cycle is logged to an append-only JSONL audit trail, with winning genomes pinned to IPFS via Storacha for immutable proof of Darwinian evolution.
+Every evolution cycle is logged to an append-only JSONL audit trail, with winning genomes pinned to IPFS via Storacha (now active via CLI) for immutable proof of Darwinian evolution.
 
 ---
 
@@ -277,6 +277,7 @@ Venice powers `src/agent/venice-engine.ts` (real-time execution signals) and `sr
 | Autonomous evolution cycles | 5 (all safety-gated) |
 | Vault version | V4 (security hardened) |
 | Contracts deployed | 4 (V4 Vault, PerformanceLog, StrategyExecutor, ENS) |
+| Vault TVL | ~$90 USDC deposited, trading live |
 | Trade cycles completed | 2 (8 USDC volume, Uniswap V3) |
 | PerformanceLog entries | 2 trades + 1 generation advance |
 

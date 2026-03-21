@@ -130,13 +130,13 @@ export function InstinctChart({
   return (
     <div className="bg-darwin-card border border-darwin-border rounded-lg overflow-hidden">
       <div className="p-4 border-b border-darwin-border flex items-center justify-between">
-        <h3 className="font-arcade text-xs text-darwin-accent tracking-wider">
+        <h3 className="font-arcade text-sm text-darwin-accent tracking-wider">
           {token} / USDC &middot; {resolution.toUpperCase()}
         </h3>
         {prediction && (
           <div className="flex items-center gap-3">
             <span
-              className={`px-2 py-0.5 text-xs font-mono rounded border ${
+              className={`px-2 py-0.5 text-sm font-mono rounded border ${
                 prediction.direction === "up"
                   ? "bg-darwin-accent/20 text-darwin-accent border-darwin-accent/30"
                   : prediction.direction === "down"
@@ -146,7 +146,7 @@ export function InstinctChart({
             >
               {prediction.direction.toUpperCase()}
             </span>
-            <span className="text-xs font-mono text-darwin-text-dim">
+            <span className="text-sm font-mono text-darwin-text-dim">
               {prediction.confidence}% conf
             </span>
           </div>

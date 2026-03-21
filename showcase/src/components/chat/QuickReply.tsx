@@ -16,7 +16,7 @@ export function QuickReply({ options, onSelect, disabled }: QuickReplyProps) {
           key={opt.value}
           onClick={() => onSelect(opt.value)}
           disabled={disabled}
-          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-darwin-border bg-darwin-card text-darwin-text hover:border-darwin-accent/50 hover:text-darwin-accent transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 text-sm font-medium rounded-lg border border-darwin-border bg-darwin-card text-darwin-text hover:border-darwin-accent/50 hover:text-darwin-accent transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {opt.label}
         </button>

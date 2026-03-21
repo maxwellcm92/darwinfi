@@ -47,11 +47,11 @@ export function ChampionshipStandings({
           </h3>
           {overallChampion && (
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono text-darwin-text-dim">
+              <span className="text-xs font-mono text-darwin-text-dim">
                 Champion:
               </span>
               <span
-                className={`text-xs font-mono font-bold ${
+                className={`text-sm font-mono font-bold ${
                   TEAM_COLORS[overallChampion.teamName] || "text-darwin-accent"
                 }`}
               >
@@ -64,7 +64,7 @@ export function ChampionshipStandings({
 
       {champions.length === 0 ? (
         <div className="p-8 text-center">
-          <p className="text-sm font-mono text-darwin-text-dim">
+          <p className="text-base font-mono text-darwin-text-dim">
             No championship data yet. Teams are still qualifying.
           </p>
         </div>
@@ -97,7 +97,7 @@ export function ChampionshipStandings({
                       }`}
                     >
                       <span
-                        className={`text-xs font-mono font-bold ${
+                        className={`text-sm font-mono font-bold ${
                           idx === 0
                             ? "text-darwin-accent"
                             : "text-darwin-text-dim"
@@ -111,11 +111,11 @@ export function ChampionshipStandings({
                     <div>
                       <div className="flex items-center gap-2">
                         <span
-                          className={`text-xs font-mono font-bold ${teamColor}`}
+                          className={`text-sm font-mono font-bold ${teamColor}`}
                         >
                           {champion.teamName}
                         </span>
-                        <span className="text-[10px] font-mono text-darwin-text-dim">
+                        <span className="text-xs font-mono text-darwin-text-dim">
                           {champion.strategyName}
                         </span>
                         {isOverall && (
@@ -125,10 +125,10 @@ export function ChampionshipStandings({
                         )}
                       </div>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className="text-[10px] font-mono text-darwin-text-dim">
+                        <span className="text-xs font-mono text-darwin-text-dim">
                           {champion.trades} trades
                         </span>
-                        <span className="text-[10px] font-mono text-darwin-text-dim">
+                        <span className="text-xs font-mono text-darwin-text-dim">
                           WR: {(champion.winRate * 100).toFixed(1)}%
                         </span>
                       </div>
@@ -137,11 +137,11 @@ export function ChampionshipStandings({
 
                   {/* Score + PnL */}
                   <div className="text-right">
-                    <p className="text-sm font-mono text-darwin-text-bright font-bold">
+                    <p className="text-base font-mono text-darwin-text-bright font-bold">
                       {champion.compositeScore.toFixed(3)}
                     </p>
                     <p
-                      className={`text-[10px] font-mono ${
+                      className={`text-xs font-mono ${
                         champion.pnl > 0
                           ? "text-darwin-accent"
                           : champion.pnl < 0

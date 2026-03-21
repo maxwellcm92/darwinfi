@@ -18,7 +18,7 @@ export function LiveLeaderboard() {
         Strategy Leaderboard
       </h3>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-base">
           <thead>
             <tr className="border-b border-darwin-border text-darwin-text-dim text-left">
               <th className="py-2 pr-2 font-medium">#</th>
@@ -61,7 +61,7 @@ export function LiveLeaderboard() {
                       <td className="py-2.5 pr-3 font-medium text-darwin-text-bright">
                         {s.name}
                         {isChampion && (
-                          <span className="ml-2 text-xs text-darwin-gold font-mono">
+                          <span className="ml-2 text-sm text-darwin-gold font-mono">
                             CHAMPION
                           </span>
                         )}
@@ -71,7 +71,7 @@ export function LiveLeaderboard() {
                       </td>
                       <td className="py-2.5 pr-3 hidden md:table-cell">
                         <span
-                          className={`text-xs font-mono px-1.5 py-0.5 rounded ${
+                          className={`text-sm font-mono px-1.5 py-0.5 rounded ${
                             s.status === "active"
                               ? "bg-darwin-success/10 text-darwin-success"
                               : s.status === "eliminated"
@@ -108,7 +108,7 @@ export function LiveLeaderboard() {
         </table>
       </div>
       {!loading && sorted.length === 0 && (
-        <p className="text-center text-darwin-text-dim py-8 font-mono text-sm">
+        <p className="text-center text-darwin-text-dim py-8 font-mono text-base">
           No strategy data available
         </p>
       )}

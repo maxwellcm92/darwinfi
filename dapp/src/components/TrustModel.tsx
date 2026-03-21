@@ -39,13 +39,13 @@ function TrustCard({ icon, question, answer, detail, accentColor }: TrustCardPro
       <div className={`w-10 h-10 rounded-lg ${c.iconBg} flex items-center justify-center mb-3`}>
         <span className="text-lg">{icon}</span>
       </div>
-      <h4 className={`text-sm font-mono font-bold ${c.text} mb-2`}>
+      <h4 className={`text-base font-mono font-bold ${c.text} mb-2`}>
         {question}
       </h4>
-      <p className="text-sm font-sans text-darwin-text-bright mb-2">
+      <p className="text-base font-sans text-darwin-text-bright mb-2">
         {answer}
       </p>
-      <p className="text-xs font-sans text-darwin-text-dim leading-relaxed">
+      <p className="text-sm font-sans text-darwin-text-dim leading-relaxed">
         {detail}
       </p>
     </div>
@@ -59,7 +59,7 @@ export function TrustModel() {
     <div className="space-y-3">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 text-xs font-mono text-darwin-text-dim hover:text-darwin-text transition-colors"
+        className="flex items-center gap-2 text-sm font-mono text-darwin-text-dim hover:text-darwin-text transition-colors"
       >
         <span
           className="transition-transform duration-200"

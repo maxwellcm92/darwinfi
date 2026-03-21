@@ -41,10 +41,10 @@ export function FAQ() {
             key={i}
             className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-5"
           >
-            <h3 className="text-sm font-sans font-bold text-darwin-text-bright mb-2">
+            <h3 className="text-base font-sans font-bold text-darwin-text-bright mb-2">
               {item.q}
             </h3>
-            <p className="text-sm font-sans text-darwin-text-dim leading-relaxed">
+            <p className="text-base font-sans text-darwin-text-dim leading-relaxed">
               {item.a}
             </p>
           </div>

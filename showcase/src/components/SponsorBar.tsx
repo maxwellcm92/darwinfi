@@ -12,10 +12,10 @@ export function SponsorBar() {
             key={s.name}
             className="flex items-center gap-2 text-darwin-text-dim hover:text-darwin-text transition-colors"
           >
-            <div className="w-8 h-8 rounded-lg bg-darwin-card border border-darwin-border/50 flex items-center justify-center text-xs font-bold font-mono">
+            <div className="w-8 h-8 rounded-lg bg-darwin-card border border-darwin-border/50 flex items-center justify-center text-sm font-bold font-mono">
               {s.name.charAt(0)}
             </div>
-            <span className="text-sm font-medium">{s.name}</span>
+            <span className="text-base font-medium">{s.name}</span>
           </div>
         ))}
       </div>

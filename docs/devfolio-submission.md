@@ -24,7 +24,7 @@ What makes DarwinFi genuinely autonomous:
 
 **Adaptive Circuit Breakers** scale thresholds with strategy quality and market volatility. Recovery mode re-enters at 50% position sizing after a trip.
 
-DarwinVaultV3 collects 1% annual management + 5% performance fees (high water mark). Built with Claude Code as the agent harness, Venice AI for evolution, Uniswap V3 for execution, and Lit Protocol for cryptographic trading guardrails.
+DarwinVaultV4 collects 1% annual management + 5% performance fees (high water mark), with 6 security hardening features over V3 including 48h timelocks and proportional emergency withdrawals. Built with Claude Code as the agent harness, Venice AI for evolution, Uniswap V3 for execution, and Lit Protocol for cryptographic trading guardrails.
 
 ## Demo Video
 

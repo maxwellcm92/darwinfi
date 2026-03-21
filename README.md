@@ -38,7 +38,7 @@ DarwinFi is not just a trading bot. It is a closed-loop optimization system wher
                                    |
                       +-------- Base L2 --------+
                       |                         |
-               DarwinVaultV3              Uniswap V3
+               DarwinVaultV4              Uniswap V3
                 (ERC-4626)               SwapRouter
              1% mgmt + 5% perf           Quoter V2
                       |                         |
@@ -114,23 +114,24 @@ The AI Router health-checks KS every 60s. If KS goes down, traffic automatically
 
 ## Smart Contracts
 
-### DarwinVaultV3 (ERC-4626)
+### DarwinVaultV4 (ERC-4626, Security Hardened)
 
-Single-pool Yearn-style vault. One vault, one engine, all depositors share returns pro-rata.
+Single-pool Yearn-style vault. One vault, one engine, all depositors share returns pro-rata. V4 adds 6 audit fixes over V3: 12-decimal shares (6 USDC + 6 offset), 48h timelock on agent/feeRecipient changes, proportional emergency withdraw, 80% max borrow ratio, 7-day borrow timeout with bad debt write-off, and 7-day lock time cap.
 
 | Function | Who | What |
 |----------|-----|------|
 | `deposit(assets, receiver)` | Any user | Deposit USDC, receive dvUSDC shares |
 | `withdraw(assets, receiver, owner)` | Any user | Redeem shares for USDC |
-| `agentBorrow(amount)` | Agent only | Pull USDC for trading |
+| `agentBorrow(amount)` | Agent only | Pull USDC for trading (max 80% of vault) |
 | `agentReturn(amount)` | Agent only | Return proceeds (fees auto-collected) |
-| `emergencyWithdraw()` | Any user | Always works, even when paused |
+| `emergencyWithdraw()` | Any user | Proportional withdraw, always works even when paused |
+| `proposeAgent(newAgent)` | Owner only | 48h timelock before agent change takes effect |
 
 **Fees**: 1% annual management (100 bps, auto-collected via share dilution) + 5% performance (high water mark).
 
-### 51 Tests
+### 80 Tests (V4) + 51 Tests (V3)
 
-Full coverage of vault math, fee calculations, multi-user deposits, agent borrow/return, HWM tracking, pause/emergency, access control.
+Full coverage of vault math, fee calculations, multi-user deposits, agent borrow/return, HWM tracking, pause/emergency, access control, timelock transitions, proportional emergency withdraw, max borrow ratio, borrow timeout, bad debt write-off.
 
 ---
 
@@ -162,7 +163,7 @@ Full coverage of vault math, fee calculations, multi-user deposits, agent borrow
 
 ## Testing
 
-325 tests across 25 modules:
+423 tests across 25+ modules:
 
 ```bash
 npm test
@@ -170,7 +171,9 @@ npm test
 
 | Module | Tests | Coverage |
 |--------|-------|----------|
+| DarwinVaultV4 | 80 | V3 coverage + timelock, proportional emergency, max borrow, borrow timeout |
 | DarwinVaultV3 | 51 | Deposit/withdraw, fees, HWM, multi-user, agent flow, emergency |
+| DarwinAgent | 18 | Config, initialization, entries/exits, evolution triggers, paper/live, persistence |
 | Evolution Smoke | 18 | Config, validation, sandbox, test gate, canary, audit |
 | Frontier | 46 | Archetype strategies, chain registry, niche selection |
 | Circuit Breakers | 32 | Adaptive thresholds, recovery mode, strategy quality scaling |
@@ -182,7 +185,7 @@ npm test
 | Dynamic Fitness | 14 | Regime detection, weight adaptation, scoring |
 | Strategy Switching | 12 | Continuous monitoring, emergency promote, sell-only mode |
 | Candle Service | 11 | Price feeds, OHLCV aggregation, multi-token |
-| Other modules | 33 | Integration, e2e, utilities |
+| Other modules | 23 | Integration, e2e, utilities |
 
 ---
 

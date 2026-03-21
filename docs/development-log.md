@@ -1,7 +1,7 @@
 # DarwinFi Development Log
 
 > Built with [Claude Code](https://claude.com/claude-code) (`claude-opus-4-6`) as the agent harness.
-> Sessions: March 18-20, 2026. Total: 219 source files, ~44,500 lines of code, 325 tests.
+> Sessions: March 18-21, 2026. Total: 219 source files, ~44,500 lines of code, 423 tests.
 
 ---
 
@@ -1039,6 +1039,91 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 
 ---
 
+## Session 20: DarwinVaultV4 -- Security Hardening (2026-03-20)
+
+**Objective:** Build V4 vault with 6 audit-driven security fixes over V3, addressing real-world attack vectors.
+
+### Key Changes
+
+- **12-decimal shares** (6 USDC decimals + 6 offset) -- prevents rounding manipulation on small deposits
+- **48-hour timelock** on agent and feeRecipient changes -- prevents instant hostile takeover
+- **Proportional emergency withdraw** -- users get fair share even when agent has borrowed funds
+- **80% max borrow ratio** -- vault always retains 20% liquidity for withdrawals
+- **7-day borrow timeout** with bad debt write-off -- prevents infinite capital lockup
+- **7-day lock time cap** -- prevents governance from trapping depositor funds indefinitely
+
+### New Files
+
+- `contracts/DarwinVaultV4.sol` -- Security-hardened ERC-4626 vault
+- `test/DarwinVaultV4.test.ts` -- 80 tests covering all V4-specific features
+- `scripts/deploy-v4.ts` -- V4 deployment script
+
+**Code Impact:** 80 new tests (423 total). Commit: `3e71858`.
+
+---
+
+## Session 21: DApp UX Overhaul (2026-03-20)
+
+**Objective:** Address 7 specific weaknesses from simulated hackathon judge feedback (score 5.8/10).
+
+### Changes
+
+- Fixed stale data indicators on dashboard
+- Improved mobile responsiveness
+- Added clearer vault deposit/withdraw flow
+- Enhanced tournament visualization
+- Better error states and loading indicators
+- Improved sponsor integration visibility
+- Cleaner navigation and information hierarchy
+
+**Code Impact:** DApp rebuilt and redeployed. Commit: `28959f6`.
+
+---
+
+## Session 22: DarwinAgent Core Tests (2026-03-21)
+
+**Objective:** Add comprehensive test coverage for the core DarwinAgent orchestrator.
+
+### Changes
+
+- `test/darwin-agent.test.ts` -- 18 tests in 8 groups: config loading, initialization, rule-based entries, rule-based exits, evolution triggers, paper vs live mode, state persistence, shutdown
+- Added exports (`DarwinAgent`, `AgentConfig`, `loadConfig()`) for clean test imports
+- Guarded `main()` with `require.main === module` to prevent auto-execution on import
+
+**Code Impact:** 18 new tests, 423 total suite passing. Commit: `ca0de53`.
+
+---
+
+## Session 23: V4 Mainnet Deployment + Full Integration (2026-03-21)
+
+**Objective:** Deploy DarwinVaultV4 to Base mainnet and update all system references from V3/V2 to V4.
+
+### Changes
+
+- **V4 deployed**: `0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7` on Base mainnet (chain 8453)
+- **ContractClient**: 15 wrapper methods added for V4's new functions (proposeAgent, confirmAgent, maxBorrowable, borrowTimeout, etc.)
+- **LiveEngine**: Updated borrow/return paths for V4's 12-decimal shares and 80% max borrow ratio
+- **DarwinAgent**: V4-first vault selection via `DARWIN_VAULT_V4_ADDRESS` env var (falls back to V2)
+- **DApp + Showcase**: All address references updated, rebuilt, PM2 restarted
+- **deposit-usdc-v4.ts**: Script created for initial vault seeding (awaiting USDC in deployer wallet)
+
+**Code Impact:** Full V4 integration across agent, DApp, showcase, and docs. Commit: `5bea517`.
+
+---
+
+## Session 24: ENS/Basenames + Lit Protocol Status (2026-03-21)
+
+**Objective:** Verify darwinfi.base.eth registration and document Lit Protocol readiness.
+
+### Findings
+
+- **darwinfi.base.eth**: Confirmed registered and owned by deployer wallet. Registration TX: `0x204bec5eab443cd8839aef764ce27325fc97d68db17d2f8dc03187d47775bd98` (block 43625837).
+- **Lit Protocol**: `mint-pkp-direct.ts` ready on naga-dev network. Lit is transitioning Naga -> Chipotle (March 25). DarwinFi will auto-activate when Chipotle launches.
+
+**Code Impact:** Verification only, commit: `1a7d9b1` (Basenames + Lit Protocol naga-dev updates).
+
+---
+
 ## Technical Summary
 
 | Metric | Value |
@@ -1046,7 +1131,7 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 | TypeScript source files | 106 agent/trading + 29 showcase (~31,100 LOC) |
 | Solidity contracts | 6 (~1,550 LOC) |
 | DApp files (React/TSX) | 41 (~3,800 LOC) |
-| Test files | 25 modules, 325 tests (5 pending) |
+| Test files | 27 modules, 423 tests |
 | Evolution engine files | 11 (~2,100 LOC) |
 | Total source files | 219 |
 | Total lines of code | ~44,500 |
@@ -1057,8 +1142,8 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 | AI models integrated | 5 (Ollama gemma2:9b local signals, Venice AI evolution, Claude CLI fallback, Claude Haiku batch eval, Grok-X via Venice sentiment) |
 | AI routing | Ollama (KS RTX 3090) -> Venice -> Claude CLI fallback chain |
 | Sponsor integrations | 7 (Base, Uniswap, Venice AI, Filecoin, ENS, Lido, 1inch) |
-| Git commits | 42 |
-| Build time | ~19 hours across 19 sessions |
+| Git commits | 50+ |
+| Build time | ~24 hours across 24 sessions |
 
 ---
 
@@ -1087,4 +1172,4 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 
 ---
 
-*This development log covers 19 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi now operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~18 hours.*
+*This development log covers 24 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi now operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~24 hours.*

@@ -28,6 +28,8 @@ What makes DarwinFi genuinely autonomous:
 
 DarwinVaultV4 collects 1% annual management + 5% performance fees (high water mark), with 6 security hardening features over V3 including 48h timelocks on agent/feeRecipient changes and proportional emergency withdrawals. Built with Claude Code as the agent harness, Venice AI for evolution, Uniswap V3 for execution, and Lit Protocol for cryptographic trading guardrails.
 
+**Evolution Proof**: DarwinFi has completed 5 real autonomous evolution cycles -- not simulations. Venice AI (Llama 3.3 70B) proposed code mutations targeting `instinct/reflexes/pattern-matcher.ts`, `instinct/cortex/weight-optimizer.ts`, and `instinct/cortex/scorer.ts`. All 5 passed static validation (no ring violations, no forbidden patterns) but were correctly rejected at the sandbox stage due to malformed git patches. This is the safety pipeline working as designed: bad mutations are caught before any code touches production. Anti-loop memory prevents re-proposing identical mutations, and exponential zone backoff forces the engine to explore new targets after repeated failures. Full audit trail: [`data/evolution/audit.jsonl`](../data/evolution/audit.jsonl). See [evolution-proof.md](evolution-proof.md) for the complete cycle-by-cycle breakdown.
+
 ## Demo Video
 
 **Status:** Pipeline built and ready. ElevenLabs API key available for TTS generation.

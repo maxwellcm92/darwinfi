@@ -1,9 +1,14 @@
 /**
  * mint-pkp.ts - Mint a Lit Protocol PKP for DarwinFi
  *
- * Mints a new Programmable Key Pair (PKP) on the Lit Chronicle Yellowstone
- * testnet. The PKP will be used by the trading agent to sign transactions
+ * Mints a new Programmable Key Pair (PKP) on Lit Protocol.
+ * The PKP will be used by the trading agent to sign transactions
  * through the trade-policy Lit Action.
+ *
+ * Network history:
+ *   - Datil (V0): sunset Feb 25, 2026
+ *   - Naga (V1): sunset March 25, 2026
+ *   - Chipotle (V3): launches March 25, 2026 -- target this when available
  *
  * Usage: npx ts-node scripts/mint-pkp.ts
  */
@@ -19,7 +24,8 @@ async function main() {
   // Dynamic import for Lit SDK (ESM modules)
   const { LitContracts } = await import("@lit-protocol/contracts-sdk");
 
-  const LIT_NETWORK = process.env.LIT_NETWORK || "datil-test";
+  // Default to naga-dev (v8 SDK). When Chipotle launches, update to chipotle network name.
+  const LIT_NETWORK = process.env.LIT_NETWORK || "naga-dev";
   console.log(`Lit Network: ${LIT_NETWORK}`);
 
   // Initialize contracts SDK with the deployer wallet

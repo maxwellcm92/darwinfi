@@ -48,6 +48,23 @@ Upload: YouTube (unlisted), embed in Devfolio submission.
 - **GitHub:** https://github.com/maxwellcm92/darwinfi
 - **Basename:** darwinfi.base.eth
 
+## Sponsor Integration: Lit Protocol
+
+**Status:** SDK integrated, PKP minting script ready, awaiting network availability.
+
+Lit Protocol is mid-generation transition: Datil (V0) sunset Feb 25, Naga (V1) sunsets March 25, and Chipotle (V3) launches March 25. DarwinFi's Lit integration (trade-policy guardrails, cryptographic signing via PKPs) is fully built and will self-activate when Chipotle goes live -- no human intervention required. The minting script, Lit Action policy, and vault integration are all staged and waiting.
+
+This is DarwinFi being DarwinFi: it detects an external dependency isn't available yet, queues the integration, and will autonomously complete it when the environment changes. The organism adapts to its ecosystem.
+
+## Roadmap
+
+| Date | Milestone |
+|------|-----------|
+| March 22 | Hackathon submission (v4 vault live, 16 strategies, self-evolution engine) |
+| March 25 | Lit Protocol Chipotle launches -- DarwinFi auto-mints PKP + activates trade guardrails |
+| April | First real depositors, tiered vault exploration |
+| Q2 2026 | Cross-chain Frontier strategies go live (Arbitrum, Optimism) |
+
 ## Track
 
 Agents that Pay

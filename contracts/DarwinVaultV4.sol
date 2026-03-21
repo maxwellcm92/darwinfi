@@ -59,6 +59,12 @@ contract DarwinVaultV4 is ERC4626, Ownable, ReentrancyGuard, Pausable {
     address public pendingFeeRecipient;
     uint256 public pendingFeeRecipientTimestamp;
 
+    // Fee parameter timelocks
+    uint256 public pendingPerformanceFeeBps;
+    uint256 public pendingPerformanceFeeBpsTimestamp;
+    uint256 public pendingManagementFeeBps;
+    uint256 public pendingManagementFeeBpsTimestamp;
+
     // H-01: Max borrow ratio
     uint256 public constant MAX_BORROW_RATIO = 9000; // 90% ceiling
     uint256 public maxBorrowRatioBps;                 // default 8000 = 80%
@@ -81,6 +87,14 @@ contract DarwinVaultV4 is ERC4626, Ownable, ReentrancyGuard, Pausable {
     event PendingFeeRecipientSet(address indexed newFeeRecipient, uint256 readyAt);
     event FeeRecipientConfirmed(address indexed oldRecipient, address indexed newRecipient);
     event PendingFeeRecipientCancelled(address indexed cancelledRecipient);
+
+    // Fee parameter timelock events
+    event PendingPerformanceFeeBpsSet(uint256 newBps, uint256 readyAt);
+    event PerformanceFeeBpsConfirmed(uint256 oldBps, uint256 newBps);
+    event PendingPerformanceFeeBpsCancelled(uint256 cancelledBps);
+    event PendingManagementFeeBpsSet(uint256 newBps, uint256 readyAt);
+    event ManagementFeeBpsConfirmed(uint256 oldBps, uint256 newBps);
+    event PendingManagementFeeBpsCancelled(uint256 cancelledBps);
 
     // H-01: Borrow ratio events
     event MaxBorrowRatioBpsUpdated(uint256 oldRatio, uint256 newRatio);
@@ -113,6 +127,9 @@ contract DarwinVaultV4 is ERC4626, Ownable, ReentrancyGuard, Pausable {
     // C-01: Timelock errors
     error TimelockNotElapsed(uint256 readyAt);
     error NoPendingChange();
+
+    // C-02: Emergency withdraw rounding
+    error WithdrawalTooSmall();
 
     // H-01: Borrow ratio errors
     error BorrowRatioExceeded(uint256 resultingRatio, uint256 maxRatio);
@@ -339,14 +356,36 @@ contract DarwinVaultV4 is ERC4626, Ownable, ReentrancyGuard, Pausable {
         _collectManagementFeeInternal();
     }
 
-    /// @notice Set management fee basis points (max 500 = 5%)
+    /// @notice Initiate management fee change (starts 48h timelock, max 500 = 5%)
     function setManagementFeeBps(uint256 _bps) external onlyOwner {
         require(_bps <= 500, "Management fee too high");
+        pendingManagementFeeBps = _bps;
+        pendingManagementFeeBpsTimestamp = block.timestamp;
+        emit PendingManagementFeeBpsSet(_bps, block.timestamp + TIMELOCK_DURATION);
+    }
+
+    /// @notice Confirm management fee change after timelock has elapsed
+    function confirmManagementFeeBps() external onlyOwner {
+        if (pendingManagementFeeBpsTimestamp == 0) revert NoPendingChange();
+        if (block.timestamp < pendingManagementFeeBpsTimestamp + TIMELOCK_DURATION) {
+            revert TimelockNotElapsed(pendingManagementFeeBpsTimestamp + TIMELOCK_DURATION);
+        }
         // Collect any pending fee before updating rate
         _collectManagementFeeInternal();
         uint256 oldBps = managementFeeBps;
-        emit ManagementFeeBpsUpdated(oldBps, _bps);
-        managementFeeBps = _bps;
+        managementFeeBps = pendingManagementFeeBps;
+        pendingManagementFeeBps = 0;
+        pendingManagementFeeBpsTimestamp = 0;
+        emit ManagementFeeBpsUpdated(oldBps, managementFeeBps);
+    }
+
+    /// @notice Cancel a pending management fee change
+    function cancelPendingManagementFeeBps() external onlyOwner {
+        if (pendingManagementFeeBpsTimestamp == 0) revert NoPendingChange();
+        uint256 cancelled = pendingManagementFeeBps;
+        pendingManagementFeeBps = 0;
+        pendingManagementFeeBpsTimestamp = 0;
+        emit PendingManagementFeeBpsCancelled(cancelled);
     }
 
     // ----------------------------------------------------------------
@@ -374,6 +413,7 @@ contract DarwinVaultV4 is ERC4626, Ownable, ReentrancyGuard, Pausable {
         } else if (available > 0) {
             // Partial withdrawal -- burn proportional shares, send available USDC
             uint256 sharesToBurn = (shares * available) / assets;
+            if (sharesToBurn == 0) revert WithdrawalTooSmall();
             _burn(msg.sender, sharesToBurn);
             IERC20(asset()).safeTransfer(msg.sender, available);
 
@@ -455,10 +495,34 @@ contract DarwinVaultV4 is ERC4626, Ownable, ReentrancyGuard, Pausable {
     // Owner: Configuration
     // ----------------------------------------------------------------
 
-    /// @notice Set the performance fee (in basis points, max 2000 = 20%)
+    /// @notice Initiate performance fee change (starts 48h timelock, max 2000 = 20%)
     function setPerformanceFeeBps(uint256 _bps) external onlyOwner {
         require(_bps <= 2000, "Fee too high");
-        performanceFeeBps = _bps;
+        pendingPerformanceFeeBps = _bps;
+        pendingPerformanceFeeBpsTimestamp = block.timestamp;
+        emit PendingPerformanceFeeBpsSet(_bps, block.timestamp + TIMELOCK_DURATION);
+    }
+
+    /// @notice Confirm performance fee change after timelock has elapsed
+    function confirmPerformanceFeeBps() external onlyOwner {
+        if (pendingPerformanceFeeBpsTimestamp == 0) revert NoPendingChange();
+        if (block.timestamp < pendingPerformanceFeeBpsTimestamp + TIMELOCK_DURATION) {
+            revert TimelockNotElapsed(pendingPerformanceFeeBpsTimestamp + TIMELOCK_DURATION);
+        }
+        uint256 oldBps = performanceFeeBps;
+        performanceFeeBps = pendingPerformanceFeeBps;
+        pendingPerformanceFeeBps = 0;
+        pendingPerformanceFeeBpsTimestamp = 0;
+        emit PerformanceFeeBpsConfirmed(oldBps, performanceFeeBps);
+    }
+
+    /// @notice Cancel a pending performance fee change
+    function cancelPendingPerformanceFeeBps() external onlyOwner {
+        if (pendingPerformanceFeeBpsTimestamp == 0) revert NoPendingChange();
+        uint256 cancelled = pendingPerformanceFeeBps;
+        pendingPerformanceFeeBps = 0;
+        pendingPerformanceFeeBpsTimestamp = 0;
+        emit PendingPerformanceFeeBpsCancelled(cancelled);
     }
 
     /// @notice Set maximum total assets

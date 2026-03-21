@@ -396,8 +396,8 @@ describe("DarwinVaultV4", function () {
   // setManagementFeeBps
   // =================================================================
 
-  describe("setManagementFeeBps", function () {
-    it("should only allow owner to set", async function () {
+  describe("setManagementFeeBps (Timelock)", function () {
+    it("should only allow owner to initiate", async function () {
       const { vault, unauthorized } = await loadFixture(deployVaultFixture);
       await expect(
         vault.connect(unauthorized).setManagementFeeBps(200)
@@ -411,36 +411,90 @@ describe("DarwinVaultV4", function () {
       ).to.be.revertedWith("Management fee too high");
     });
 
-    it("should allow setting to 500 (max)", async function () {
+    it("should allow setting to 500 (max) via timelock", async function () {
       const { vault, owner } = await loadFixture(deployVaultFixture);
       await vault.connect(owner).setManagementFeeBps(500);
+      await time.increase(TWO_DAYS + 1);
+      await vault.connect(owner).confirmManagementFeeBps();
       expect(await vault.managementFeeBps()).to.equal(500);
     });
 
-    it("should allow setting to 0", async function () {
+    it("should allow setting to 0 via timelock", async function () {
       const { vault, owner } = await loadFixture(deployVaultFixture);
       await vault.connect(owner).setManagementFeeBps(0);
+      await time.increase(TWO_DAYS + 1);
+      await vault.connect(owner).confirmManagementFeeBps();
       expect(await vault.managementFeeBps()).to.equal(0);
     });
 
-    it("should collect pending fee before updating rate", async function () {
+    it("should collect pending fee on confirm before updating rate", async function () {
       const { vault, owner, feeRecipient, user1 } = await loadFixture(deployVaultFixture);
       await vault.connect(user1).deposit(parseUSDC(10000), user1.address);
 
       await time.increase(ONE_YEAR / 2);
 
-      const feeSharesBefore = await vault.balanceOf(feeRecipient.address);
       await vault.connect(owner).setManagementFeeBps(200);
+
+      await time.increase(TWO_DAYS + 1);
+
+      const feeSharesBefore = await vault.balanceOf(feeRecipient.address);
+      await vault.connect(owner).confirmManagementFeeBps();
       const feeSharesAfter = await vault.balanceOf(feeRecipient.address);
 
       expect(feeSharesAfter).to.be.greaterThan(feeSharesBefore);
     });
 
-    it("should emit ManagementFeeBpsUpdated event", async function () {
+    it("should emit PendingManagementFeeBpsSet on initiate", async function () {
       const { vault, owner } = await loadFixture(deployVaultFixture);
       await expect(vault.connect(owner).setManagementFeeBps(200))
+        .to.emit(vault, "PendingManagementFeeBpsSet");
+    });
+
+    it("should emit ManagementFeeBpsUpdated on confirm", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await vault.connect(owner).setManagementFeeBps(200);
+      await time.increase(TWO_DAYS + 1);
+      await expect(vault.connect(owner).confirmManagementFeeBps())
         .to.emit(vault, "ManagementFeeBpsUpdated")
         .withArgs(100, 200);
+    });
+
+    it("should revert confirm before 48 hours", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await vault.connect(owner).setManagementFeeBps(200);
+
+      await time.increase(TWO_DAYS - 10);
+
+      await expect(
+        vault.connect(owner).confirmManagementFeeBps()
+      ).to.be.revertedWithCustomError(vault, "TimelockNotElapsed");
+    });
+
+    it("should revert confirm when no pending change", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await expect(
+        vault.connect(owner).confirmManagementFeeBps()
+      ).to.be.revertedWithCustomError(vault, "NoPendingChange");
+    });
+
+    it("should cancel pending management fee change", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await vault.connect(owner).setManagementFeeBps(200);
+
+      await expect(vault.connect(owner).cancelPendingManagementFeeBps())
+        .to.emit(vault, "PendingManagementFeeBpsCancelled")
+        .withArgs(200);
+
+      expect(await vault.pendingManagementFeeBpsTimestamp()).to.equal(0);
+      // Original value unchanged
+      expect(await vault.managementFeeBps()).to.equal(100);
+    });
+
+    it("should revert cancel when no pending change", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await expect(
+        vault.connect(owner).cancelPendingManagementFeeBps()
+      ).to.be.revertedWithCustomError(vault, "NoPendingChange");
     });
   });
 
@@ -1027,6 +1081,161 @@ describe("DarwinVaultV4", function () {
       const { vault, owner } = await loadFixture(deployVaultFixture);
       await vault.connect(owner).setMinLockTime(SEVEN_DAYS);
       expect(await vault.minLockTime()).to.equal(SEVEN_DAYS);
+    });
+  });
+
+  // =================================================================
+  // setPerformanceFeeBps (Timelock)
+  // =================================================================
+
+  describe("setPerformanceFeeBps (Timelock)", function () {
+    it("should initiate performance fee change and emit event", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await expect(vault.connect(owner).setPerformanceFeeBps(1000))
+        .to.emit(vault, "PendingPerformanceFeeBpsSet");
+      expect(await vault.pendingPerformanceFeeBps()).to.equal(1000);
+    });
+
+    it("should revert if bps > 2000", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await expect(
+        vault.connect(owner).setPerformanceFeeBps(2001)
+      ).to.be.revertedWith("Fee too high");
+    });
+
+    it("should not change performanceFeeBps immediately", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await vault.connect(owner).setPerformanceFeeBps(1000);
+      // Still the original value
+      expect(await vault.performanceFeeBps()).to.equal(500);
+    });
+
+    it("should confirm after 48 hours", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await vault.connect(owner).setPerformanceFeeBps(1000);
+      await time.increase(TWO_DAYS + 1);
+      await expect(vault.connect(owner).confirmPerformanceFeeBps())
+        .to.emit(vault, "PerformanceFeeBpsConfirmed")
+        .withArgs(500, 1000);
+      expect(await vault.performanceFeeBps()).to.equal(1000);
+      expect(await vault.pendingPerformanceFeeBpsTimestamp()).to.equal(0);
+    });
+
+    it("should revert confirm before 48 hours", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await vault.connect(owner).setPerformanceFeeBps(1000);
+
+      await time.increase(TWO_DAYS - 10);
+
+      await expect(
+        vault.connect(owner).confirmPerformanceFeeBps()
+      ).to.be.revertedWithCustomError(vault, "TimelockNotElapsed");
+    });
+
+    it("should revert confirm when no pending change", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await expect(
+        vault.connect(owner).confirmPerformanceFeeBps()
+      ).to.be.revertedWithCustomError(vault, "NoPendingChange");
+    });
+
+    it("should cancel pending performance fee change", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await vault.connect(owner).setPerformanceFeeBps(1000);
+
+      await expect(vault.connect(owner).cancelPendingPerformanceFeeBps())
+        .to.emit(vault, "PendingPerformanceFeeBpsCancelled")
+        .withArgs(1000);
+
+      expect(await vault.pendingPerformanceFeeBpsTimestamp()).to.equal(0);
+      expect(await vault.performanceFeeBps()).to.equal(500);
+    });
+
+    it("should revert cancel when no pending change", async function () {
+      const { vault, owner } = await loadFixture(deployVaultFixture);
+      await expect(
+        vault.connect(owner).cancelPendingPerformanceFeeBps()
+      ).to.be.revertedWithCustomError(vault, "NoPendingChange");
+    });
+
+    it("should only allow owner to initiate", async function () {
+      const { vault, unauthorized } = await loadFixture(deployVaultFixture);
+      await expect(
+        vault.connect(unauthorized).setPerformanceFeeBps(1000)
+      ).to.be.revertedWithCustomError(vault, "OwnableUnauthorizedAccount");
+    });
+  });
+
+  // =================================================================
+  // Emergency Withdraw Rounding Guard (WithdrawalTooSmall)
+  // =================================================================
+
+  describe("Emergency Withdraw Rounding Guard", function () {
+    it("should define WithdrawalTooSmall error in contract ABI", async function () {
+      const { vault } = await loadFixture(deployVaultFixture);
+      const errorFragment = vault.interface.getError("WithdrawalTooSmall");
+      expect(errorFragment).to.not.be.null;
+      expect(errorFragment!.name).to.equal("WithdrawalTooSmall");
+    });
+
+    it("should revert WithdrawalTooSmall when sharesToBurn rounds to 0", async function () {
+      const { vault, agent, usdc, owner, user1 } = await loadFixture(deployVaultFixture);
+
+      // Deposit and set up a partial withdrawal scenario
+      await vault.connect(user1).deposit(parseUSDC(1000), user1.address);
+      await vault.connect(agent).agentBorrow(parseUSDC(800));
+
+      // Now: user1 has ~1000e12 shares, available = 200e6, totalAssets = 1000e6
+      // In the partial branch: sharesToBurn = (shares * available) / assets
+      //
+      // With USDC's 6+6 offset, shares are always ~1e6x larger than asset values,
+      // so sharesToBurn naturally stays > 0. We use hardhat_setStorageAt to directly
+      // set totalBorrowed to an astronomically large value, making
+      // user1's asset value >> shares * available so division rounds to 0.
+
+      const vaultAddr = await vault.getAddress();
+
+      // Scan storage slots to find totalBorrowed (value = 800e6 = 800000000)
+      // Storage layout after inherited contracts (ERC20: ~5 slots, ERC4626: 0, Ownable: 1,
+      // ReentrancyGuard: 1, Pausable: 1 = ~8 base slots). Check slots 0-30.
+      const targetValue = ethers.zeroPadValue(ethers.toBeHex(parseUSDC(800)), 32);
+      let totalBorrowedSlot: string | null = null;
+
+      for (let i = 0; i < 40; i++) {
+        const slot = ethers.toBeHex(i, 32);
+        const value = await ethers.provider.getStorage(vaultAddr, slot);
+        if (value === targetValue) {
+          totalBorrowedSlot = slot;
+          break;
+        }
+      }
+
+      expect(totalBorrowedSlot).to.not.be.null;
+
+      // Set totalBorrowed to a massive value so that:
+      // totalAssets = available (200e6) + totalBorrowed (massive) ~ massive
+      // user1 assets = convertToAssets(shares) ~ massive (proportional to total)
+      // sharesToBurn = (shares * available) / assets
+      // With shares ~ 1000e12 and available = 200e6:
+      //   shares * available ~ 2e20
+      // We need assets > 2e20, so totalBorrowed > 2e20.
+      // Setting totalBorrowed = 1e30 makes assets ~ 1e30.
+      // sharesToBurn = 2e20 / 1e30 = 0.
+      const massiveValue = 10n ** 30n;
+      await ethers.provider.send("hardhat_setStorageAt", [
+        vaultAddr,
+        totalBorrowedSlot!,
+        ethers.zeroPadValue(ethers.toBeHex(massiveValue), 32)
+      ]);
+
+      // Verify totalBorrowed was set
+      expect(await vault.totalBorrowed()).to.equal(massiveValue);
+
+      // Now user1's emergency withdraw enters the partial branch (assets >> available)
+      // and sharesToBurn rounds to 0, triggering WithdrawalTooSmall
+      await expect(
+        vault.connect(user1).emergencyWithdraw()
+      ).to.be.revertedWithCustomError(vault, "WithdrawalTooSmall");
     });
   });
 });

@@ -104,7 +104,7 @@ async function main() {
   console.log(`LIT_PKP_PUBLIC_KEY=${publicKey}`);
   console.log(`LIT_PKP_TOKEN_ID=${tokenId}`);
   console.log(`LIT_PKP_ADDRESS=${ethAddress}`);
-  console.log(`LIT_NETWORK=datil-test`);
+  console.log(`LIT_NETWORK=naga-dev`);
 
   console.log("\nDone.");
 }

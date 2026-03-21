@@ -91,40 +91,34 @@ async function main() {
   if (ethBal < MIN_ETH_BALANCE) {
     throw new Error(`Insufficient ETH. Need >= 0.002 ETH for gas, have ${ethers.formatEther(ethBal)}`);
   }
-  if (usdcBal < DEPOSIT_AMOUNT) {
-    throw new Error(`Insufficient USDC. Need >= 5 USDC, have ${formatUsdc(usdcBal)}`);
-  }
   if (!agentMatch) {
     throw new Error(`Vault agent is ${agent}, but signer is ${wallet}. Cannot borrow.`);
   }
 
+  // Check vault total assets to see if deposit is needed
+  const vaultAssets: bigint = await vault.totalAssets();
+  console.log(`  Vault total assets: ${formatUsdc(vaultAssets)} USDC`);
   console.log('  All checks passed.\n');
 
   // -----------------------------------------------------------------
-  // Step 1: Approve USDC for vault (for deposit)
+  // Step 1: Deposit (skip if vault already has funds)
   // -----------------------------------------------------------------
-  console.log('Step 1: Approve USDC for vault');
-  const allowance1: bigint = await usdc.allowance(wallet, vaultAddress);
-  if (allowance1 < DEPOSIT_AMOUNT) {
-    const tx = await usdc.approve(vaultAddress, ethers.MaxUint256);
-    const receipt = await tx.wait();
-    txLog.push({ step: 'Approve USDC->Vault', hash: receipt.hash });
-    console.log(`  tx: ${link(receipt.hash)}\n`);
+  if (vaultAssets < BORROW_AMOUNT && usdcBal >= DEPOSIT_AMOUNT) {
+    console.log('Step 1: Approve & Deposit USDC into vault');
+    const allowance1: bigint = await usdc.allowance(wallet, vaultAddress);
+    if (allowance1 < DEPOSIT_AMOUNT) {
+      const tx = await usdc.approve(vaultAddress, ethers.MaxUint256);
+      const receipt = await tx.wait();
+      txLog.push({ step: 'Approve USDC->Vault', hash: receipt.hash });
+      console.log(`  Approve tx: ${link(receipt.hash)}`);
+    }
+    const depositTx = await vault.deposit(DEPOSIT_AMOUNT, wallet);
+    const depositReceipt = await depositTx.wait();
+    txLog.push({ step: 'Deposit USDC', hash: depositReceipt.hash });
+    console.log(`  Deposit tx: ${link(depositReceipt.hash)}\n`);
   } else {
-    console.log('  Already approved.\n');
+    console.log('Step 1: Vault already funded, skipping deposit.\n');
   }
-
-  // -----------------------------------------------------------------
-  // Step 2: Deposit 5 USDC into vault
-  // -----------------------------------------------------------------
-  console.log('Step 2: Deposit 5 USDC into vault');
-  const depositTx = await vault.deposit(DEPOSIT_AMOUNT, wallet);
-  const depositReceipt = await depositTx.wait();
-  txLog.push({ step: 'Deposit 5 USDC', hash: depositReceipt.hash });
-
-  const sharesAfter: bigint = await vault.balanceOf(wallet);
-  console.log(`  tx: ${link(depositReceipt.hash)}`);
-  console.log(`  Shares received: ${sharesAfter} dvUSDC\n`);
 
   // -----------------------------------------------------------------
   // Step 3: Agent borrows 3 USDC

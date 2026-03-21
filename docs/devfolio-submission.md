@@ -261,6 +261,31 @@ DarwinFi's moat: it is the only protocol where trading logic evolves autonomousl
 - Lit Protocol Chipotle launches March 25 (after hackathon deadline) -- integration staged and waiting
 - Storacha genome pinning blocked on billing -- code is built, uploads will activate once billing is resolved
 
+## Traction Metrics
+
+| Metric | Value |
+|--------|-------|
+| Tests passing | 488 across 27+ modules |
+| Solidity coverage | 70% statements (V4 vault: 91%) |
+| On-chain transactions | 19 on Base mainnet |
+| Autonomous evolution cycles | 5 (all safety-gated, documented in [evolution-proof.md](evolution-proof.md)) |
+| Contracts deployed | DarwinVaultV4, PerformanceLog, StrategyExecutor, ENS |
+| Trade cycles | 2 complete borrow-swap-return cycles (8 USDC, Uniswap V3) |
+| Vault iterations | V1 -> V2 -> V3 -> V4 (4 generations, each improving security) |
+| Evolution engine | 11 modules, 2,114 LOC, 7-stage safety pipeline |
+
+## Why We'll Win
+
+1. **It actually works on-chain.** 19 verified transactions on Base mainnet. Real USDC deposited, real Uniswap V3 swaps executed, real performance logged. Not a demo, not a mockup -- verifiable on BaseScan.
+
+2. **Self-evolution is real, not theoretical.** 5 documented autonomous cycles where Venice AI proposed code mutations and the safety pipeline correctly rejected malformed patches. The audit trail proves the system runs without human intervention.
+
+3. **Security is not an afterthought.** V4 vault has 91% statement coverage, 96 dedicated tests, and 7 hardening features (timelocks, proportional emergency withdraw, max borrow ratio, borrow timeout). Four vault iterations show continuous security improvement.
+
+4. **Every sponsor integration is genuine.** Base (native deployment), Uniswap (real swaps), Venice (real evolution proposals), Storacha (genome pinning built), Lit (PKP integration staged), ENS (4 on-chain text records). Not checkbox integrations -- each solves a real problem in the architecture.
+
+5. **The Golden Rule enforces focus.** Every module serves one objective: increase profits and win rate. No feature creep, no vanity metrics. If it does not make DarwinFi better at making money, it does not exist.
+
 ## Technologies
 
 Base, Uniswap V3, ERC-4626 (OpenZeppelin v5), Claude Code, Venice AI, Ollama, Storacha/IPFS, Lit Protocol, ENS/Basenames, React 19, Hardhat, ethers.js v6, Tailscale, ElevenLabs TTS, Playwright, ffmpeg

@@ -77,7 +77,7 @@ The code evolution engine (11 modules, 2,114 LOC) gives DarwinFi the ability to 
 2. **AI Proposal**: Venice AI (Llama 3.3 70B) generates code mutations
 3. **Static Validation**: Ring checks prevent mutations to critical infrastructure
 4. **Sandbox**: Git worktree isolation + TypeScript compilation
-5. **Test Gate**: All 444 tests must pass
+5. **Test Gate**: All 488 tests must pass
 6. **Canary Deploy**: 4-hour minimum monitoring with 60-second health checks
 7. **Promote or Rollback**: If canary degrades performance, automatic git rollback
 
@@ -165,7 +165,7 @@ Full coverage of vault math, fee calculations, multi-user deposits, agent borrow
 
 ## Testing
 
-444 tests across 27+ modules:
+488 tests across 27+ modules:
 
 ```bash
 npm test
@@ -217,8 +217,11 @@ npm start
 ## Documentation
 
 - [Competitor Analysis](docs/competitor-analysis.md) -- How DarwinFi compares to Yearn, dHEDGE, Enzyme, and others
+- [Coverage Report](docs/coverage-report.md) -- Solidity test coverage breakdown
 - [Devfolio Submission](docs/devfolio-submission.md) -- Full hackathon submission details
 - [Development Log](docs/development-log.md) -- Build diary
+- [Evolution Proof](docs/evolution-proof.md) -- 5 real autonomous evolution cycles documented
+- [Getting Started](docs/getting-started.md) -- User guide for depositing and withdrawing
 - [Trade Proof](docs/trade-proof.md) -- On-chain transaction verification
 
 ---
@@ -261,6 +264,21 @@ DarwinFi uses Venice AI (Llama 3.3 70B) for two critical functions where privacy
 3. **Private Inference**: Trading strategies are alpha. If competitors can observe what signals DarwinFi requests, they can front-run or copy the strategy. Venice's privacy-preserving inference ensures no one sees DarwinFi's queries -- not even Venice.
 
 Venice powers `src/agent/venice-engine.ts` (real-time execution signals) and `src/evolution/proposal.ts` (code mutation proposals). The AI Router (`src/agent/ai-router.ts`) health-checks the GPU node first, falls back to Venice for quality-critical inference, and uses Claude CLI as last resort.
+
+---
+
+## Traction Metrics
+
+| Metric | Value |
+|--------|-------|
+| Tests passing | 488 |
+| Solidity statement coverage | 70% (V4 vault: 91%) |
+| On-chain transactions | 19 (Base mainnet) |
+| Autonomous evolution cycles | 5 (all safety-gated) |
+| Vault version | V4 (security hardened) |
+| Contracts deployed | 4 (V4 Vault, PerformanceLog, StrategyExecutor, ENS) |
+| Trade cycles completed | 2 (8 USDC volume, Uniswap V3) |
+| PerformanceLog entries | 2 trades + 1 generation advance |
 
 ---
 

@@ -9,6 +9,7 @@ import { AgentStatus } from "../components/AgentStatus";
 import { TradesFeed } from "../components/TradesFeed";
 import { TrustModel } from "../components/TrustModel";
 import { SharePriceChart } from "../components/SharePriceChart";
+import { ReturnsChart } from "../components/ReturnsChart";
 import { AnimatedSection } from "../components/AnimatedSection";
 import { useVaultStats } from "../hooks/useVaultStats";
 import { useDarwinFiAPI } from "../hooks/useDarwinFiAPI";
@@ -196,7 +197,10 @@ export function Home() {
         {/* Position + Chart side by side */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <PositionDisplay />
-          <SharePriceChart />
+          <div className="space-y-4">
+            <SharePriceChart />
+            <ReturnsChart />
+          </div>
         </div>
 
         {/* Withdraw section */}

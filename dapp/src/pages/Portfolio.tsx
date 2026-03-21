@@ -1,5 +1,6 @@
 import { useAccount } from "wagmi";
 import { PortfolioCard } from "../components/PortfolioCard";
+import { ReturnsChart } from "../components/ReturnsChart";
 import { DepositCard } from "../components/DepositCard";
 import { WithdrawCard } from "../components/WithdrawCard";
 import { VAULT_ADDRESS, BASENAME } from "../lib/constants";
@@ -17,6 +18,9 @@ export function Portfolio() {
 
       {/* Main portfolio card */}
       <PortfolioCard />
+
+      {/* Returns Chart */}
+      <ReturnsChart />
 
       {/* Deposit + Withdraw */}
       {isConnected && (

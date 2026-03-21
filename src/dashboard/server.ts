@@ -275,6 +275,20 @@ export function startDashboard(port: number = 3500): void {
     }
   });
 
+  // Historical returns endpoint (cumulative % return from share price)
+  app.get("/api/vault/returns", (_req, res) => {
+    if (sharePriceHistory.length < 2) {
+      return res.json({ returns: [] });
+    }
+    const basePrice = sharePriceHistory[0].price;
+    const returns = sharePriceHistory.map(point => ({
+      timestamp: point.timestamp,
+      returnPct: ((point.price - basePrice) / basePrice) * 100,
+      price: point.price,
+    }));
+    res.json({ returns });
+  });
+
   // Championship endpoint (cross-team competition)
   app.get("/api/championship", (_req, res) => {
     res.json(state.championshipStandings ?? {

@@ -1,12 +1,15 @@
 import { ethers } from "ethers";
 
-// Basenames Registrar on Base
+// Basenames UpgradeableRegistrarController (proxy) on Base mainnet
+const BASENAMES_REGISTRAR = "0xa7d2607c6BD39Ae9521e514026CBB078405Ab322";
 // L2 Resolver for Base
-const BASENAMES_REGISTRAR = "0x4cCb0720c37aC24166f391eDBe1a717C4714a5Db";
+export const L2_RESOLVER = "0xC6d566A56A1aFf6508b41f6c90ff131615583BCD";
+
 const BASE_REGISTRAR_ABI = [
-  "function register(tuple(string name, address owner, uint256 duration, address resolver, bytes[] data, bool reverseRecord) request) payable",
+  "function register(tuple(string name, address owner, uint256 duration, address resolver, bytes[] data, bool reverseRecord, uint256[] coinTypes, uint256 signatureExpiry, bytes signature) request) payable",
   "function available(string name) view returns (bool)",
-  "function rentPrice(string name, uint256 duration) view returns (uint256)"
+  "function rentPrice(string name, uint256 duration) view returns (uint256 base, uint256 premium)",
+  "function registerPrice(string name, uint256 duration) view returns (uint256)"
 ];
 
 export async function checkBasenameAvailable(
@@ -20,6 +23,15 @@ export async function checkBasenameAvailable(
     console.log(`[DarwinFi] ENS availability check failed for ${name}:`, error);
     return false;
   }
+}
+
+export async function getRegisterPrice(
+  provider: ethers.Provider,
+  name: string,
+  durationSeconds: number
+): Promise<bigint> {
+  const registrar = new ethers.Contract(BASENAMES_REGISTRAR, BASE_REGISTRAR_ABI, provider);
+  return await registrar.registerPrice(name, durationSeconds);
 }
 
 export async function registerBasename(
@@ -37,8 +49,9 @@ export async function registerBasename(
   }
 
   console.log(`[DarwinFi] Getting rent price...`);
-  const price = await registrar.rentPrice(name, duration);
-  console.log(`[DarwinFi] Rent price: ${ethers.formatEther(price)} ETH`);
+  const price = await registrar.registerPrice(name, duration);
+  const priceWithBuffer = (price * 110n) / 100n; // 10% buffer for price fluctuation
+  console.log(`[DarwinFi] Price: ${ethers.formatEther(price)} ETH (with buffer: ${ethers.formatEther(priceWithBuffer)} ETH)`);
 
   const ownerAddr = await signer.getAddress();
   console.log(`[DarwinFi] Registering ${name}.base.eth for ${ownerAddr}...`);
@@ -48,11 +61,14 @@ export async function registerBasename(
       name: name,
       owner: ownerAddr,
       duration: duration,
-      resolver: ethers.ZeroAddress, // use default resolver
+      resolver: L2_RESOLVER,
       data: [],
       reverseRecord: true,
+      coinTypes: [],
+      signatureExpiry: 0n,
+      signature: "0x",
     },
-    { value: price }
+    { value: priceWithBuffer }
   );
 
   const receipt = await tx.wait();

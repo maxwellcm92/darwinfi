@@ -23,6 +23,10 @@ const faqs = [
     q: "What fees does DarwinFi charge?",
     a: "DarwinFi charges a 1% annual management fee and a 5% performance fee on profits above a high-water mark. There are no deposit or withdrawal fees.",
   },
+  {
+    q: "How do I get started?",
+    a: "Connect your wallet, deposit USDC, and the AI handles the rest. For a detailed walkthrough, visit the Getting Started guide in our documentation. You'll need a Web3 wallet (like MetaMask), USDC on the Base network, and a small amount of ETH for gas.",
+  },
 ];
 
 export function FAQ() {

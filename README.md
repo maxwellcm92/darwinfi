@@ -191,7 +191,15 @@ npm test
 
 ---
 
-## Setup
+## Getting Started (Users)
+
+New to DarwinFi? See the [Getting Started Guide](docs/getting-started.md) for a step-by-step walkthrough:
+1. Connect your wallet to the [live DApp](https://corduroycloud.com/darwinfi/)
+2. Deposit USDC into the vault
+3. Monitor your position as AI strategies trade
+4. Withdraw anytime
+
+## Setup (Developers)
 
 ```bash
 git clone https://github.com/maxwellcm92/darwinfi.git

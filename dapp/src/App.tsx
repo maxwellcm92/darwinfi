@@ -29,7 +29,7 @@ export function App() {
       </main>
       <footer className="border-t border-darwin-border/30 py-6 mt-auto">
         <div className="flex items-center justify-center gap-2">
-          <img src="/darwinfi/darwinfi-logo.png" alt="" className="h-5 w-5 rounded" />
+          <img src="/darwinfi/darwinfi-logo.png" alt="" className="h-6 w-auto rounded" />
           <p className="text-xs font-mono text-darwin-text-dim">
             DarwinFi - Autonomous DeFi on Base L2
           </p>

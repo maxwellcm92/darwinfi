@@ -33,42 +33,6 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
-/* ── Floating DNA helix decoration ── */
-function DNAHelix({ side }: { side: "left" | "right" }) {
-  const x = side === "left" ? 20 : 80;
-  return (
-    <div
-      className={`hidden lg:block absolute top-0 ${side === "left" ? "left-0" : "right-0"} h-full w-24 opacity-[0.04] pointer-events-none`}
-    >
-      <svg viewBox="0 0 100 800" className="h-full w-full">
-        {Array.from({ length: 20 }).map((_, i) => (
-          <g key={i}>
-            <circle
-              cx={x + Math.sin(i * 0.6) * 25}
-              cy={i * 40 + 20}
-              r="3"
-              fill="#00F0C0"
-            />
-            <circle
-              cx={x - Math.sin(i * 0.6) * 25}
-              cy={i * 40 + 20}
-              r="3"
-              fill="#8040DD"
-            />
-            <line
-              x1={x + Math.sin(i * 0.6) * 25}
-              y1={i * 40 + 20}
-              x2={x - Math.sin(i * 0.6) * 25}
-              y2={i * 40 + 20}
-              stroke="rgba(30,30,74,0.6)"
-              strokeWidth="1"
-            />
-          </g>
-        ))}
-      </svg>
-    </div>
-  );
-}
 
 export default function HomePage() {
   const { data: state, loading } = usePollAPI<AgentState>("/api/state", 8000);
@@ -84,7 +48,11 @@ export default function HomePage() {
         <div className="text-center px-6 max-w-4xl">
           {/* Logo */}
           <div className="mb-6">
-            <img src="/darwinfi-logo.png" alt="DarwinFi" className="w-20 h-20 mx-auto rounded-2xl opacity-90" />
+            <img
+              src="/darwinfi-logo.png"
+              alt="DarwinFi"
+              className="w-auto h-24 mx-auto rounded-2xl opacity-95 shadow-lg shadow-darwin-accent/30"
+            />
           </div>
 
           {/* Hackathon badge */}
@@ -142,9 +110,6 @@ export default function HomePage() {
       </ShaderHero>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <DNAHelix side="left" />
-        <DNAHelix side="right" />
-
         {/* ── Organism Diagram ── */}
         <AnimatedSection className="py-20 md:py-28">
           <div className="text-center mb-4">

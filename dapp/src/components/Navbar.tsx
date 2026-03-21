@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import wordmarkSrc from "../assets/darwinfi-wordmark.png";
 
 const navPillClass = ({ isActive }: { isActive: boolean }) =>
   `px-4 py-2 rounded-full text-sm font-mono transition-all duration-200 border ${
@@ -38,9 +37,11 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <NavLink to="/" className="flex items-center gap-2">
-            <img src="/darwinfi/darwinfi-logo.png" alt="" className="h-8 w-8 rounded-lg" />
-            <img src={wordmarkSrc} alt="DarwinFi" className="h-7 w-auto" />
+          <NavLink to="/" className="flex items-center gap-2.5 group">
+            <img src="/darwinfi/darwinfi-logo.png" alt="DarwinFi" className="h-9 w-auto rounded-lg transition-transform duration-200 group-hover:scale-105" />
+            <span className="text-lg font-bold tracking-tight text-darwin-accent">
+              DarwinFi
+            </span>
           </NavLink>
 
           {/* Desktop Nav Links */}

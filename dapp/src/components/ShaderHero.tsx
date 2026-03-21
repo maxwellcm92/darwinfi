@@ -171,7 +171,7 @@ export function ShaderHero() {
           <img
             src="/darwinfi/darwinfi-logo-bg.png"
             alt=""
-            className="h-32 w-auto opacity-70 rounded-xl"
+            className="h-36 w-auto opacity-80 rounded-2xl shadow-lg shadow-darwin-accent/20"
             aria-hidden="true"
           />
         </div>

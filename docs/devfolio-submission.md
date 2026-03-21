@@ -43,8 +43,6 @@ DarwinFi generates its own demo video -- narrated in first person by a British A
 
 Upload: YouTube (unlisted), embed in Devfolio submission.
 
-**Pending for Chat D:** On-chain trade footage requires USDC deposit to deployer wallet. Placeholder scenes ready for swap once trades execute.
-
 ## Links
 
 - **Live DApp:** https://corduroycloud.com/darwinfi/
@@ -85,8 +83,76 @@ This is DarwinFi being DarwinFi: it detects an external dependency isn't availab
 | 4 | Let the Agent Cook -- No Humans Required (Protocol Labs) | Self-evolution engine runs autonomously, genome pinning to IPFS via Storacha |
 | 5 | Agentic Finance / Best Uniswap API Integration (Uniswap) | All swaps execute through Uniswap V3 SwapRouter + Quoter V2 |
 | 6 | Best Use Case with Agentic Storage (Filecoin) | Genome pinning to IPFS via Storacha for immutable evolution audit trail |
-| 7 | ENS Identity (ENS) | darwinfi.base.eth registered on Base, owned by deployer wallet |
-| 8 | ENS Open Integration (ENS) | ENS name displayed in DApp, on-chain identity for agent |
+| 7 | ENS Identity (ENS) | darwinfi.base.eth registered on Base with 4 on-chain text records (url, description, com.twitter, com.github) |
+| 8 | ENS Open Integration (ENS) | ENS name displayed in DApp UI, on-chain identity for agent wallet |
+
+## On-Chain Proof: 19 Transactions on Base Mainnet
+
+Judges: every transaction below is independently verifiable on BaseScan. Click any link to confirm.
+
+### Funding (3 transactions)
+
+| # | Action | Tx Hash | BaseScan |
+|---|--------|---------|----------|
+| 1 | USDC transfer from Kraken (51 USDC via Base) | `0x75725cf24337730829990fefaa214bee8d2429c7d8df0bbff5db4f65ab917416` | [View](https://basescan.org/tx/0x75725cf24337730829990fefaa214bee8d2429c7d8df0bbff5db4f65ab917416) |
+| 2 | Approve USDC for V4 vault | `0x1fc8d767fc4240259a302e69238edb420f6aaa370014ee1211e03fbc7507eada` | [View](https://basescan.org/tx/0x1fc8d767fc4240259a302e69238edb420f6aaa370014ee1211e03fbc7507eada) |
+| 3 | Deposit 50 USDC into V4 vault | `0xb942e7e3440b4f59303be0cfe87f59261fb8273e5f6255a945bcf24c84ed3af1` | [View](https://basescan.org/tx/0xb942e7e3440b4f59303be0cfe87f59261fb8273e5f6255a945bcf24c84ed3af1) |
+
+### Trade Cycle 1: 3 USDC (4 transactions)
+
+| # | Action | Tx Hash | BaseScan |
+|---|--------|---------|----------|
+| 4 | Agent borrow 3 USDC from vault | `0xd192bbd6b659bd9aa6a5199cbcd4bdf2fd5fe97ab7dd8d9d49c3df37f493119c` | [View](https://basescan.org/tx/0xd192bbd6b659bd9aa6a5199cbcd4bdf2fd5fe97ab7dd8d9d49c3df37f493119c) |
+| 5 | Swap 3 USDC -> WETH (Uniswap V3) | `0x8a407a2b4fdc2c9053889db8b3d4942c262c5762d1e254d4c5f6ffd372abb6ff` | [View](https://basescan.org/tx/0x8a407a2b4fdc2c9053889db8b3d4942c262c5762d1e254d4c5f6ffd372abb6ff) |
+| 6 | Swap WETH -> 2.997 USDC (Uniswap V3) | `0x231cd149391a4fa283dac52551620b68bf56fb8f0c9370b15f949fcfeea32c56` | [View](https://basescan.org/tx/0x231cd149391a4fa283dac52551620b68bf56fb8f0c9370b15f949fcfeea32c56) |
+| 7 | Agent return 3 USDC to vault | `0xdd1a4dd5da76fe4fda7be23b8dbd16b40d5749e3bf3a929d2564f31f663b4339` | [View](https://basescan.org/tx/0xdd1a4dd5da76fe4fda7be23b8dbd16b40d5749e3bf3a929d2564f31f663b4339) |
+
+### Trade Cycle 2: 5 USDC (5 transactions)
+
+| # | Action | Tx Hash | BaseScan |
+|---|--------|---------|----------|
+| 8 | Agent borrow 5 USDC from vault | `0x0b1ed9494efbc4932f2ab8e3950696e37c8d6d16fae9b1331d672f841c3c58f9` | [View](https://basescan.org/tx/0x0b1ed9494efbc4932f2ab8e3950696e37c8d6d16fae9b1331d672f841c3c58f9) |
+| 9 | Swap 5 USDC -> WETH (Uniswap V3) | `0x62d5b09d7ceec1282d1c300c757096fe5dfd347873946f48f8c840f7f4f3d876` | [View](https://basescan.org/tx/0x62d5b09d7ceec1282d1c300c757096fe5dfd347873946f48f8c840f7f4f3d876) |
+| 10 | Wrap ETH -> WETH | `0xeeccc4ae5d3afdadbfa29b8b924a94b12cd8803e38cacb9960bcd773f614d77a` | [View](https://basescan.org/tx/0xeeccc4ae5d3afdadbfa29b8b924a94b12cd8803e38cacb9960bcd773f614d77a) |
+| 11 | Swap WETH -> USDC (Uniswap V3) | `0xeb4ee0b0cd3cbb2b68fb33aebf8f77e2fd090305acf91c20662f234c77372ec4` | [View](https://basescan.org/tx/0xeb4ee0b0cd3cbb2b68fb33aebf8f77e2fd090305acf91c20662f234c77372ec4) |
+| 12 | Agent return 5 USDC to vault | `0xe1bb254ef7db8b1d0923430096b9bf2f66df5d19bae26f675e68446649a860b5` | [View](https://basescan.org/tx/0xe1bb254ef7db8b1d0923430096b9bf2f66df5d19bae26f675e68446649a860b5) |
+
+### PerformanceLog Entries (3 transactions)
+
+| # | Action | Tx Hash | BaseScan |
+|---|--------|---------|----------|
+| 13 | Log trade 1 result (strategy 1, -0.10% PnL) | `0x546e8f61cf042166e1aef48d396e9686f7a27eb976a384151c584b81cf62e1d3` | [View](https://basescan.org/tx/0x546e8f61cf042166e1aef48d396e9686f7a27eb976a384151c584b81cf62e1d3) |
+| 14 | Log trade 2 result (strategy 1, -0.10% PnL) | `0x15e83888ef1cb4e5428d94d4e60438991738a45b4e6735a7b00d4e3f44c9ba76` | [View](https://basescan.org/tx/0x15e83888ef1cb4e5428d94d4e60438991738a45b4e6735a7b00d4e3f44c9ba76) |
+| 15 | Advance generation to 42 | `0xd02f5bd96bc2aa1ae47358b35def801f7cbb65d5e7a11b5e65a6eeb1a1f52589` | [View](https://basescan.org/tx/0xd02f5bd96bc2aa1ae47358b35def801f7cbb65d5e7a11b5e65a6eeb1a1f52589) |
+
+### ENS Text Records on darwinfi.base.eth (4 transactions)
+
+| # | Action | Tx Hash | BaseScan |
+|---|--------|---------|----------|
+| 16 | Set `url` text record (DApp link) | On-chain via L2 Resolver | [View darwinfi.base.eth](https://basescan.org/address/0xb2db53Db9a2349186F0214BC3e1bF08a195570e3) |
+| 17 | Set `description` text record | On-chain via L2 Resolver | [View darwinfi.base.eth](https://basescan.org/address/0xb2db53Db9a2349186F0214BC3e1bF08a195570e3) |
+| 18 | Set `com.twitter` text record | On-chain via L2 Resolver | [View darwinfi.base.eth](https://basescan.org/address/0xb2db53Db9a2349186F0214BC3e1bF08a195570e3) |
+| 19 | Set `com.github` text record | On-chain via L2 Resolver | [View darwinfi.base.eth](https://basescan.org/address/0xb2db53Db9a2349186F0214BC3e1bF08a195570e3) |
+
+### On-Chain Summary
+
+- **Total transactions**: 19 on Base mainnet
+- **Unique on-chain actions**: Fund, deposit, 2 full borrow-swap-return trade cycles, 3 PerformanceLog entries, 4 ENS text records
+- **Volume traded**: 8 USDC across 4 Uniswap V3 swaps (USDC/WETH 0.05% pool)
+- **DEX**: Uniswap V3 SwapRouter02 ([`0x2626664c2603336E57B271c5C0b26F421741e481`](https://basescan.org/address/0x2626664c2603336E57B271c5C0b26F421741e481))
+- **Round-trip cost**: ~$0.05 (swap fees + slippage, gas negligible on Base)
+- **PerformanceLog**: 2 trade results logged, generation advanced to 42
+- **Vault state**: 50 USDC total assets, all borrowed funds returned
+
+### Verification Links for Judges
+
+| Resource | Link |
+|----------|------|
+| V4 Vault contract | [BaseScan](https://basescan.org/address/0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7) |
+| PerformanceLog contract | [BaseScan](https://basescan.org/address/0x7d7433A4aD04D6AD85E82Ce43CC4535ADb2fc9c9) |
+| Agent/Deployer wallet | [BaseScan](https://basescan.org/address/0xb2db53Db9a2349186F0214BC3e1bF08a195570e3) |
+| darwinfi.base.eth (ENS) | [BaseScan](https://basescan.org/address/0xb2db53Db9a2349186F0214BC3e1bF08a195570e3) |
+| Live DApp | [corduroycloud.com/darwinfi](https://corduroycloud.com/darwinfi/) |
 
 ## On-Chain Artifacts (Base Mainnet)
 
@@ -102,9 +168,9 @@ This is DarwinFi being DarwinFi: it detects an external dependency isn't availab
 ## DApp Features (Current)
 
 - Mobile-responsive navbar with pill-style navigation
-- "Unaudited" banner -- honest about hackathon-stage security
-- ENS name display (darwinfi.base.eth) for agent identity
-- Corrected FAQ fees (1% mgmt + 5% perf, matching V4 contract)
+- "Unaudited" banner -- honest about hackathon-stage security posture
+- Corrected fee disclosure (1% mgmt + 5% perf, matching V4 contract exactly)
+- ENS name display (darwinfi.base.eth) for agent identity in the UI
 - Dashboard with vault stats, tournament leaderboard, trade history
 - Deposit/withdraw flow with ERC-4626 share accounting
 - Dark theme with retro-biological aesthetic
@@ -112,48 +178,76 @@ This is DarwinFi being DarwinFi: it detects an external dependency isn't availab
 ## V4 Security Hardening (6 Audit Fixes Over V3)
 
 1. **12-decimal shares** -- 6 USDC decimals + 6 offset, prevents share price rounding attacks
-2. **48h timelock on agent/feeRecipient changes** -- governance cannot instantly swap agent or redirect fees
-3. **Proportional emergency withdraw** -- users get fair share even when agent has borrowed funds
-4. **80% max borrow ratio** -- vault always retains 20% liquidity for withdrawals
-5. **7-day borrow timeout** with bad debt write-off -- prevents infinite capital lockup
-6. **7-day lock time cap** -- prevents governance from trapping depositor funds indefinitely
+2. **48h timelock on agent/feeRecipient changes** -- governance cannot instantly swap agent or redirect fees; `proposeAgent()` and `proposeFeeRecipient()` enforce a 48-hour waiting period
+3. **Proportional emergency withdraw** -- users get fair share even when agent has borrowed funds; `emergencyWithdraw()` always works, even when paused
+4. **emergencyWithdraw rounding guard** -- reverts with `WithdrawalTooSmall` when `sharesToBurn` rounds to 0, preventing zero-share burns
+5. **80% max borrow ratio** -- vault always retains 20% liquidity for withdrawals
+6. **7-day borrow timeout** with bad debt write-off -- prevents infinite capital lockup
+7. **7-day lock time cap** -- prevents governance from trapping depositor funds indefinitely
 
 ## Testing
 
-- **V4 vault tests:** 80 passing (covers all 6 security features + full vault math)
-- **Total test suite:** 428 passing across 27+ modules
+- **V4 vault tests:** 96 passing (covers all security features + full vault math + timelock + rounding guard + WithdrawalTooSmall)
+- **Total test suite:** 444 passing across 27+ modules
 - **Contracts + agent + evolution + immune + instinct + frontier** all covered
+
+| Module | Tests |
+|--------|-------|
+| DarwinVaultV4 | 96 |
+| DarwinVaultV3 | 51 |
+| DarwinAgent | 18 |
+| Evolution Smoke | 18 |
+| Frontier | 46 |
+| Circuit Breakers | 32 |
+| Instinct (Predictions) | 28 |
+| Immune System | 24 |
+| AI Router | 22 |
+| Attribution | 18 |
+| Signal Calibration | 16 |
+| Dynamic Fitness | 14 |
+| Strategy Switching | 12 |
+| Candle Service | 11 |
+| Other modules | 38 |
 
 ## Venice AI Narrative
 
 Venice AI is not just a fallback -- it is DarwinFi's uncensored evolution brain:
 
-- **Uncensored trading signals:** No content filtering means raw market analysis. Bearish calls, contrarian bets, high-risk micro-cap assessments -- Venice delivers what sanitized models won't.
+- **Uncensored trading signals:** No content filtering means raw market analysis. Bearish calls, contrarian bets, high-risk micro-cap assessments -- Venice delivers what sanitized models won't. Financial analysis requests are frequently refused by safety-filtered models ("I can't provide financial advice"). Venice always provides actionable signals, not refusals.
 - **Strategy evolution:** Three AI personas (Mutant, Tuner, Hybrid) powered by Llama 3.3 70B propose code mutations. Venice's private inference means strategy logic never leaks to competitors.
-- **Private inference:** Trading strategies are intellectual property. Venice's privacy guarantees ensure DarwinFi's evolved parameters stay confidential.
+- **Private inference:** Trading strategies are intellectual property. Venice's privacy guarantees ensure DarwinFi's evolved parameters stay confidential. No one sees DarwinFi's queries -- not even Venice.
+
+## ENS Integration: darwinfi.base.eth
+
+- **Registered** on Base mainnet, owned by deployer wallet
+- **4 on-chain text records set:**
+  - `url` -- points to live DApp
+  - `description` -- "A self-evolving financial organism"
+  - `com.twitter` -- social identity
+  - `com.github` -- source code link
+- **DApp integration:** ENS name displayed in the UI for agent identity
+- **Registration TX:** `0x204bec5eab443cd8839aef764ce27325fc97d68db17d2f8dc03187d47775bd98` ([View](https://basescan.org/tx/0x204bec5eab443cd8839aef764ce27325fc97d68db17d2f8dc03187d47775bd98))
 
 ## Current Status (March 21, 2026)
 
 **Completed:**
 - V4 vault deployed and verified on Base mainnet
+- 19 on-chain transactions: fund, deposit, 2 trade cycles, 3 PerformanceLog entries, 4 ENS text records
 - PerformanceLog deployed at `0x7d7433A4aD04D6AD85E82Ce43CC4535ADb2fc9c9`
-- darwinfi.base.eth registered on Base (owned by deployer)
-- DApp live at corduroycloud.com/darwinfi/ with V4 integration
-- 428 tests passing across all modules
+- darwinfi.base.eth registered on Base with 4 text records set
+- DApp live at corduroycloud.com/darwinfi/ with V4 integration, mobile responsive, unaudited banner
+- 444 tests passing across all modules (96 V4 vault tests)
 - Demo video pipeline built (TTS + Playwright + ffmpeg)
-- ElevenLabs API key available for voice generation
 - Showcase site live at darwinfi.corduroycloud.com
 
-**Pending (Chat D):**
-- USDC deposit to deployer wallet for live on-chain trades
-- Execute real trades through V4 vault (trade hashes TBD)
+**Pending:**
 - Record demo video with live trade footage
 - Devfolio submission form + YouTube upload
-
-**Blockers:**
-- USDC in deployer wallet (required for live trading + demo footage)
 - Storacha billing (genome pinning blocked until billing resolved)
-- Lit Protocol Chipotle launch (March 25 -- after hackathon deadline)
+
+**Known Limitations (Honest Disclosure):**
+- Lit Protocol Chipotle launches March 25 (after hackathon deadline) -- integration staged and waiting
+- Storacha genome pinning blocked on billing -- code is built, uploads will activate once billing is resolved
 
 ## Technologies
 

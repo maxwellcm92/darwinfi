@@ -41,8 +41,8 @@
 
 ## Summary
 
-- **Total transactions**: 15
-- **Unique on-chain actions**: Fund, deposit, 2 full borrow-swap-return cycles, PerformanceLog entries
+- **Total transactions**: 19 (15 trade-related + 4 ENS text records on darwinfi.base.eth)
+- **Unique on-chain actions**: Fund, deposit, 2 full borrow-swap-return cycles, PerformanceLog entries, 4 ENS text records
 - **Volume traded**: 8 USDC across 4 Uniswap V3 swaps (USDC/WETH 0.05% pool)
 - **DEX**: Uniswap V3 SwapRouter02 (`0x2626664c2603336E57B271c5C0b26F421741e481`)
 - **Round-trip cost**: ~$0.05 (swap fees + slippage, gas negligible on Base)

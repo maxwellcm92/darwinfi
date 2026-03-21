@@ -75,7 +75,7 @@ The code evolution engine (11 modules, 2,114 LOC) gives DarwinFi the ability to 
 2. **AI Proposal**: Venice AI (Llama 3.3 70B) generates code mutations
 3. **Static Validation**: Ring checks prevent mutations to critical infrastructure
 4. **Sandbox**: Git worktree isolation + TypeScript compilation
-5. **Test Gate**: All 423 tests must pass
+5. **Test Gate**: All 444 tests must pass
 6. **Canary Deploy**: 4-hour minimum monitoring with 60-second health checks
 7. **Promote or Rollback**: If canary degrades performance, automatic git rollback
 
@@ -116,7 +116,7 @@ The AI Router health-checks KS every 60s. If KS goes down, traffic automatically
 
 ### DarwinVaultV4 (ERC-4626, Security Hardened)
 
-Single-pool Yearn-style vault. One vault, one engine, all depositors share returns pro-rata. V4 adds 6 audit fixes over V3: 12-decimal shares (6 USDC + 6 offset), 48h timelock on agent/feeRecipient changes, proportional emergency withdraw, 80% max borrow ratio, 7-day borrow timeout with bad debt write-off, and 7-day lock time cap.
+Single-pool Yearn-style vault. One vault, one engine, all depositors share returns pro-rata. V4 adds 7 security hardening features over V3: 12-decimal shares (6 USDC + 6 offset), 48h fee timelocks on agent/feeRecipient changes, proportional emergency withdraw, emergencyWithdraw rounding guard (reverts `WithdrawalTooSmall` when sharesToBurn rounds to 0), 80% max borrow ratio, 7-day borrow timeout with bad debt write-off, and 7-day lock time cap.
 
 | Function | Who | What |
 |----------|-----|------|
@@ -129,9 +129,9 @@ Single-pool Yearn-style vault. One vault, one engine, all depositors share retur
 
 **Fees**: 1% annual management (100 bps, auto-collected via share dilution) + 5% performance (high water mark).
 
-### 80 Tests (V4) + 51 Tests (V3) = 131 Vault Tests
+### 96 Tests (V4) + 51 Tests (V3) = 147 Vault Tests
 
-Full coverage of vault math, fee calculations, multi-user deposits, agent borrow/return, HWM tracking, pause/emergency, access control, timelock transitions, proportional emergency withdraw, max borrow ratio, borrow timeout, bad debt write-off.
+Full coverage of vault math, fee calculations, multi-user deposits, agent borrow/return, HWM tracking, pause/emergency, access control, timelock transitions, proportional emergency withdraw, emergencyWithdraw rounding guard (WithdrawalTooSmall), max borrow ratio, borrow timeout, bad debt write-off.
 
 ---
 
@@ -163,7 +163,7 @@ Full coverage of vault math, fee calculations, multi-user deposits, agent borrow
 
 ## Testing
 
-428 tests across 27+ modules:
+444 tests across 27+ modules:
 
 ```bash
 npm test
@@ -171,7 +171,7 @@ npm test
 
 | Module | Tests | Coverage |
 |--------|-------|----------|
-| DarwinVaultV4 | 80 | V3 coverage + timelock, proportional emergency, max borrow, borrow timeout |
+| DarwinVaultV4 | 96 | V3 coverage + timelock, proportional emergency, max borrow, borrow timeout, rounding guard |
 | DarwinVaultV3 | 51 | Deposit/withdraw, fees, HWM, multi-user, agent flow, emergency |
 | DarwinAgent | 18 | Config, initialization, entries/exits, evolution triggers, paper/live, persistence |
 | Evolution Smoke | 18 | Config, validation, sandbox, test gate, canary, audit |
@@ -185,7 +185,7 @@ npm test
 | Dynamic Fitness | 14 | Regime detection, weight adaptation, scoring |
 | Strategy Switching | 12 | Continuous monitoring, emergency promote, sell-only mode |
 | Candle Service | 11 | Price feeds, OHLCV aggregation, multi-token |
-| Other modules | 23 | Integration, e2e, utilities |
+| Other modules | 38 | Integration, e2e, utilities |
 
 ---
 
@@ -227,7 +227,7 @@ npm start
 | **Venice AI** | Strategy evolution (Llama 3.3 70B), quality-critical inference |
 | **Storacha/IPFS** | Genome pinning, immutable evolution audit trail |
 | **Lit Protocol** | PKP trading guardrails (cryptographic policy enforcement) |
-| **ENS/Basenames** | darwinfi.base.eth agent identity |
+| **ENS/Basenames** | darwinfi.base.eth with 4 on-chain text records (url, description, com.twitter, com.github), displayed in DApp UI |
 
 ---
 

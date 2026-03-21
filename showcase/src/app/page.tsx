@@ -82,6 +82,11 @@ export default function HomePage() {
       {/* ── Hero ── */}
       <ShaderHero>
         <div className="text-center px-6 max-w-4xl">
+          {/* Logo */}
+          <div className="mb-6">
+            <img src="/darwinfi-logo.png" alt="DarwinFi" className="w-20 h-20 mx-auto rounded-2xl opacity-90" />
+          </div>
+
           {/* Hackathon badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-darwin-accent/20 bg-darwin-accent/5 mb-8">
             <span className="relative flex h-2 w-2">

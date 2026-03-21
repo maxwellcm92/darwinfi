@@ -15,7 +15,7 @@ export function App() {
           UNAUDITED SOFTWARE -- This vault has not undergone a formal security audit. Use at your own risk.
         </p>
       </div>
-      <main className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-8 flex-1 w-full">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/portfolio" element={<Portfolio />} />
@@ -28,9 +28,12 @@ export function App() {
         </Routes>
       </main>
       <footer className="border-t border-darwin-border/30 py-6 mt-auto">
-        <p className="text-center text-xs font-mono text-darwin-text-dim">
-          DarwinFi - Autonomous DeFi on Base L2
-        </p>
+        <div className="flex items-center justify-center gap-2">
+          <img src="/darwinfi/darwinfi-logo.png" alt="" className="h-5 w-5 rounded" />
+          <p className="text-xs font-mono text-darwin-text-dim">
+            DarwinFi - Autonomous DeFi on Base L2
+          </p>
+        </div>
       </footer>
     </div>
   );

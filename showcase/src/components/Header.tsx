@@ -26,9 +26,7 @@ export function Header() {
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-darwin-accent to-darwin-purple flex items-center justify-center text-darwin-bg font-bold text-sm">
-            D
-          </div>
+          <img src="/darwinfi-logo.png" alt="" className="w-8 h-8 rounded-lg" />
           <span className="font-mono font-bold text-darwin-text-bright tracking-tight">
             DarwinFi
           </span>

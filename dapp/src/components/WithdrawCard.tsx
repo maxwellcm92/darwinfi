@@ -158,7 +158,7 @@ export function WithdrawCard() {
             (userShareValue != null && usdcAmount > parseFloat(userShareValue))
           }
           className="w-full py-3 rounded-lg font-mono text-sm font-bold uppercase tracking-wider transition-all duration-200
-            bg-darwin-purple text-darwin-text-bright
+            bg-darwin-purple text-darwin-text-bright btn-shine
             hover:shadow-lg hover:shadow-darwin-purple/20
             active:scale-[0.97]
             disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-none"

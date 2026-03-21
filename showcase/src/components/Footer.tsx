@@ -8,9 +8,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-darwin-accent to-darwin-purple flex items-center justify-center text-darwin-bg font-bold text-xs">
-                D
-              </div>
+              <img src="/darwinfi-logo.png" alt="" className="w-7 h-7 rounded-lg" />
               <span className="font-mono font-bold text-darwin-text-bright">
                 DarwinFi
               </span>

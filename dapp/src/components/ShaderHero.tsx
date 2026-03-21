@@ -158,20 +158,20 @@ export function ShaderHero() {
       <div className="absolute inset-0 flex items-center justify-between px-10 md:px-14 lg:px-16">
         {/* Left: text */}
         <div className="relative z-10 max-w-lg">
-          <h1 className="font-mono text-xl md:text-2xl lg:text-3xl font-bold text-darwin-text-bright mb-2 tracking-tight">
+          <h1 className="font-serif text-xl md:text-2xl lg:text-3xl font-bold text-darwin-text-bright mb-2 tracking-tight">
             Autonomous DeFi Vault
           </h1>
-          <p className="font-mono text-sm md:text-base text-darwin-text/80">
+          <p className="font-sans text-sm md:text-base text-darwin-text/80">
             AI-managed trading strategies competing for your yield on Base L2
           </p>
         </div>
 
-        {/* Right: decorative helix (desktop) */}
+        {/* Right: logo (desktop) */}
         <div className="hidden lg:block relative z-10">
           <img
-            src="/darwinfi/darwinfi-helix.png"
+            src="/darwinfi/darwinfi-logo-bg.png"
             alt=""
-            className="h-32 w-auto opacity-40"
+            className="h-32 w-auto opacity-70 rounded-xl"
             aria-hidden="true"
           />
         </div>

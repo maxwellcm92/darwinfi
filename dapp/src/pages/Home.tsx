@@ -9,6 +9,7 @@ import { AgentStatus } from "../components/AgentStatus";
 import { TradesFeed } from "../components/TradesFeed";
 import { TrustModel } from "../components/TrustModel";
 import { SharePriceChart } from "../components/SharePriceChart";
+import { AnimatedSection } from "../components/AnimatedSection";
 import { useVaultStats } from "../hooks/useVaultStats";
 import { useDarwinFiAPI } from "../hooks/useDarwinFiAPI";
 
@@ -105,8 +106,8 @@ function StepExplainer() {
           <div className="w-8 h-8 rounded-full bg-darwin-accent/20 border border-darwin-accent/30 flex items-center justify-center mx-auto mb-3">
             <span className="text-sm font-mono font-bold text-darwin-accent">{step.num}</span>
           </div>
-          <h3 className="text-sm font-mono font-bold text-darwin-text-bright mb-1">{step.title}</h3>
-          <p className="text-xs font-mono text-darwin-text-dim leading-relaxed">{step.desc}</p>
+          <h3 className="text-sm font-sans font-bold text-darwin-text-bright mb-1">{step.title}</h3>
+          <p className="text-xs font-sans text-darwin-text-dim leading-relaxed">{step.desc}</p>
         </div>
       ))}
     </div>
@@ -158,28 +159,31 @@ export function Home() {
         <PerformanceBar />
 
         {/* Big Connect CTA */}
+        <AnimatedSection>
         <div className="text-center space-y-4">
-          <h2 className="text-xl font-mono font-bold text-darwin-text-bright">
+          <h2 className="text-xl font-serif font-bold text-darwin-text-bright">
             Deposit USDC. The bot handles everything.
           </h2>
-          <p className="text-sm font-mono text-darwin-text-dim max-w-md mx-auto">
+          <p className="text-sm font-sans text-darwin-text-dim max-w-md mx-auto">
             AI-managed trading strategies compete for your yield on Base L2.
             No strategy picking. No parameter tuning. Just returns.
           </p>
           <button
             onClick={openConnectModal}
-            className="px-8 py-3 rounded-lg font-mono text-sm font-bold uppercase tracking-wider transition-all duration-200
+            className="group relative overflow-hidden px-8 py-3 rounded-lg font-mono text-sm font-bold uppercase tracking-wider transition-all duration-200
               bg-darwin-accent text-darwin-bg
               hover:shadow-lg hover:shadow-darwin-accent/30
               active:scale-[0.97]"
           >
-            Connect Wallet
+            <span className="relative z-10">Connect Wallet</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
           </button>
         </div>
+        </AnimatedSection>
 
-        <StepExplainer />
-        <VaultStatsBar />
-        <TrustModel />
+        <AnimatedSection delay={100}><StepExplainer /></AnimatedSection>
+        <AnimatedSection delay={200}><VaultStatsBar /></AnimatedSection>
+        <AnimatedSection delay={300}><TrustModel /></AnimatedSection>
       </div>
     );
   }
@@ -245,15 +249,15 @@ export function Home() {
 
       {/* Centered deposit */}
       <div className="max-w-md mx-auto space-y-4">
-        <p className="text-center text-sm font-mono text-darwin-text-dim">
+        <p className="text-center text-sm font-sans text-darwin-text-dim">
           Your USDC earns yield from AI-managed trading.
         </p>
         <DepositCard />
       </div>
 
-      <VaultStatsBar />
-      <StepExplainer />
-      <TrustModel />
+      <AnimatedSection delay={100}><VaultStatsBar /></AnimatedSection>
+      <AnimatedSection delay={200}><StepExplainer /></AnimatedSection>
+      <AnimatedSection delay={300}><TrustModel /></AnimatedSection>
     </div>
   );
 }

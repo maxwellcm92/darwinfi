@@ -42,10 +42,10 @@ function TrustCard({ icon, question, answer, detail, accentColor }: TrustCardPro
       <h4 className={`text-sm font-mono font-bold ${c.text} mb-2`}>
         {question}
       </h4>
-      <p className="text-sm font-mono text-darwin-text-bright mb-2">
+      <p className="text-sm font-sans text-darwin-text-bright mb-2">
         {answer}
       </p>
-      <p className="text-xs font-mono text-darwin-text-dim leading-relaxed">
+      <p className="text-xs font-sans text-darwin-text-dim leading-relaxed">
         {detail}
       </p>
     </div>

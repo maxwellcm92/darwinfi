@@ -10,8 +10,8 @@ export function Portfolio() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="section-header text-darwin-text-bright text-sm">
-          PORTFOLIO
+        <h1 className="font-serif text-2xl font-bold text-darwin-text-bright">
+          Portfolio
         </h1>
       </div>
 

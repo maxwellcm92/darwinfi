@@ -136,7 +136,7 @@ export function DepositCard() {
             parseFloat(amount) <= 0
           }
           className="w-full py-3 rounded-lg font-mono text-sm font-bold uppercase tracking-wider transition-all duration-200
-            bg-darwin-accent text-darwin-bg
+            bg-darwin-accent text-darwin-bg btn-shine
             hover:shadow-lg hover:shadow-darwin-accent/20
             active:scale-[0.97]
             disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-none"

@@ -47,6 +47,21 @@ contract StrategyExecutor is Ownable, ReentrancyGuard {
     /// @notice Running trade counter for unique trade IDs.
     uint256 public tradeNonce;
 
+    /// @notice Maximum allowed slippage in basis points (default 500 = 5%).
+    uint256 public maxSlippageBps = 500;
+
+    /// @notice Absolute ceiling for maxSlippageBps (1000 = 10%).
+    uint256 public constant MAX_SLIPPAGE_CEILING = 1000;
+
+    /// @notice 48-hour timelock duration, matching DarwinVaultV4.
+    uint256 public constant TIMELOCK_DURATION = 48 hours;
+
+    /// @notice Pending new maxSlippageBps value awaiting timelock confirmation.
+    uint256 public pendingMaxSlippageBps;
+
+    /// @notice Timestamp when pendingMaxSlippageBps was set (0 = no pending change).
+    uint256 public pendingMaxSlippageBpsTimestamp;
+
     // ----------------------------------------------------------------
     // Events
     // ----------------------------------------------------------------
@@ -65,6 +80,10 @@ contract StrategyExecutor is Ownable, ReentrancyGuard {
     event VaultUpdated(address indexed oldVault, address indexed newVault);
     event AgentUpdated(address indexed oldAgent, address indexed newAgent);
 
+    event PendingMaxSlippageSet(uint256 newBps, uint256 readyAt);
+    event MaxSlippageConfirmed(uint256 oldBps, uint256 newBps);
+    event PendingMaxSlippageCancelled(uint256 cancelledBps);
+
     // ----------------------------------------------------------------
     // Errors
     // ----------------------------------------------------------------
@@ -73,6 +92,10 @@ contract StrategyExecutor is Ownable, ReentrancyGuard {
     error ZeroAddress();
     error ZeroAmount();
     error SwapFailed();
+    error SlippageTooHigh(uint256 requested, uint256 ceiling);
+    error SlippageFloorViolation(uint256 amountOutMin, uint256 requiredMin);
+    error TimelockNotElapsed(uint256 readyAt);
+    error NoPendingChange();
 
     // ----------------------------------------------------------------
     // Modifiers
@@ -116,6 +139,37 @@ contract StrategyExecutor is Ownable, ReentrancyGuard {
         emit AgentUpdated(old, _agent);
     }
 
+    /// @notice Initiate max slippage change (starts 48h timelock).
+    /// @param _bps New max slippage in basis points (must be <= MAX_SLIPPAGE_CEILING).
+    function setMaxSlippage(uint256 _bps) external onlyOwner {
+        if (_bps > MAX_SLIPPAGE_CEILING) revert SlippageTooHigh(_bps, MAX_SLIPPAGE_CEILING);
+        pendingMaxSlippageBps = _bps;
+        pendingMaxSlippageBpsTimestamp = block.timestamp;
+        emit PendingMaxSlippageSet(_bps, block.timestamp + TIMELOCK_DURATION);
+    }
+
+    /// @notice Confirm max slippage change after 48h timelock has elapsed.
+    function confirmMaxSlippage() external onlyOwner {
+        if (pendingMaxSlippageBpsTimestamp == 0) revert NoPendingChange();
+        if (block.timestamp < pendingMaxSlippageBpsTimestamp + TIMELOCK_DURATION) {
+            revert TimelockNotElapsed(pendingMaxSlippageBpsTimestamp + TIMELOCK_DURATION);
+        }
+        uint256 oldBps = maxSlippageBps;
+        maxSlippageBps = pendingMaxSlippageBps;
+        pendingMaxSlippageBps = 0;
+        pendingMaxSlippageBpsTimestamp = 0;
+        emit MaxSlippageConfirmed(oldBps, maxSlippageBps);
+    }
+
+    /// @notice Cancel a pending max slippage change.
+    function cancelPendingMaxSlippage() external onlyOwner {
+        if (pendingMaxSlippageBpsTimestamp == 0) revert NoPendingChange();
+        uint256 cancelled = pendingMaxSlippageBps;
+        pendingMaxSlippageBps = 0;
+        pendingMaxSlippageBpsTimestamp = 0;
+        emit PendingMaxSlippageCancelled(cancelled);
+    }
+
     // ----------------------------------------------------------------
     // Agent: Trade Execution
     // ----------------------------------------------------------------
@@ -140,6 +194,10 @@ contract StrategyExecutor is Ownable, ReentrancyGuard {
     ) external onlyAgent nonReentrant returns (uint256 amountOut) {
         if (amountIn == 0) revert ZeroAmount();
         if (tokenIn == address(0) || tokenOut == address(0)) revert ZeroAddress();
+
+        // M-02: Enforce slippage floor -- amountOutMin must meet the maxSlippageBps threshold
+        uint256 requiredMin = (amountIn * (10000 - maxSlippageBps)) / 10000;
+        if (amountOutMin < requiredMin) revert SlippageFloorViolation(amountOutMin, requiredMin);
 
         // 1. Pull funds from DarwinVault
         IDarwinVault(vault).spendToken(strategyId, tokenIn, amountIn, address(this));

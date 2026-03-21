@@ -600,6 +600,8 @@ contract DarwinVaultV4 is ERC4626, Ownable, ReentrancyGuard, Pausable {
     // Internal
     // ----------------------------------------------------------------
 
+    /// @notice Reverts if the owner's deposit lock time has not elapsed
+    /// @param owner_ The address whose lock time to check
     function _enforceLockTime(address owner_) internal view {
         uint256 depTime = depositTimestamp[owner_];
         if (depTime > 0 && block.timestamp < depTime + minLockTime) {
@@ -607,6 +609,8 @@ contract DarwinVaultV4 is ERC4626, Ownable, ReentrancyGuard, Pausable {
         }
     }
 
+    /// @notice Collects performance fee on profit above the high water mark by minting shares to feeRecipient
+    /// @param profit The gross profit amount from the agent's return
     function _collectPerformanceFee(uint256 profit) internal {
         uint256 currentAssets = totalAssets();
 
@@ -636,6 +640,7 @@ contract DarwinVaultV4 is ERC4626, Ownable, ReentrancyGuard, Pausable {
         }
     }
 
+    /// @notice Accrues and mints management fee shares to feeRecipient based on elapsed time and total assets
     function _collectManagementFeeInternal() internal {
         if (lastFeeCollection == 0) {
             lastFeeCollection = block.timestamp;

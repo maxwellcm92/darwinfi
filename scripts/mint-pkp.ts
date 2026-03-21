@@ -18,19 +18,9 @@ async function main() {
 
   // Dynamic import for Lit SDK (ESM modules)
   const { LitContracts } = await import("@lit-protocol/contracts-sdk");
-  const { LitNodeClient } = await import("@lit-protocol/lit-node-client");
 
   const LIT_NETWORK = process.env.LIT_NETWORK || "datil-test";
   console.log(`Lit Network: ${LIT_NETWORK}`);
-
-  // Connect to Lit node first to verify connectivity
-  console.log("Connecting to Lit network...");
-  const litNodeClient = new LitNodeClient({
-    litNetwork: LIT_NETWORK as any,
-    debug: false,
-  });
-  await litNodeClient.connect();
-  console.log("Lit node connected.\n");
 
   // Initialize contracts SDK with the deployer wallet
   // Chronicle Yellowstone uses the Lit testnet chain
@@ -67,8 +57,6 @@ async function main() {
   console.log(`LIT_PKP_ADDRESS=${mintResult.pkp.ethAddress}`);
   console.log(`LIT_NETWORK=${LIT_NETWORK}`);
 
-  // Disconnect
-  await litNodeClient.disconnect();
   console.log("\nDone.");
 }
 

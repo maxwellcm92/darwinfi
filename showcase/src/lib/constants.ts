@@ -2,7 +2,7 @@ export const API_BASE_URL = "https://corduroycloud.com/darwinfi";
 
 export const DAPP_URL = "https://corduroycloud.com/darwinfi/";
 
-export const VAULT_ADDRESS = "0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3";
+export const VAULT_ADDRESS = "0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7";
 export const DEPLOYER_ADDRESS = "0xb2db53Db9a2349186F0214BC3e1bF08a195570e3";
 
 export const NAV_LINKS = [

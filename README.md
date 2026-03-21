@@ -205,8 +205,9 @@ npm start
 
 | Contract | Address | Status |
 |----------|---------|--------|
-| DarwinVaultV3 (ERC-4626) | [`0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF`](https://basescan.org/address/0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF) | Live |
-| DarwinVaultV2 (ERC-4626) | [`0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3`](https://basescan.org/address/0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3) | Live |
+| DarwinVaultV4 (ERC-4626) | [`0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7`](https://basescan.org/address/0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7) | Live |
+| DarwinVaultV3 (ERC-4626) | [`0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF`](https://basescan.org/address/0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF) | Superseded |
+| DarwinVaultV2 (ERC-4626) | [`0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3`](https://basescan.org/address/0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3) | Superseded |
 | StrategyExecutor | Deployed | Live |
 | PerformanceLog | Deployed | Live |
 

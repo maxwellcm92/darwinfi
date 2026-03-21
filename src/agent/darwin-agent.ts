@@ -146,9 +146,10 @@ export class DarwinAgent {
     // Trading infrastructure (RPC health check happens at start())
     const uniswap = new UniswapClient();
     this.priceFeed = new PriceFeed(uniswap);
-    const useVaultV2 = !!process.env.DARWIN_VAULT_V2_ADDRESS;
+    const useVaultV4 = !!process.env.DARWIN_VAULT_V4_ADDRESS;
+    const useVaultV2 = !useVaultV4 && !!process.env.DARWIN_VAULT_V2_ADDRESS;
     this.liveEngine = new LiveEngine(
-      { useVaultV2 },
+      { useVaultV4, useVaultV2 },
       { uniswap, priceFeed: this.priceFeed }
     );
 

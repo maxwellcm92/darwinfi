@@ -33,7 +33,7 @@ const sessions: SessionData[] = [
       "Full React DApp: Home, Portfolio, Tournament pages with Wagmi + RainbowKit",
     ],
     details:
-      "DarwinVaultV2 (374 lines Solidity) implements ERC-4626 with agent borrow/return tracking, 10% performance fee above high water mark, 10K USDC deposit cap, 1-hour anti-flash-loan lock, and emergency withdrawal. Built 11 React components, 6 hooks, and deployed to Base mainnet at 0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3.",
+      "DarwinVaultV2 (374 lines Solidity) implements ERC-4626 with agent borrow/return tracking, 10% performance fee above high water mark, 10K USDC deposit cap, 1-hour anti-flash-loan lock, and emergency withdrawal. Built 11 React components, 6 hooks, and deployed to Base mainnet at 0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7.",
     codeImpact: "36 files created (1 Solidity, 35 DApp TS/TSX), ~4,900 lines added",
     type: "deployment",
   },
@@ -228,7 +228,7 @@ const sessions: SessionData[] = [
       "RainbowKit wallet connect + Base chain",
     ],
     details:
-      "Deployed the full DApp as a React SPA served via Express on port 3502 with Caddy reverse proxy stripping the /darwinfi prefix. Integrated VaultV2 contract at 0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3 with wagmi hooks for deposit, withdraw, share price, and TVL. RainbowKit provides wallet connection with Base chain support.",
+      "Deployed the full DApp as a React SPA served via Express on port 3502 with Caddy reverse proxy stripping the /darwinfi prefix. Integrated VaultV2 contract at 0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7 with wagmi hooks for deposit, withdraw, share price, and TVL. RainbowKit provides wallet connection with Base chain support.",
     codeImpact: "DApp deployed, Express server configured, Caddy routes added",
     type: "deployment",
   },

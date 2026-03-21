@@ -200,7 +200,7 @@ async function recordOutro(browser: Browser): Promise<void> {
 
   // Show BaseScan contract page
   await page.goto(
-    "https://basescan.org/address/0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3",
+    "https://basescan.org/address/0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7",
     { waitUntil: "load", timeout: 30_000 }
   );
   await sleep(8000);

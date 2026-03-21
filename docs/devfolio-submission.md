@@ -44,7 +44,7 @@ Upload: YouTube (unlisted), embed in Devfolio submission.
 ## Links
 
 - **Live DApp:** https://corduroycloud.com/darwinfi/
-- **Vault (BaseScan):** https://basescan.org/address/0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3
+- **Vault (BaseScan):** https://basescan.org/address/0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7
 - **GitHub:** https://github.com/maxwellcm92/darwinfi
 - **Basename:** darwinfi.base.eth
 

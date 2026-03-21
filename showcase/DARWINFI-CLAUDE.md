@@ -56,8 +56,9 @@ score = (rolling_24h_PnL * 0.30) + (rolling_24h_Sharpe * 0.25)
 
 ### Smart Contracts (Base L2)
 
-- **DarwinVaultV3** (ERC-4626): `0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF` -- upgraded vault with 1% annual management fee + 5% performance fee (high water mark)
-- **DarwinVaultV2** (ERC-4626): `0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3` -- deposit USDC, receive dvUSDC shares, agentBorrow/agentReturn for trading
+- **DarwinVaultV4** (ERC-4626): `0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7` -- security-hardened vault with 48h agent timelock, 80% max borrow ratio, 7-day borrow timeout, proportional emergency withdrawal
+- **DarwinVaultV3** (ERC-4626): `0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF` -- superseded (1% management fee + 5% performance fee)
+- **DarwinVaultV2** (ERC-4626): `0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3` -- superseded (initial vault)
 - **StrategyExecutor**: Executes swaps on Uniswap V3 SwapRouter
 - **PerformanceLog**: Immutable on-chain performance and evolution event logging
 - **Deployer**: `0xb2db53Db9a2349186F0214BC3e1bF08a195570e3`

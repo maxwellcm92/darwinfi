@@ -75,7 +75,7 @@ export const CHAT_FLOWS: Record<string, FlowStep[]> = {
     {
       type: "bot",
       text: "Even in the worst case, you can always use **emergency withdrawal** -- it works even when the vault is paused. Plus: 1-hour lock (anti-flash-loan), 10K USDC TVL cap, and 1K USDC per-trade limit enforced cryptographically.",
-      cta: { label: "View Vault on BaseScan", url: "https://basescan.org/address/0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3" },
+      cta: { label: "View Vault on BaseScan", url: "https://basescan.org/address/0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7" },
     },
   ],
 

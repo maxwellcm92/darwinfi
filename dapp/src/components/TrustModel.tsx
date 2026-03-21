@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const VAULT_ADDRESS = "0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3";
+const VAULT_ADDRESS = "0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7";
 
 interface TrustCardProps {
   icon: string;
@@ -88,8 +88,8 @@ export function TrustModel() {
           <TrustCard
             icon="!"
             question="Can the bot rug me?"
-            answer="No. Cryptographically impossible."
-            detail="A Lit Protocol Programmable Key Pair (PKP) signs every transaction. The signing policy is stored on IPFS (immutable). It enforces whitelisted contracts, tokens, and size limits. The agent cannot transfer funds to unauthorized addresses."
+            answer="No. Cryptographic + on-chain safeguards."
+            detail="A Lit Protocol PKP signs every trade through an immutable IPFS policy. The vault enforces a 48-hour timelock on agent changes, 80% max borrow cap, 7-day borrow timeout, and emergency withdrawal that always works. Verify on BaseScan."
             accentColor="warning"
           />
         </div>

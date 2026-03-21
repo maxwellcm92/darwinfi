@@ -74,6 +74,8 @@ export interface LiveEngineConfig {
   sellOnly?: boolean;
   /** Use VaultV2 for fund management (agent borrows before trade, returns after) */
   useVaultV2?: boolean;
+  /** Use VaultV4 for fund management (preferred over V2) */
+  useVaultV4?: boolean;
 }
 
 interface StrategyState {
@@ -99,6 +101,7 @@ export class LiveEngine {
   private maxTradeSizeUsd: number;
   private globalSellOnly: boolean;
   private useVaultV2: boolean;
+  private useVaultV4: boolean;
   private contractClient: ContractClient | null = null;
 
   private strategyStates: Map<string, StrategyState> = new Map();
@@ -121,10 +124,27 @@ export class LiveEngine {
     this.minGasReserveEth = config?.minGasReserveEth ?? 0.002;
     this.maxTradeSizeUsd = config?.maxTradeSizeUsd ?? 1000;
     this.globalSellOnly = config?.sellOnly ?? false;
+    this.useVaultV4 = config?.useVaultV4 ?? false;
     this.useVaultV2 = config?.useVaultV2 ?? false;
 
-    // Initialize VaultV2 integration if enabled
-    if (this.useVaultV2) {
+    // Initialize VaultV4 integration if enabled (preferred over V2)
+    if (this.useVaultV4) {
+      try {
+        this.contractClient = new ContractClient(this.baseClient);
+        if (this.contractClient.hasVaultV4()) {
+          console.log('[LiveEngine] VaultV4 integration enabled');
+        } else {
+          console.warn('[LiveEngine] VaultV4 enabled but address not set, falling back');
+          this.useVaultV4 = false;
+        }
+      } catch (err) {
+        console.warn('[LiveEngine] VaultV4 init failed:', err);
+        this.useVaultV4 = false;
+      }
+    }
+
+    // Initialize VaultV2 integration if V4 not active
+    if (!this.useVaultV4 && this.useVaultV2) {
       try {
         this.contractClient = new ContractClient(this.baseClient);
         if (this.contractClient.hasVaultV2()) {
@@ -250,8 +270,11 @@ export class LiveEngine {
     // Check if we need to go through WETH (no direct USDC pool)
     const effectiveFee = fee;
 
-    // If using VaultV2, borrow USDC from vault before swap
-    if (this.useVaultV2 && this.contractClient) {
+    // If using vault, borrow USDC before swap
+    if (this.useVaultV4 && this.contractClient) {
+      console.log(`[LiveEngine] Borrowing $${amountUsd} USDC from VaultV4 for trade`);
+      await this.contractClient.vaultV4BorrowFromVault(usdcAmount);
+    } else if (this.useVaultV2 && this.contractClient) {
       console.log(`[LiveEngine] Borrowing $${amountUsd} USDC from VaultV2 for trade`);
       await this.contractClient.vaultV2BorrowFromVault(usdcAmount);
     }
@@ -345,8 +368,11 @@ export class LiveEngine {
     const usdcReceived = Number(ethers.formatUnits(swapResult.amountOut, 6));
     const executionPriceUsd = tokensSold > 0 ? usdcReceived / tokensSold : 0;
 
-    // If using VaultV2, return USDC proceeds to vault after sell
-    if (this.useVaultV2 && this.contractClient && swapResult.amountOut > 0n) {
+    // Return USDC proceeds to vault after sell
+    if (this.useVaultV4 && this.contractClient && swapResult.amountOut > 0n) {
+      console.log(`[LiveEngine] Returning $${usdcReceived.toFixed(2)} USDC to VaultV4`);
+      await this.contractClient.vaultV4ReturnToVault(swapResult.amountOut);
+    } else if (this.useVaultV2 && this.contractClient && swapResult.amountOut > 0n) {
       console.log(`[LiveEngine] Returning $${usdcReceived.toFixed(2)} USDC to VaultV2`);
       await this.contractClient.vaultV2ReturnToVault(swapResult.amountOut);
     }
@@ -490,19 +516,24 @@ export class LiveEngine {
   }
 
   // ---------------------------------------------------------------
-  // VaultV2 helpers
+  // Vault helpers
   // ---------------------------------------------------------------
 
   /**
    * Get max trade size based on vault TVL (5% of TVL per trade).
-   * Falls back to the configured maxTradeSizeUsd if VaultV2 is not active.
+   * Falls back to the configured maxTradeSizeUsd if no vault is active.
    */
   async getVaultScaledMaxTradeSize(): Promise<number> {
-    if (!this.useVaultV2 || !this.contractClient) {
-      return this.maxTradeSizeUsd;
-    }
+    if (!this.contractClient) return this.maxTradeSizeUsd;
     try {
-      const totalAssets = await this.contractClient.vaultV2TotalAssets();
+      let totalAssets: bigint;
+      if (this.useVaultV4) {
+        totalAssets = await this.contractClient.vaultV4TotalAssets();
+      } else if (this.useVaultV2) {
+        totalAssets = await this.contractClient.vaultV2TotalAssets();
+      } else {
+        return this.maxTradeSizeUsd;
+      }
       const tvlUsd = Number(ethers.formatUnits(totalAssets, 6));
       const vaultMaxTrade = tvlUsd * 0.05; // 5% of TVL
       return Math.min(vaultMaxTrade, this.maxTradeSizeUsd);
@@ -511,8 +542,16 @@ export class LiveEngine {
     }
   }
 
+  isVaultEnabled(): boolean {
+    return (this.useVaultV4 || this.useVaultV2) && !!this.contractClient;
+  }
+
   isVaultV2Active(): boolean {
     return this.useVaultV2 && !!this.contractClient;
+  }
+
+  isVaultV4Active(): boolean {
+    return this.useVaultV4 && !!this.contractClient;
   }
 
   // ---------------------------------------------------------------

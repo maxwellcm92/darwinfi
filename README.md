@@ -1,3 +1,5 @@
+![Coverage](https://img.shields.io/badge/Coverage-70%25-yellow)
+
 # DarwinFi
 
 **A self-evolving financial organism that increases profits and win rate, autonomously, forever.**

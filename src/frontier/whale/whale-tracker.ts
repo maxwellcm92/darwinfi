@@ -8,6 +8,7 @@
 
 import { EventEmitter } from 'events';
 import { ethers, JsonRpcProvider, Contract } from 'ethers';
+import { FrontierError, FrontierErrorCodes, wrapError } from '../../types/errors';
 
 // -------------------------------------------------------------------
 // Types
@@ -202,7 +203,8 @@ export class WhaleTracker extends EventEmitter {
           }
         }
       } catch (err) {
-        console.error(`[WhaleTracker] Swap event scan error for pool ${poolAddress}:`, err);
+        const wrapped = wrapError(err, FrontierError, FrontierErrorCodes.WHALE_SCAN_FAILED, `Swap event scan failed for pool ${poolAddress}`);
+        console.error('[WhaleTracker] Swap event scan error:', wrapped.code, wrapped.message);
       }
     }
 
@@ -247,7 +249,8 @@ export class WhaleTracker extends EventEmitter {
               txHash: event.transactionHash,
             });
           } catch (err) {
-            console.error('[WhaleTracker] Swap handler error:', err);
+            const wrapped = wrapError(err, FrontierError, FrontierErrorCodes.WHALE_SCAN_FAILED, 'Swap handler failed');
+            console.error('[WhaleTracker] Swap handler error:', wrapped.code, wrapped.message);
           }
         });
 

@@ -8,6 +8,7 @@
  */
 
 import { JsonRpcProvider } from 'ethers';
+import { FrontierError, FrontierErrorCodes, wrapError } from '../../types/errors';
 
 // -------------------------------------------------------------------
 // Types
@@ -288,7 +289,9 @@ export class VolScanner {
       }
 
       return undefined;
-    } catch {
+    } catch (err) {
+      const wrapped = wrapError(err, FrontierError, FrontierErrorCodes.API_ERROR, `DexScreener catalyst check failed for ${tokenAddress}`);
+      console.error('[VolScanner] Catalyst check error:', wrapped.code, wrapped.message);
       return undefined;
     }
   }

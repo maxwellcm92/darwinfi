@@ -8,6 +8,7 @@
 
 import { EventEmitter } from 'events';
 import { ethers, Contract, JsonRpcProvider } from 'ethers';
+import { FrontierError, FrontierErrorCodes, wrapError } from '../../types/errors';
 
 // -------------------------------------------------------------------
 // Types
@@ -102,7 +103,8 @@ export class TokenDiscovery extends EventEmitter {
           this.pollGeckoTerminal(),
         ]);
       } catch (err) {
-        console.error('[TokenDiscovery] Poll error:', err);
+        const wrapped = wrapError(err, FrontierError, FrontierErrorCodes.DISCOVERY_FAILED, 'Poll cycle failed');
+        console.error('[TokenDiscovery] Poll error:', wrapped.code, wrapped.message);
       }
     }, this.pollIntervalMs);
 
@@ -217,7 +219,8 @@ export class TokenDiscovery extends EventEmitter {
         });
       }
     } catch (err) {
-      console.error('[TokenDiscovery] DexScreener poll error:', err);
+      const wrapped = wrapError(err, FrontierError, FrontierErrorCodes.API_ERROR, 'DexScreener poll failed');
+      console.error('[TokenDiscovery] DexScreener poll error:', wrapped.code, wrapped.message);
     }
   }
 
@@ -273,7 +276,8 @@ export class TokenDiscovery extends EventEmitter {
           });
         }
       } catch (err) {
-        console.error(`[TokenDiscovery] GeckoTerminal poll error (chain ${chainId}):`, err);
+        const wrapped = wrapError(err, FrontierError, FrontierErrorCodes.API_ERROR, `GeckoTerminal poll failed (chain ${chainId})`);
+        console.error('[TokenDiscovery] GeckoTerminal poll error:', wrapped.code, wrapped.message);
       }
     }
   }

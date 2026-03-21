@@ -7,6 +7,7 @@
  */
 
 import { ethers, JsonRpcProvider, Contract } from 'ethers';
+import { FrontierError, FrontierErrorCodes, wrapError } from '../../types/errors';
 
 // -------------------------------------------------------------------
 // Types
@@ -110,15 +111,17 @@ export class SpreadScanner {
     this.running = true;
 
     // Run first scan immediately
-    this.scanAll().catch((err) =>
-      console.error('[SpreadScanner] Initial scan error:', err)
-    );
+    this.scanAll().catch((err) => {
+      const wrapped = wrapError(err, FrontierError, FrontierErrorCodes.SPREAD_SCAN_FAILED, 'Initial scan failed');
+      console.error('[SpreadScanner] Initial scan error:', wrapped.code, wrapped.message);
+    });
 
     this.timer = setInterval(async () => {
       try {
         await this.scanAll();
       } catch (err) {
-        console.error('[SpreadScanner] Scan error:', err);
+        const wrapped = wrapError(err, FrontierError, FrontierErrorCodes.SPREAD_SCAN_FAILED, 'Periodic scan failed');
+        console.error('[SpreadScanner] Scan error:', wrapped.code, wrapped.message);
       }
     }, this.scanIntervalMs);
 
@@ -152,7 +155,8 @@ export class SpreadScanner {
         const opportunities = await this.scanChain(chainId, provider);
         allOpportunities.push(...opportunities);
       } catch (err) {
-        console.error(`[SpreadScanner] Chain ${chainId} scan error:`, err);
+        const wrapped = wrapError(err, FrontierError, FrontierErrorCodes.SPREAD_SCAN_FAILED, `Chain ${chainId} scan failed`);
+        console.error('[SpreadScanner] Chain scan error:', wrapped.code, wrapped.message);
       }
     });
 

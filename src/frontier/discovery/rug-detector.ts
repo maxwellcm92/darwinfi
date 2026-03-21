@@ -13,6 +13,7 @@
  */
 
 import { ethers, JsonRpcProvider, Contract } from 'ethers';
+import { FrontierError, FrontierErrorCodes, wrapError } from '../../types/errors';
 
 // -------------------------------------------------------------------
 // Types
@@ -96,7 +97,10 @@ export class RugDetector {
 
     const provider = this.providers.get(chainId);
     if (!provider) {
-      throw new Error(`No provider for chain ${chainId}`);
+      throw new FrontierError(
+        `No provider for chain ${chainId}`,
+        FrontierErrorCodes.PROVIDER_MISSING,
+      );
     }
 
     // Run all 5 checks in parallel

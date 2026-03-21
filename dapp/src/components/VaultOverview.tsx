@@ -1,4 +1,5 @@
 import { useVaultStats } from "../hooks/useVaultStats";
+import { VAULT_ADDRESS, BASENAME, AGENT_ADDRESS } from "../lib/constants";
 
 function formatUSD(value: string | null): string {
   if (value == null) return "--";
@@ -83,6 +84,40 @@ export function VaultOverview() {
             PAUSED
           </span>
         )}
+      </div>
+
+      {/* Vault identity */}
+      <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div>
+          <span className="text-xs font-mono text-darwin-text-dim mr-2">Vault:</span>
+          <a
+            href={`https://basescan.org/address/${VAULT_ADDRESS}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-mono text-darwin-accent hover:underline"
+            title={String(VAULT_ADDRESS)}
+          >
+            {BASENAME}
+          </a>
+          <span className="text-xs font-mono text-darwin-text-dim ml-2">
+            ({String(VAULT_ADDRESS).slice(0, 6)}...{String(VAULT_ADDRESS).slice(-4)})
+          </span>
+        </div>
+        <div>
+          <span className="text-xs font-mono text-darwin-text-dim mr-2">Agent:</span>
+          <a
+            href={`https://basescan.org/address/${AGENT_ADDRESS}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-mono text-darwin-accent hover:underline"
+            title={AGENT_ADDRESS}
+          >
+            {BASENAME}
+          </a>
+          <span className="text-xs font-mono text-darwin-text-dim ml-2">
+            ({AGENT_ADDRESS.slice(0, 6)}...{AGENT_ADDRESS.slice(-4)})
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">

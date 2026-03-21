@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BASENAME } from "../lib/constants";
 
 const VAULT_ADDRESS = "0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7";
 
@@ -75,7 +76,7 @@ export function TrustModel() {
             icon="$"
             question="Where is my money?"
             answer="In a Solidity vault on Base L2."
-            detail={`Your USDC is held in an auditable ERC-4626 smart contract (${VAULT_ADDRESS.slice(0, 6)}...${VAULT_ADDRESS.slice(-4)}) on Base. The vault code is immutable and verifiable on BaseScan.`}
+            detail={`Your USDC is held in an auditable ERC-4626 smart contract at ${BASENAME} (${VAULT_ADDRESS.slice(0, 6)}...${VAULT_ADDRESS.slice(-4)}) on Base. The vault code is immutable and verifiable on BaseScan.`}
             accentColor="accent"
           />
           <TrustCard

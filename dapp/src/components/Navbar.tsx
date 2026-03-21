@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import wordmarkSrc from "../assets/darwinfi-wordmark.png";
@@ -9,7 +10,16 @@ const navPillClass = ({ isActive }: { isActive: boolean }) =>
       : "text-darwin-text border-transparent hover:text-darwin-text-bright hover:bg-darwin-card-hover"
   }`;
 
+const mobileNavClass = ({ isActive }: { isActive: boolean }) =>
+  `block w-full px-4 py-3 text-sm font-mono transition-all duration-200 border-b border-darwin-border/30 ${
+    isActive
+      ? "text-darwin-accent bg-darwin-accent/10"
+      : "text-darwin-text hover:text-darwin-text-bright hover:bg-darwin-card-hover"
+  }`;
+
 export function Navbar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <nav className="border-b border-darwin-border/50 bg-darwin-card/60 backdrop-blur-xl sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
@@ -19,8 +29,8 @@ export function Navbar() {
             <img src={wordmarkSrc} alt="DarwinFi" className="h-7 w-auto" />
           </NavLink>
 
-          {/* Nav Links */}
-          <div className="flex items-center gap-1">
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex items-center gap-1">
             <NavLink to="/" end className={navPillClass}>
               Dashboard
             </NavLink>
@@ -32,8 +42,53 @@ export function Navbar() {
             </NavLink>
           </div>
 
-          {/* Connect Button */}
-          <div className="flex items-center">
+          {/* Desktop Connect Button */}
+          <div className="hidden md:flex items-center">
+            <ConnectButton
+              showBalance={false}
+              chainStatus="icon"
+              accountStatus="address"
+            />
+          </div>
+
+          {/* Mobile hamburger button */}
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="md:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5"
+            aria-label="Toggle menu"
+          >
+            <div
+              className={`w-6 h-0.5 bg-darwin-text-bright transition-all duration-200 ${
+                mobileOpen ? "rotate-45 translate-y-2" : ""
+              }`}
+            />
+            <div
+              className={`w-6 h-0.5 bg-darwin-text-bright transition-all duration-200 ${
+                mobileOpen ? "opacity-0" : ""
+              }`}
+            />
+            <div
+              className={`w-6 h-0.5 bg-darwin-text-bright transition-all duration-200 ${
+                mobileOpen ? "-rotate-45 -translate-y-2" : ""
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile dropdown menu */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-darwin-border/50 bg-darwin-card/90 backdrop-blur-xl">
+          <NavLink to="/" end className={mobileNavClass} onClick={() => setMobileOpen(false)}>
+            Dashboard
+          </NavLink>
+          <NavLink to="/faq" className={mobileNavClass} onClick={() => setMobileOpen(false)}>
+            FAQ
+          </NavLink>
+          <NavLink to="/advanced" className={mobileNavClass} onClick={() => setMobileOpen(false)}>
+            Advanced
+          </NavLink>
+          <div className="px-4 py-3">
             <ConnectButton
               showBalance={false}
               chainStatus="icon"
@@ -41,7 +96,7 @@ export function Navbar() {
             />
           </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 }

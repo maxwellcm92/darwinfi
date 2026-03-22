@@ -38,62 +38,182 @@ function parseSearchReplaceBlocks(diff: string): SearchReplaceBlock[] {
 }
 
 /**
- * Convert a unified diff (from Venice AI) into SEARCH/REPLACE block format.
+ * Parse a SEARCH/REPLACE diff string that includes `// File: path` comments.
+ * Returns a Map of file path -> blocks, or null if no file comments found.
+ */
+function parsePerFileBlocks(diff: string): Map<string, SearchReplaceBlock[]> | null {
+  if (!diff.includes('// File: ')) return null;
+
+  const fileBlocks = new Map<string, SearchReplaceBlock[]>();
+  let currentFile: string | null = null;
+
+  // Split by file comment markers
+  const lines = diff.split('\n');
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const fileMatch = line.match(/^\/\/ File: (.+)$/);
+    if (fileMatch) {
+      currentFile = fileMatch[1].trim();
+      if (!fileBlocks.has(currentFile)) {
+        fileBlocks.set(currentFile, []);
+      }
+      i++;
+      continue;
+    }
+    i++;
+  }
+
+  // Now parse blocks and associate with files using position
+  const blockRegex = /<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE/g;
+  const fileCommentRegex = /\/\/ File: (.+)/g;
+
+  // Find all file comment positions
+  const filePositions: { file: string; pos: number }[] = [];
+  let fcMatch;
+  while ((fcMatch = fileCommentRegex.exec(diff)) !== null) {
+    filePositions.push({ file: fcMatch[1].trim(), pos: fcMatch.index });
+  }
+
+  if (filePositions.length === 0) return null;
+
+  // Reset map
+  fileBlocks.clear();
+
+  let blockMatch;
+  while ((blockMatch = blockRegex.exec(diff)) !== null) {
+    // Find which file this block belongs to (last file comment before this block)
+    let ownerFile = filePositions[0].file;
+    for (const fp of filePositions) {
+      if (fp.pos < blockMatch.index) {
+        ownerFile = fp.file;
+      } else {
+        break;
+      }
+    }
+    if (!fileBlocks.has(ownerFile)) {
+      fileBlocks.set(ownerFile, []);
+    }
+    fileBlocks.get(ownerFile)!.push({
+      search: blockMatch[1],
+      replace: blockMatch[2],
+    });
+  }
+
+  return fileBlocks.size > 0 ? fileBlocks : null;
+}
+
+/**
+ * Convert a unified diff (from Venice AI) into per-file SEARCH/REPLACE blocks.
  * Venice outputs standard `--- a/file` / `+++ b/file` / `@@ ... @@` diffs,
  * but the sandbox expects `<<<<<<< SEARCH` / `=======` / `>>>>>>> REPLACE` blocks.
+ *
+ * Returns a Map of file path -> SearchReplaceBlock[], or null if no blocks found.
+ * File paths are stripped of the `a/` and `b/` prefixes from unified diff headers.
  */
 export function convertUnifiedToSearchReplace(
   diff: string,
   fileContents: Record<string, string>,
-): string | null {
+): Map<string, SearchReplaceBlock[]> | null {
   const lines = diff.split('\n');
-  const blocks: string[] = [];
+  const fileBlocks = new Map<string, SearchReplaceBlock[]>();
+  let currentFile: string | null = null;
 
   let i = 0;
   while (i < lines.length) {
-    // Skip to next hunk header
-    if (lines[i].startsWith('@@')) {
+    const line = lines[i];
+
+    // Track file path from unified diff headers
+    if (line.startsWith('+++ b/')) {
+      currentFile = line.substring(6).trim();
+      i++;
+      continue;
+    }
+    if (line.startsWith('--- a/') || line.startsWith('--- /dev/null')) {
+      // Skip --- header (we use +++ for the target file path)
+      i++;
+      continue;
+    }
+    if (line.startsWith('\\ No newline at end of file')) {
+      i++;
+      continue;
+    }
+
+    // Process hunk
+    if (line.startsWith('@@')) {
       const searchLines: string[] = [];
       const replaceLines: string[] = [];
       i++; // skip the @@ line
 
-      // Process hunk lines
-      while (i < lines.length && !lines[i].startsWith('@@') && !lines[i].startsWith('diff ') && !lines[i].startsWith('--- ')) {
-        const line = lines[i];
-        if (line.startsWith('-')) {
-          // Removed line: goes in SEARCH only
-          searchLines.push(line.substring(1));
-        } else if (line.startsWith('+')) {
-          // Added line: goes in REPLACE only
-          replaceLines.push(line.substring(1));
-        } else if (line.startsWith(' ') || line === '') {
-          // Context line: goes in both
-          const contextLine = line.startsWith(' ') ? line.substring(1) : line;
-          searchLines.push(contextLine);
-          replaceLines.push(contextLine);
+      while (i < lines.length) {
+        const hunkLine = lines[i];
+        // Stop at next hunk, next file, or diff boundary
+        if (hunkLine.startsWith('@@') || hunkLine.startsWith('diff ') ||
+            hunkLine.startsWith('--- ') || hunkLine.startsWith('+++ ')) {
+          break;
         }
+        // Skip "no newline" markers
+        if (hunkLine.startsWith('\\ No newline at end of file')) {
+          i++;
+          continue;
+        }
+        if (hunkLine.startsWith('-')) {
+          // Removed line: goes in SEARCH only
+          searchLines.push(hunkLine.substring(1));
+        } else if (hunkLine.startsWith('+')) {
+          // Added line: goes in REPLACE only
+          replaceLines.push(hunkLine.substring(1));
+        } else if (hunkLine.startsWith(' ')) {
+          // Context line (starts with space): goes in both
+          searchLines.push(hunkLine.substring(1));
+          replaceLines.push(hunkLine.substring(1));
+        }
+        // Empty lines (no leading space/+/-) are skipped -- not treated as context
         i++;
       }
 
       if (searchLines.length > 0 || replaceLines.length > 0) {
-        blocks.push(
-          '<<<<<<< SEARCH\n' +
-          searchLines.join('\n') +
-          '\n=======\n' +
-          replaceLines.join('\n') +
-          '\n>>>>>>> REPLACE',
-        );
+        const block: SearchReplaceBlock = {
+          search: searchLines.join('\n'),
+          replace: replaceLines.join('\n'),
+        };
+        const filePath = currentFile || '__unknown__';
+        if (!fileBlocks.has(filePath)) {
+          fileBlocks.set(filePath, []);
+        }
+        fileBlocks.get(filePath)!.push(block);
       }
     } else {
       i++;
     }
   }
 
-  if (blocks.length === 0) {
+  if (fileBlocks.size === 0) {
     return null;
   }
 
-  return blocks.join('\n\n');
+  return fileBlocks;
+}
+
+/**
+ * Convert a per-file block map into a flat SEARCH/REPLACE string with file comments.
+ * This preserves compatibility with parseSearchReplaceBlocks() and proposal.diff format.
+ */
+export function fileBlockMapToString(fileBlocks: Map<string, SearchReplaceBlock[]>): string {
+  const parts: string[] = [];
+  for (const [filePath, blocks] of fileBlocks) {
+    parts.push(`// File: ${filePath}`);
+    for (const block of blocks) {
+      parts.push(
+        '<<<<<<< SEARCH\n' +
+        block.search +
+        '\n=======\n' +
+        block.replace +
+        '\n>>>>>>> REPLACE',
+      );
+    }
+  }
+  return parts.join('\n\n');
 }
 
 function applySearchReplace(fileContent: string, blocks: SearchReplaceBlock[]): string {
@@ -136,8 +256,33 @@ export async function createSandbox(proposal: EvolutionProposal): Promise<Sandbo
     // Try SEARCH/REPLACE blocks first, fall back to git apply --3way
     const blocks = parseSearchReplaceBlocks(proposal.diff);
 
-    if (blocks.length > 0) {
-      // Apply SEARCH/REPLACE blocks directly to target files
+    // Check if proposal has per-file block comments (from unified diff conversion)
+    const perFileBlocks = parsePerFileBlocks(proposal.diff);
+
+    if (perFileBlocks && perFileBlocks.size > 0) {
+      // Per-file SEARCH/REPLACE blocks: apply each file's blocks only to that file
+      let totalBlocks = 0;
+      for (const b of perFileBlocks.values()) totalBlocks += b.length;
+      console.log(`[Evolution] Applying ${totalBlocks} per-file SEARCH/REPLACE block(s) across ${perFileBlocks.size} file(s) for ${shortId}`);
+      try {
+        for (const [targetFile, fileSpecificBlocks] of perFileBlocks) {
+          const filePath = path.join(worktreeDir, targetFile);
+          if (!fs.existsSync(filePath)) {
+            throw new Error(`Target file not found: ${targetFile}`);
+          }
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const updated = applySearchReplace(content, fileSpecificBlocks);
+          fs.writeFileSync(filePath, updated, 'utf-8');
+        }
+      } catch (applyErr) {
+        const errMsg = applyErr instanceof Error ? applyErr.message : String(applyErr);
+        result.compilationErrors.push(`SEARCH/REPLACE apply failed: ${errMsg}`);
+        result.compilationOutput = errMsg;
+        console.error(`[Evolution] SEARCH/REPLACE apply failed for ${shortId}:`, errMsg.slice(0, 200));
+        return result;
+      }
+    } else if (blocks.length > 0) {
+      // Flat SEARCH/REPLACE blocks (no per-file comments): apply to all target files
       console.log(`[Evolution] Applying ${blocks.length} SEARCH/REPLACE block(s) for ${shortId}`);
       try {
         for (const targetFile of proposal.targetFiles) {

@@ -140,14 +140,15 @@ export class FixEngine {
       return;
     }
 
+    const verifyDelay = entry.verifyDelayMs ?? THRESHOLDS.fixVerifyDelayMs;
     this.logger.info(
       DIVISION,
-      `Fix '${entry.fixName}' applied for ${result.checkId}. Waiting ${THRESHOLDS.fixVerifyDelayMs / 1000}s to verify...`,
+      `Fix '${entry.fixName}' applied for ${result.checkId}. Waiting ${verifyDelay / 1000}s to verify...`,
       result.checkId,
     );
 
     // Wait before verification
-    await this.delay(THRESHOLDS.fixVerifyDelayMs);
+    await this.delay(verifyDelay);
 
     // Verify the fix
     let verifyResult: CheckResult;

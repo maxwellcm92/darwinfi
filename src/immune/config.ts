@@ -168,6 +168,10 @@ export const SAFE_FIX_IDS = new Set([
   'cache_clear',
   'hardhat_cache_clear',
   'evolution_rollback',
+  'math_recompute',
+  'state_invariant_repair',
+  'integration_restart',
+  'dashboard_restart',
 ]);
 
 // ---------------------------------------------------------------------------

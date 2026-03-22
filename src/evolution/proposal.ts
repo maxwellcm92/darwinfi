@@ -10,7 +10,7 @@ import * as crypto from 'crypto';
 import { EvolutionProposal, AntiLoopEntry } from './types';
 import { PROJECT_ROOT, loadEvolutionConfig } from './config';
 import { getFailedProposals, loadMemory } from './memory';
-import { convertUnifiedToSearchReplace } from './sandbox';
+import { convertUnifiedToSearchReplace, fileBlockMapToString } from './sandbox';
 import { GradingDepartment } from '../agent/grading-department';
 
 export interface ProposalContext {
@@ -251,7 +251,7 @@ export async function generateProposal(
       console.log('[Evolution] Detected unified diff format, converting to SEARCH/REPLACE...');
       const converted = convertUnifiedToSearchReplace(parsed.diff, context.fileContents);
       if (converted) {
-        parsed.diff = converted;
+        parsed.diff = fileBlockMapToString(converted);
       } else {
         console.error('[Evolution] Failed to convert unified diff to SEARCH/REPLACE format');
         return null;

@@ -9,7 +9,7 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { RPC_ENDPOINTS, MONITORED_STATE_FILES, PROJECT_ROOT } from '../config';
+import { RPC_ENDPOINTS, MONITORED_STATE_FILES, MONITORED_PROCESSES, PROJECT_ROOT, THRESHOLDS } from '../config';
 
 const PREFIX = '[Immune:Platelets]';
 const ECOSYSTEM_CONFIG = path.join(PROJECT_ROOT, 'ecosystem.config.js');
@@ -88,25 +88,54 @@ export async function rpcRotation(): Promise<boolean> {
 }
 
 /**
- * Rebuild agent state from .tmp backup if it exists.
+ * Rebuild agent state from .tmp backup if it exists, or repair corrupt state in-place.
  */
 export async function stateRebuild(): Promise<boolean> {
   try {
     const statePath = path.join(PROJECT_ROOT, MONITORED_STATE_FILES.agentState);
     const tmpPath = statePath + '.tmp';
 
-    if (!fs.existsSync(tmpPath)) {
-      console.log(`${PREFIX} No .tmp backup found at ${tmpPath}, nothing to rebuild`);
-      return false;
+    // Path A: .tmp backup exists -- validate and rename (original behavior)
+    if (fs.existsSync(tmpPath)) {
+      const raw = fs.readFileSync(tmpPath, 'utf-8');
+      JSON.parse(raw); // throws if invalid
+      fs.renameSync(tmpPath, statePath);
+      console.log(`${PREFIX} State rebuilt from ${tmpPath}`);
+      await pm2Restart('darwinfi');
+      return true;
     }
 
-    // Validate the tmp file is valid JSON before replacing
-    const raw = fs.readFileSync(tmpPath, 'utf-8');
-    JSON.parse(raw); // throws if invalid
+    // Path B: No .tmp -- check the current state file
+    const SKELETON_STATE = {
+      strategies: [],
+      performance: {},
+      config: {},
+      version: 1,
+      updatedAt: Date.now(),
+    };
 
-    fs.renameSync(tmpPath, statePath);
-    console.log(`${PREFIX} State rebuilt from ${tmpPath}`);
-    return true;
+    if (!fs.existsSync(statePath)) {
+      // State file missing entirely -- write skeleton
+      fs.writeFileSync(statePath, JSON.stringify(SKELETON_STATE, null, 2), 'utf-8');
+      console.log(`${PREFIX} State file missing, wrote skeleton state`);
+      await pm2Restart('darwinfi');
+      return true;
+    }
+
+    // State file exists -- check if it's valid JSON
+    const raw = fs.readFileSync(statePath, 'utf-8');
+    try {
+      JSON.parse(raw);
+      // Valid JSON -- the check was triggered but state is readable, return true
+      console.log(`${PREFIX} State file is valid JSON, no rebuild needed`);
+      return true;
+    } catch {
+      // Corrupt JSON -- write skeleton state
+      console.log(`${PREFIX} State file is corrupt JSON, writing skeleton state`);
+      fs.writeFileSync(statePath, JSON.stringify(SKELETON_STATE, null, 2), 'utf-8');
+      await pm2Restart('darwinfi');
+      return true;
+    }
   } catch (err) {
     console.error(`${PREFIX} State rebuild failed: ${err instanceof Error ? err.message : err}`);
     return false;
@@ -127,6 +156,152 @@ export async function hardhatCacheClear(): Promise<boolean> {
     return true;
   } catch (err) {
     console.error(`${PREFIX} Hardhat cache clear failed: ${err instanceof Error ? err.message : err}`);
+    return false;
+  }
+}
+
+/**
+ * Recompute key metrics (totalPnL, winRate) from tradeHistory and write corrected values.
+ */
+export async function mathRecompute(): Promise<boolean> {
+  try {
+    const statePath = path.join(PROJECT_ROOT, MONITORED_STATE_FILES.agentState);
+    const raw = fs.readFileSync(statePath, 'utf-8');
+    const state = JSON.parse(raw);
+
+    const performance: Record<string, any> = state.performance || {};
+    let corrected = 0;
+
+    for (const [sid, perf] of Object.entries(performance)) {
+      const trades: any[] = (perf as any).tradeHistory || [];
+      const closed = trades.filter((t: any) => t.status === 'closed' && t.pnl !== undefined);
+
+      // Recompute totalPnL
+      const computedPnL = closed.reduce((sum: number, t: any) => sum + t.pnl, 0);
+      if (Math.abs((perf as any).totalPnL - computedPnL) > 0.001) {
+        (perf as any).totalPnL = computedPnL;
+        corrected++;
+      }
+
+      // Recompute winRate
+      const computedWinRate = closed.length > 0
+        ? closed.filter((t: any) => t.pnl > 0).length / closed.length
+        : 0;
+      if (Math.abs((perf as any).winRate - computedWinRate) > 0.001) {
+        (perf as any).winRate = computedWinRate;
+        corrected++;
+      }
+
+      // Recompute tradesCompleted
+      if ((perf as any).tradesCompleted !== closed.length) {
+        (perf as any).tradesCompleted = closed.length;
+        corrected++;
+      }
+    }
+
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf-8');
+    console.log(`${PREFIX} Math recompute: corrected ${corrected} metric(s)`);
+    return true;
+  } catch (err) {
+    console.error(`${PREFIX} Math recompute failed: ${err instanceof Error ? err.message : err}`);
+    return false;
+  }
+}
+
+/**
+ * Repair state invariant violations: prune stale trades, ensure perf entries exist.
+ */
+export async function stateInvariantRepair(): Promise<boolean> {
+  try {
+    const statePath = path.join(PROJECT_ROOT, MONITORED_STATE_FILES.agentState);
+    const raw = fs.readFileSync(statePath, 'utf-8');
+    const state = JSON.parse(raw);
+
+    const strategies: any[] = state.strategies || [];
+    const performance: Record<string, any> = state.performance || {};
+    const maxTradeAgeMs = THRESHOLDS.maxTradeAgeHours * 60 * 60 * 1000;
+    const now = Date.now();
+    let repairs = 0;
+
+    // Prune stale open trades (>48h) by marking them as closed with pnl: 0
+    for (const [sid, perf] of Object.entries(performance)) {
+      const trades: any[] = (perf as any).tradeHistory || [];
+      for (const trade of trades) {
+        if (trade.status === 'open' && trade.entryTime) {
+          const entryMs = new Date(trade.entryTime).getTime();
+          if (now - entryMs > maxTradeAgeMs) {
+            trade.status = 'closed';
+            trade.pnl = 0;
+            trade.exitTime = new Date().toISOString();
+            trade.exitReason = 'stale_trade_pruned_by_immune';
+            repairs++;
+          }
+        }
+      }
+    }
+
+    // Ensure all strategies have performance entries
+    for (const strategy of strategies) {
+      if (strategy.id && !performance[strategy.id]) {
+        performance[strategy.id] = {
+          totalPnL: 0,
+          winRate: 0,
+          sharpeRatio: 0,
+          maxDrawdown: 0,
+          tradesCompleted: 0,
+          rolling24hPnL: 0,
+          rolling24hSharpe: 0,
+          rolling24hWinRate: 0,
+          tradeHistory: [],
+        };
+        repairs++;
+      }
+    }
+
+    // Ensure required top-level fields exist
+    if (!state.version) { state.version = 1; repairs++; }
+    if (!state.updatedAt) { state.updatedAt = now; repairs++; }
+    if (!state.config) { state.config = {}; repairs++; }
+
+    state.performance = performance;
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf-8');
+    console.log(`${PREFIX} State invariant repair: ${repairs} repair(s) applied`);
+    return true;
+  } catch (err) {
+    console.error(`${PREFIX} State invariant repair failed: ${err instanceof Error ? err.message : err}`);
+    return false;
+  }
+}
+
+/**
+ * Restart all non-immune PM2 processes to fix integration mismatches.
+ */
+export async function integrationRestart(): Promise<boolean> {
+  try {
+    let successes = 0;
+    for (const proc of MONITORED_PROCESSES) {
+      if (proc.name === 'darwinfi-immune') continue;
+      const ok = await pm2Restart(proc.name);
+      if (ok) successes++;
+    }
+    console.log(`${PREFIX} Integration restart: ${successes}/${MONITORED_PROCESSES.length - 1} processes restarted`);
+    return successes > 0;
+  } catch (err) {
+    console.error(`${PREFIX} Integration restart failed: ${err instanceof Error ? err.message : err}`);
+    return false;
+  }
+}
+
+/**
+ * Restart the darwinfi process (dashboard/API server) to fix UI truth mismatches.
+ */
+export async function dashboardRestart(): Promise<boolean> {
+  try {
+    const ok = await pm2Restart('darwinfi');
+    console.log(`${PREFIX} Dashboard restart: ${ok ? 'succeeded' : 'failed'}`);
+    return ok;
+  } catch (err) {
+    console.error(`${PREFIX} Dashboard restart failed: ${err instanceof Error ? err.message : err}`);
     return false;
   }
 }

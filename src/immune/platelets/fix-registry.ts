@@ -7,7 +7,10 @@
 
 import { FixRegistryEntry } from '../types';
 import { MONITORED_PROCESSES } from '../config';
-import { pm2Restart, pm2Start, rpcRotation, stateRebuild, hardhatCacheClear } from './safe-fixes';
+import {
+  pm2Restart, pm2Start, rpcRotation, stateRebuild, hardhatCacheClear,
+  mathRecompute, stateInvariantRepair, integrationRestart, dashboardRestart,
+} from './safe-fixes';
 
 const registry = new Map<string, FixRegistryEntry>();
 
@@ -22,6 +25,7 @@ registry.set('process_health', {
   safety: 'safe',
   description: 'Restart darwinfi PM2 process',
   fixFn: () => pm2Restart('darwinfi'),
+  verifyDelayMs: 20_000,
 });
 
 // Per-process pm2_start fixes (skip darwinfi-immune -- can't restart itself)
@@ -33,6 +37,7 @@ for (const proc of MONITORED_PROCESSES) {
     safety: 'safe',
     description: `Start/restart ${proc.name} PM2 process`,
     fixFn: () => pm2Start(proc.name),
+    verifyDelayMs: 20_000,
   });
 }
 
@@ -48,8 +53,9 @@ registry.set('state_integrity', {
   checkId: 'state_integrity',
   fixName: 'state_rebuild',
   safety: 'safe',
-  description: 'Rebuild state from .tmp backup',
+  description: 'Rebuild state from .tmp backup or repair corrupt state',
   fixFn: stateRebuild,
+  verifyDelayMs: 5_000,
 });
 
 registry.set('api_probe', {
@@ -58,6 +64,7 @@ registry.set('api_probe', {
   safety: 'safe',
   description: 'Restart darwinfi (main API server) if API endpoints unreachable',
   fixFn: () => pm2Restart('darwinfi'),
+  verifyDelayMs: 20_000,
 });
 
 registry.set('antibody.test_runner', {
@@ -113,17 +120,50 @@ registry.set('evolution_branch_integrity', {
 });
 
 // ---------------------------------------------------------------------------
+// Automatable antibody/membrane fixes
+// ---------------------------------------------------------------------------
+
+registry.set('antibody.math_verifier', {
+  checkId: 'antibody.math_verifier',
+  fixName: 'math_recompute',
+  safety: 'safe',
+  description: 'Recompute totalPnL, winRate from tradeHistory and write corrected values',
+  fixFn: mathRecompute,
+});
+
+registry.set('antibody.state_invariants', {
+  checkId: 'antibody.state_invariants',
+  fixName: 'state_invariant_repair',
+  safety: 'safe',
+  description: 'Prune stale open trades and ensure all strategies have performance entries',
+  fixFn: stateInvariantRepair,
+});
+
+registry.set('antibody.integration_checks', {
+  checkId: 'antibody.integration_checks',
+  fixName: 'integration_restart',
+  safety: 'safe',
+  description: 'Restart all non-immune PM2 processes to fix API/file state mismatches',
+  fixFn: integrationRestart,
+  verifyDelayMs: 20_000,
+});
+
+registry.set('membrane.ui_truth_checker', {
+  checkId: 'membrane.ui_truth_checker',
+  fixName: 'dashboard_restart',
+  safety: 'safe',
+  description: 'Restart darwinfi process to refresh dashboard state',
+  fixFn: dashboardRestart,
+  verifyDelayMs: 20_000,
+});
+
+// ---------------------------------------------------------------------------
 // Manual-review checks (no auto-fix -- logged and escalated only)
 // ---------------------------------------------------------------------------
 
 const manualCheckIds = [
-  'antibody.math_verifier',
-  'antibody.state_invariants',
-  'antibody.integration_checks',
-  'antibody.test_runner',
   'membrane.share_price_auditor',
   'membrane.vault_consistency',
-  'membrane.ui_truth_checker',
   'dep_scan',
   'key_safety',
   'contract_scan',

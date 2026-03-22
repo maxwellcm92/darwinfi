@@ -177,4 +177,5 @@ export interface FixRegistryEntry {
   safety: FixSafety;
   description: string;
   fixFn: FixFunction;
+  verifyDelayMs?: number;
 }

@@ -249,16 +249,62 @@ describe("Evolution Engine Smoke Tests", function () {
 // ------------------------------------------------------------------
 
 describe("Evolution Diff Converter (smoke)", function () {
-  it("should convert basic unified diff", function () {
+  it("should convert basic unified diff to per-file Map", function () {
     const diff = `--- a/file.ts\n+++ b/file.ts\n@@ -1,3 +1,3 @@\n const x = 1;\n-const y = 2;\n+const y = 3;\n const z = 4;`;
     const result = convertUnifiedToSearchReplace(diff, {});
     expect(result).to.not.be.null;
-    expect(result).to.include("<<<<<<< SEARCH");
-    expect(result).to.include(">>>>>>> REPLACE");
+    expect(result).to.be.instanceOf(Map);
+    expect(result!.has("file.ts")).to.be.true;
+    const blocks = result!.get("file.ts")!;
+    expect(blocks.length).to.be.greaterThan(0);
+    expect(blocks[0].search).to.include("const y = 2;");
+    expect(blocks[0].replace).to.include("const y = 3;");
   });
 
   it("should return null for non-diff input", function () {
     const result = convertUnifiedToSearchReplace("not a diff", {});
     expect(result).to.be.null;
+  });
+
+  it("should track blocks per file for multi-file diffs", function () {
+    const diff = [
+      "--- a/src/a.ts",
+      "+++ b/src/a.ts",
+      "@@ -1,2 +1,2 @@",
+      " const a = 1;",
+      "-const b = 2;",
+      "+const b = 3;",
+      "--- a/src/b.ts",
+      "+++ b/src/b.ts",
+      "@@ -1,2 +1,2 @@",
+      " const x = 10;",
+      "-const y = 20;",
+      "+const y = 30;",
+    ].join("\n");
+    const result = convertUnifiedToSearchReplace(diff, {});
+    expect(result).to.not.be.null;
+    expect(result!.size).to.equal(2);
+    expect(result!.has("src/a.ts")).to.be.true;
+    expect(result!.has("src/b.ts")).to.be.true;
+    expect(result!.get("src/a.ts")![0].search).to.include("const b = 2;");
+    expect(result!.get("src/b.ts")![0].search).to.include("const y = 20;");
+  });
+
+  it("should skip empty lines instead of treating them as context", function () {
+    const diff = [
+      "--- a/file.ts",
+      "+++ b/file.ts",
+      "@@ -1,4 +1,4 @@",
+      " const a = 1;",
+      "",
+      "-const b = 2;",
+      "+const b = 3;",
+      " const c = 4;",
+    ].join("\n");
+    const result = convertUnifiedToSearchReplace(diff, {});
+    expect(result).to.not.be.null;
+    const blocks = result!.get("file.ts")!;
+    // Empty line should NOT appear in search/replace blocks
+    expect(blocks[0].search).to.not.include("\n\n");
   });
 });

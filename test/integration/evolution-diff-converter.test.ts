@@ -1,8 +1,8 @@
 import { expect } from 'chai';
-import { convertUnifiedToSearchReplace } from '../../src/evolution/sandbox';
+import { convertUnifiedToSearchReplace, fileBlockMapToString } from '../../src/evolution/sandbox';
 
 describe('Evolution Diff Converter', () => {
-  it('should convert a simple unified diff to SEARCH/REPLACE', () => {
+  it('should convert a simple unified diff to per-file SEARCH/REPLACE blocks', () => {
     const unifiedDiff = `--- a/src/agent/circuit-breaker.ts
 +++ b/src/agent/circuit-breaker.ts
 @@ -133,7 +133,7 @@
@@ -13,10 +13,18 @@ describe('Evolution Diff Converter', () => {
 
     const result = convertUnifiedToSearchReplace(unifiedDiff, {});
     expect(result).to.not.be.null;
-    expect(result).to.include('<<<<<<< SEARCH');
-    expect(result).to.include('>>>>>>> REPLACE');
-    expect(result).to.include('return value > 0.5;');
-    expect(result).to.include('return value > 0.3;');
+    expect(result).to.be.instanceOf(Map);
+    expect(result!.has('src/agent/circuit-breaker.ts')).to.be.true;
+    const blocks = result!.get('src/agent/circuit-breaker.ts')!;
+    expect(blocks.length).to.equal(1);
+    expect(blocks[0].search).to.include('return value > 0.5;');
+    expect(blocks[0].replace).to.include('return value > 0.3;');
+
+    // Verify string serialization works
+    const str = fileBlockMapToString(result!);
+    expect(str).to.include('<<<<<<< SEARCH');
+    expect(str).to.include('>>>>>>> REPLACE');
+    expect(str).to.include('// File: src/agent/circuit-breaker.ts');
   });
 
   it('should handle multi-hunk diffs', () => {
@@ -35,13 +43,13 @@ describe('Evolution Diff Converter', () => {
 
     const result = convertUnifiedToSearchReplace(unifiedDiff, {});
     expect(result).to.not.be.null;
-    // Should produce 2 SEARCH/REPLACE blocks
-    const blocks = result!.match(/<<<<<<< SEARCH/g);
+    const blocks = result!.get('src/instinct/reflexes/pattern-matcher.ts')!;
+    // Should produce 2 blocks from 2 hunks
     expect(blocks).to.have.length(2);
-    expect(result).to.include('minConfidence = 50');
-    expect(result).to.include('minConfidence = 40');
-    expect(result).to.include('return input * 2;');
-    expect(result).to.include('return input * 2.5;');
+    expect(blocks[0].search).to.include('minConfidence = 50');
+    expect(blocks[0].replace).to.include('minConfidence = 40');
+    expect(blocks[1].search).to.include('return input * 2;');
+    expect(blocks[1].replace).to.include('return input * 2.5;');
   });
 
   it('should return null for empty or invalid diffs', () => {
@@ -63,10 +71,12 @@ describe('Evolution Diff Converter', () => {
 
     const result = convertUnifiedToSearchReplace(unifiedDiff, {});
     expect(result).to.not.be.null;
-    // Context lines should appear in both SEARCH and REPLACE
-    expect(result).to.include('const a = 1;');
-    expect(result).to.include('const c = 3;');
-    expect(result).to.include('const c = 33;');
+    const blocks = result!.get('src/test.ts')!;
+    // Context lines should appear in both search and replace
+    expect(blocks[0].search).to.include('const a = 1;');
+    expect(blocks[0].search).to.include('const c = 3;');
+    expect(blocks[0].replace).to.include('const a = 1;');
+    expect(blocks[0].replace).to.include('const c = 33;');
   });
 
   it('should handle additions (no removed lines)', () => {
@@ -79,8 +89,8 @@ describe('Evolution Diff Converter', () => {
 
     const result = convertUnifiedToSearchReplace(unifiedDiff, {});
     expect(result).to.not.be.null;
-    expect(result).to.include('<<<<<<< SEARCH');
-    expect(result).to.include('const b = 2;');
+    const blocks = result!.get('src/test.ts')!;
+    expect(blocks[0].replace).to.include('const b = 2;');
   });
 
   it('should handle a real Venice AI style corrupt patch', () => {
@@ -98,8 +108,58 @@ describe('Evolution Diff Converter', () => {
 
     const result = convertUnifiedToSearchReplace(veniceOutput, {});
     expect(result).to.not.be.null;
-    expect(result).to.include('threshold = 0.02');
-    expect(result).to.include('threshold = 0.015');
-    expect(result).to.include('minVolume = 1000');
+    const blocks = result!.get('src/instinct/reflexes/pattern-matcher.ts')!;
+    expect(blocks[0].search).to.include('threshold = 0.02');
+    expect(blocks[0].replace).to.include('threshold = 0.015');
+    expect(blocks[0].replace).to.include('minVolume = 1000');
+  });
+
+  it('should track blocks per file for multi-file diffs', () => {
+    const unifiedDiff = `--- a/src/alpha.ts
++++ b/src/alpha.ts
+@@ -1,3 +1,3 @@
+ const a = 1;
+-const b = 2;
++const b = 99;
+ const c = 3;
+--- a/src/beta.ts
++++ b/src/beta.ts
+@@ -5,3 +5,3 @@
+ const x = 10;
+-const y = 20;
++const y = 42;
+ const z = 30;`;
+
+    const result = convertUnifiedToSearchReplace(unifiedDiff, {});
+    expect(result).to.not.be.null;
+    expect(result!.size).to.equal(2);
+    expect(result!.has('src/alpha.ts')).to.be.true;
+    expect(result!.has('src/beta.ts')).to.be.true;
+
+    const alphaBlocks = result!.get('src/alpha.ts')!;
+    expect(alphaBlocks[0].search).to.include('const b = 2;');
+    expect(alphaBlocks[0].replace).to.include('const b = 99;');
+
+    const betaBlocks = result!.get('src/beta.ts')!;
+    expect(betaBlocks[0].search).to.include('const y = 20;');
+    expect(betaBlocks[0].replace).to.include('const y = 42;');
+  });
+
+  it('should skip empty lines (not treat them as context)', () => {
+    const unifiedDiff = `--- a/src/test.ts
++++ b/src/test.ts
+@@ -1,5 +1,5 @@
+ const a = 1;
+
+-const b = 2;
++const b = 3;
+ const c = 4;`;
+
+    const result = convertUnifiedToSearchReplace(unifiedDiff, {});
+    expect(result).to.not.be.null;
+    const blocks = result!.get('src/test.ts')!;
+    // The empty line should not bloat the search block
+    // Only space-prefixed context, - lines, and + lines should be included
+    expect(blocks[0].search).to.not.match(/^\n/);
   });
 });

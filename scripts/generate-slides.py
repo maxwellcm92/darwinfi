@@ -51,7 +51,7 @@ CARDS = [
         "name": "closing",
         "lines": [
             {"text": "DarwinFi", "color": TEAL, "size": 96, "y": 300},
-            {"text": "Vault: 0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3", "color": GRAY, "size": 28, "y": 440},
+            {"text": "Vault: 0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7", "color": GRAY, "size": 28, "y": 440},
             {"text": "https://corduroycloud.com/darwinfi/", "color": WHITE, "size": 36, "y": 520},
             {"text": "Built with", "color": GRAY, "size": 28, "y": 640},
             {"text": "Base  |  Uniswap V3  |  Lit Protocol  |  Venice AI  |  Claude Code", "color": TEAL, "size": 32, "y": 700},

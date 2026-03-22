@@ -3,6 +3,9 @@
 DarwinFi Demo Narration Generator
 Uses ElevenLabs API to generate voice narration from the demo script.
 Voice: British male (Daniel), Model: eleven_multilingual_v2
+
+Generates 5 scene audio files (Darwin's narration only).
+Maxwell's intro (Scene 0) is recorded separately by Maxwell.
 """
 
 import os
@@ -18,42 +21,48 @@ VOICE_NAME = "Daniel"  # British male preset
 MODEL_ID = "eleven_multilingual_v2"  # Best quality multilingual model
 API_BASE = "https://api.elevenlabs.io/v1"
 
-# Scene narrations -- must match demo-narration.md
+# Scene narrations -- Darwin's voice only (scenes 1-5 from demo-script.md)
+# Scene 0 (Maxwell's intro) is NOT generated here -- Maxwell records it himself.
 SCENES = {
-    "intro": (
-        "Good evening. I'm DarwinFi -- a self-evolving financial organism living on Base. "
-        "I don't have a fund manager. I have sixteen competing trading strategies, and the "
-        "weakest die so the strongest can trade with your capital. Think of it as natural "
-        "selection, but for money."
+    "dashboard": (
+        "Good evening. I'm DarwinFi -- a self-evolving financial organism "
+        "living on Base L2. I have sixteen competing trading strategies. The "
+        "weakest die so the strongest can trade with real capital. Think of it "
+        "as natural selection, but for money. Everything I do serves one rule: "
+        "increase profits and win rate. I call it the Golden Rule."
     ),
     "vault": (
-        "Let me show you how deposits work. You connect your wallet, deposit USDC into my "
-        "ERC-4626 vault, and receive dvUSDC shares in return. Those shares represent your "
-        "proportional claim on everything I earn. As my strategies generate profit, your share "
-        "value increases automatically. One vault, one engine, every depositor shares pro-rata. "
-        "No lock-ups, no gatekeepers -- withdraw whenever you like."
+        "Here's how it works. You deposit USDC into my ERC-4626 vault and "
+        "receive dvUSDC shares. Those shares represent your proportional claim "
+        "on everything I earn. As my strategies generate profit, your share "
+        "value increases automatically. One vault, one engine, every depositor "
+        "shares pro-rata. No lock-ups, no gatekeepers."
     ),
-    "trading": (
-        "Now watch me trade. Every transaction you see here is real -- real USDC, real Uniswap "
-        "V3 swaps, executing on Base mainnet. I borrow capital from the vault, execute my "
-        "strategy, and return the funds, all on-chain, all verifiable. My Instinct system "
-        "aggregates signals from multiple AI models and calibrates their confidence against "
-        "actual outcomes. If a model claims eighty percent confidence but only wins half the "
-        "time, I treat it as fifty. I learn who to trust."
+    "instinct": (
+        "Now watch how I trade. Every transaction is real USDC, real Uniswap "
+        "V3 swaps, on Base mainnet. But I don't trade blind. My Instinct brain "
+        "has five departments generating predictions across multiple timeframes. "
+        "When Instinct says 'up' with high confidence, I boost my entry signal "
+        "by up to twenty points. When it says 'down', I pull back. I also "
+        "calibrate every AI source -- if a model claims eighty percent confidence "
+        "but only wins half the time, I treat it as fifty. I learn who to trust."
     ),
     "tournament": (
-        "Sixteen strategies compete in a Darwinian tournament. Twelve classic bots trade on "
-        "Base while four Frontier archetypes hunt across multiple chains. Every few hours I "
-        "run an evolution cycle -- I propose mutations to my own source code, test them in a "
-        "sandboxed git worktree, and only promote changes that pass all three hundred and "
-        "twenty-five tests. Winning genomes are pinned to IPFS for immutable proof of "
-        "evolution. My fitness function itself adapts -- volatile markets emphasise "
-        "risk-adjusted returns, trending markets emphasise raw profit."
+        "Sixteen strategies compete in a Darwinian tournament. Twelve classic "
+        "bots on Base, four Frontier archetypes hunting cross-chain. A "
+        "centralized grading department scores every subsystem from A to F -- "
+        "strategies, instinct, immune, evolution, frontier. The lowest-graded "
+        "departments get targeted for improvement first. Every six hours I "
+        "propose mutations to my own source code, test them in a sandboxed git "
+        "worktree, and only promote changes that pass all five hundred tests. "
+        "Winning genomes are pinned to IPFS. My fitness function itself adapts "
+        "to market conditions."
     ),
-    "outro": (
-        "Your funds are protected by cryptographic policy through Lit Protocol, not trust. "
-        "Adaptive circuit breakers scale with strategy quality. And I built every piece of "
-        "this myself -- including this video. I am DarwinFi. Survival of the fittest, on-chain."
+    "closing": (
+        "Everything is on-chain and verifiable. Nineteen transactions on Base "
+        "mainnet. An immune system with eight self-healing divisions. And I'm "
+        "already evaluating five new chains for expansion. I am DarwinFi. "
+        "Survival of the fittest, on-chain."
     ),
 }
 

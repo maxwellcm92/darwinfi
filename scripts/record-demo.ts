@@ -3,6 +3,9 @@
  * DarwinFi Demo Screen Recorder
  * Uses Playwright to capture 5 scenes from the dapp at 1920x1080.
  * Each scene is saved as a separate .webm file.
+ *
+ * Scene 0 (Maxwell's intro) is recorded separately by Maxwell.
+ * This script records scenes 1-5 (Darwin narration scenes).
  */
 
 import { chromium, Browser, BrowserContext, Page } from "playwright";
@@ -10,16 +13,18 @@ import * as path from "path";
 import * as fs from "fs";
 
 const DAPP_URL = "https://corduroycloud.com/darwinfi/";
+const BASESCAN_V4 =
+  "https://basescan.org/address/0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7";
 const OUTPUT_DIR = path.join(__dirname, "..", "demo-output", "recordings");
 const VIEWPORT = { width: 1920, height: 1080 };
 
 // Scene timing (milliseconds)
 const SCENE_CONFIG = {
-  intro: { duration: 25_000, description: "Landing page + hero + TVL" },
-  vault: { duration: 40_000, description: "Deposit UI + share balance" },
-  trading: { duration: 50_000, description: "Instinct signals + trade feed" },
-  tournament: { duration: 50_000, description: "Tournament + Evolution tabs" },
-  outro: { duration: 25_000, description: "BaseScan + dapp URL visible" },
+  dashboard: { duration: 30_000, description: "Landing page + hero + TVL + Golden Rule" },
+  vault: { duration: 35_000, description: "Deposit card + share price + vault info" },
+  instinct: { duration: 40_000, description: "Advanced > Instinct predictions + signals" },
+  tournament: { duration: 40_000, description: "Advanced > Tournament + Evolution tabs" },
+  closing: { duration: 20_000, description: "BaseScan V4 vault + dapp hero" },
 };
 
 async function sleep(ms: number): Promise<void> {
@@ -46,51 +51,64 @@ async function createRecordingContext(
   return { context, page };
 }
 
-async function recordIntro(browser: Browser): Promise<void> {
-  console.log("\n--- Scene 1: Intro ---");
-  const { context, page } = await createRecordingContext(browser, "intro");
+/**
+ * Scene 1: Dashboard
+ * Navigate to /, scroll through vault stats, share price, TVL
+ */
+async function recordDashboard(browser: Browser): Promise<void> {
+  console.log("\n--- Scene 1: Dashboard ---");
+  const { context, page } = await createRecordingContext(browser, "dashboard");
 
-  await page.goto(DAPP_URL, { waitUntil: "networkidle", timeout: 30_000 });
-  await sleep(3000); // Let WebGL shader render
+  await page.goto(DAPP_URL, { waitUntil: "load", timeout: 30_000 });
+  await sleep(5000); // Let page fully render
 
-  // Scroll slowly to reveal TVL, share price, vault info
+  // Start at top -- show hero section
   await page.evaluate(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
   await sleep(5000);
 
-  // Scroll down to show vault stats
+  // Scroll down to reveal vault stats, TVL, share price
   await page.evaluate(() => {
     window.scrollTo({ top: 400, behavior: "smooth" });
   });
   await sleep(8000);
 
-  // Scroll back to top
+  // Continue scrolling to show more dashboard content
+  await page.evaluate(() => {
+    window.scrollTo({ top: 800, behavior: "smooth" });
+  });
+  await sleep(7000);
+
+  // Scroll back to top for clean transition
   await page.evaluate(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
   await sleep(5000);
 
   await context.close();
-  console.log("  Intro recorded.");
+  console.log("  Dashboard recorded.");
 }
 
+/**
+ * Scene 2: Vault
+ * Stay on Dashboard, scroll to deposit card area and vault info
+ */
 async function recordVault(browser: Browser): Promise<void> {
   console.log("\n--- Scene 2: Vault ---");
   const { context, page } = await createRecordingContext(browser, "vault");
 
-  await page.goto(DAPP_URL, { waitUntil: "networkidle", timeout: 30_000 });
-  await sleep(2000);
+  await page.goto(DAPP_URL, { waitUntil: "load", timeout: 30_000 });
+  await sleep(3000);
 
-  // Navigate to Portfolio tab if it exists
-  const portfolioLink = await page.$('a[href*="portfolio"], button:has-text("Portfolio")');
-  if (portfolioLink) {
-    await portfolioLink.click();
-    await sleep(3000);
-  }
+  // Scroll to deposit/vault section
+  await page.evaluate(() => {
+    window.scrollTo({ top: 300, behavior: "smooth" });
+  });
+  await sleep(5000);
 
-  // Show the deposit card area
-  const depositSection = await page.$('text=Deposit, [class*="deposit"], [data-testid="deposit"]');
+  // Look for deposit card or vault info section and scroll into view
+  const depositSection = await page.$('[class*="deposit"], [class*="vault"], [data-testid="deposit"]');
   if (depositSection) {
     await depositSection.scrollIntoViewIfNeeded();
     await sleep(3000);
@@ -98,14 +116,15 @@ async function recordVault(browser: Browser): Promise<void> {
 
   // Scroll through vault information
   await page.evaluate(() => {
-    window.scrollTo({ top: 300, behavior: "smooth" });
-  });
-  await sleep(5000);
-
-  await page.evaluate(() => {
     window.scrollTo({ top: 600, behavior: "smooth" });
   });
-  await sleep(5000);
+  await sleep(8000);
+
+  // Show share price area
+  await page.evaluate(() => {
+    window.scrollTo({ top: 900, behavior: "smooth" });
+  });
+  await sleep(7000);
 
   // Scroll back
   await page.evaluate(() => {
@@ -117,106 +136,143 @@ async function recordVault(browser: Browser): Promise<void> {
   console.log("  Vault recorded.");
 }
 
-async function recordTrading(browser: Browser): Promise<void> {
-  console.log("\n--- Scene 3: Trading ---");
-  const { context, page } = await createRecordingContext(browser, "trading");
+/**
+ * Scene 3: Instinct (Live Trading)
+ * Navigate to /advanced?tab=instinct, show predictions and signals
+ */
+async function recordInstinct(browser: Browser): Promise<void> {
+  console.log("\n--- Scene 3: Instinct (Live Trading) ---");
+  const { context, page } = await createRecordingContext(browser, "instinct");
 
-  await page.goto(DAPP_URL, { waitUntil: "networkidle", timeout: 30_000 });
-  await sleep(2000);
+  // Navigate directly to Advanced > Instinct tab
+  await page.goto(`${DAPP_URL}advanced?tab=instinct`, {
+    waitUntil: "load",
+    timeout: 30_000,
+  });
+  await sleep(5000);
 
-  // Navigate to Instinct tab
-  const instinctLink = await page.$('a[href*="instinct"], button:has-text("Instinct")');
-  if (instinctLink) {
-    await instinctLink.click();
-    await sleep(5000);
-  }
+  // Show the predictions and confidence scores
+  await page.evaluate(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  await sleep(5000);
 
-  // Show the signals and predictions
+  // Scroll through instinct signals
   await page.evaluate(() => {
     window.scrollTo({ top: 400, behavior: "smooth" });
   });
   await sleep(8000);
 
-  // Scroll through trade history
+  // Scroll further to show sentiment/calibration data
   await page.evaluate(() => {
     window.scrollTo({ top: 800, behavior: "smooth" });
   });
   await sleep(8000);
 
+  // Scroll through trade history
+  await page.evaluate(() => {
+    window.scrollTo({ top: 1200, behavior: "smooth" });
+  });
+  await sleep(8000);
+
+  // Back to top
   await page.evaluate(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
-  await sleep(5000);
+  await sleep(4000);
 
   await context.close();
-  console.log("  Trading recorded.");
+  console.log("  Instinct recorded.");
 }
 
+/**
+ * Scene 4: Tournament + Evolution
+ * Navigate to /advanced?tab=tournament, scroll leaderboard,
+ * then click "Evolution" tab, show evolution panel + audit
+ */
 async function recordTournament(browser: Browser): Promise<void> {
   console.log("\n--- Scene 4: Tournament & Evolution ---");
   const { context, page } = await createRecordingContext(browser, "tournament");
 
-  await page.goto(DAPP_URL, { waitUntil: "networkidle", timeout: 30_000 });
-  await sleep(2000);
+  // Navigate to Advanced > Tournament tab
+  await page.goto(`${DAPP_URL}advanced?tab=tournament`, {
+    waitUntil: "load",
+    timeout: 30_000,
+  });
+  await sleep(5000);
 
-  // Navigate to Tournament tab
-  const tournamentLink = await page.$('a[href*="tournament"], button:has-text("Tournament")');
-  if (tournamentLink) {
-    await tournamentLink.click();
-    await sleep(5000);
-  }
+  // Show the tournament leaderboard
+  await page.evaluate(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  await sleep(5000);
 
-  // Scroll through standings
+  // Scroll through the 16-strategy leaderboard
   await page.evaluate(() => {
     window.scrollTo({ top: 400, behavior: "smooth" });
   });
-  await sleep(8000);
+  await sleep(6000);
 
-  // Look for Advanced or Evolution sub-tab
-  const advancedLink = await page.$('a[href*="advanced"], button:has-text("Advanced")');
-  if (advancedLink) {
-    await advancedLink.click();
+  await page.evaluate(() => {
+    window.scrollTo({ top: 800, behavior: "smooth" });
+  });
+  await sleep(6000);
+
+  // Now click on Evolution tab
+  const evolutionTab = await page.$(
+    'button:has-text("Evolution"), a:has-text("Evolution"), [data-tab="evolution"]'
+  );
+  if (evolutionTab) {
+    await evolutionTab.click();
+    await sleep(5000);
+  } else {
+    // Try navigating directly
+    await page.goto(`${DAPP_URL}advanced?tab=evolution`, {
+      waitUntil: "load",
+      timeout: 30_000,
+    });
     await sleep(5000);
   }
 
-  // Scroll through evolution data
-  await page.evaluate(() => {
-    window.scrollTo({ top: 600, behavior: "smooth" });
-  });
-  await sleep(8000);
-
+  // Show evolution panel + audit data
   await page.evaluate(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
   await sleep(5000);
 
+  await page.evaluate(() => {
+    window.scrollTo({ top: 400, behavior: "smooth" });
+  });
+  await sleep(6000);
+
   await context.close();
-  console.log("  Tournament recorded.");
+  console.log("  Tournament & Evolution recorded.");
 }
 
-async function recordOutro(browser: Browser): Promise<void> {
-  console.log("\n--- Scene 5: Outro ---");
-  const { context, page } = await createRecordingContext(browser, "outro");
+/**
+ * Scene 5: Closing
+ * Go to BaseScan V4 vault page, then back to DApp hero
+ */
+async function recordClosing(browser: Browser): Promise<void> {
+  console.log("\n--- Scene 5: Closing ---");
+  const { context, page } = await createRecordingContext(browser, "closing");
 
-  // Show BaseScan contract page
-  await page.goto(
-    "https://basescan.org/address/0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7",
-    { waitUntil: "load", timeout: 30_000 }
-  );
+  // Show BaseScan contract page for V4 vault
+  await page.goto(BASESCAN_V4, { waitUntil: "load", timeout: 30_000 });
   await sleep(8000);
 
-  // Navigate back to dapp (URL visible in browser)
-  await page.goto(DAPP_URL, { waitUntil: "networkidle", timeout: 30_000 });
+  // Navigate back to dapp hero shot
+  await page.goto(DAPP_URL, { waitUntil: "load", timeout: 30_000 });
   await sleep(8000);
 
-  // Final hero shot
+  // Final hero shot at top
   await page.evaluate(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
-  await sleep(5000);
+  await sleep(4000);
 
   await context.close();
-  console.log("  Outro recorded.");
+  console.log("  Closing recorded.");
 }
 
 async function main(): Promise<void> {
@@ -232,11 +288,11 @@ async function main(): Promise<void> {
   });
 
   try {
-    await recordIntro(browser);
+    await recordDashboard(browser);
     await recordVault(browser);
-    await recordTrading(browser);
+    await recordInstinct(browser);
     await recordTournament(browser);
-    await recordOutro(browser);
+    await recordClosing(browser);
 
     // Collect all video files
     console.log("\n=== Recording Complete ===");

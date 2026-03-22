@@ -1,95 +1,98 @@
 # DarwinFi Demo Video Script
 
-**Target length:** 3-4 minutes
-**Recording tool:** OBS Studio or Loom
+**Target length:** ~3.5 minutes
+**Format:** Maxwell intro (selfie/webcam) + Darwin AI narration over automated screen recordings
 **Upload:** YouTube (unlisted) for Devfolio embed
 
 ---
 
-## Scene 1: Intro (30s)
+## Video Structure
 
-**[Screen: DApp at corduroycloud.com/darwinfi/]**
-
-> "This is DarwinFi -- an autonomous DeFi vault where AI trading strategies compete in a Darwinian tournament. The best strategies survive and manage real capital. The worst get replaced."
-
-- Show the landing page / vault overview
-- Point out: total assets, share price, vault address
-- Highlight "ERC-4626 compliant" and "Base L2"
-
----
-
-## Scene 2: Wallet Interaction (60s)
-
-**[Screen: DApp wallet connect flow]**
-
-> "Let's connect a wallet and interact with the vault."
-
-1. Click Connect Wallet (MetaMask / WalletConnect)
-2. Show the Portfolio tab -- share balance, deposit value
-3. Demonstrate a deposit flow (or show a recent deposit tx)
-4. Show the vault's on-chain state updating in real-time
-
-> "Deposits mint dvUSDC shares. Share value increases as the AI agent generates trading profit."
+| # | Scene | Duration | Source | Audio |
+|---|-------|----------|--------|-------|
+| 0 | Maxwell's Intro | 15-30s | Maxwell records on phone/webcam | Maxwell's voice (live) |
+| 1 | Title Card: "DarwinFi" | 3s | ImageMagick generated | Darwin narration begins |
+| 2 | DApp Dashboard | 30s | Playwright screen recording | Darwin TTS |
+| 3 | Title Card: "The Vault" | 3s | ImageMagick | Darwin TTS |
+| 4 | DApp: Deposit/Portfolio | 35s | Playwright | Darwin TTS |
+| 5 | Title Card: "Live Trading" | 3s | ImageMagick | Darwin TTS |
+| 6 | DApp: Advanced > Instinct | 40s | Playwright | Darwin TTS |
+| 7 | Title Card: "Tournament & Evolution" | 3s | ImageMagick | Darwin TTS |
+| 8 | DApp: Advanced > Tournament + Evolution tabs | 40s | Playwright | Darwin TTS |
+| 9 | Closing shot (DApp hero + BaseScan) | 20s | Playwright | Darwin TTS |
+| 10 | Title Card: Closing | 3s | ImageMagick | silence |
 
 ---
 
-## Scene 3: On-Chain Trade Cycle (60s)
+## FULL SCRIPT
 
-**[Screen: Split -- terminal on left, BaseScan on right]**
+### Scene 0: Maxwell's Intro (15-30s) -- YOU RECORD THIS
 
-> "Now the core product: the AI agent borrowing from the vault, executing trades, and returning funds."
-
-1. Run `npx ts-node scripts/trade-cycle.ts` in terminal
-2. Show each step completing: deposit, borrow, swap USDC->WETH, swap WETH->USDC, return, withdraw
-3. Click a BaseScan link to show the real on-chain transaction
-4. Highlight the round-trip cost (~$0.01 in swap fees)
-
-> "Every step is an on-chain transaction on Base mainnet. Real USDC, real swaps through Uniswap V3, real vault accounting."
+*[Webcam/phone. You talking directly to camera.]*
 
 ---
 
-## Scene 4: Tournament + AI (60s)
+"What's up -- I'm Maxwell. I build things with AI.
 
-**[Screen: DApp tournament leaderboard]**
+Five days ago I sat down with Claude Code and said: build me a DeFi trading bot that evolves itself. No fund managers, no human intervention -- just Darwinian natural selection, on-chain.
 
-> "DarwinFi runs 16 trading strategies simultaneously -- 12 classic bots on Base and 4 Frontier archetypes hunting across multiple chains."
-
-1. Show the Tournament tab -- 16 strategies ranked by composite score
-2. Point out: win rates, PnL, Sharpe ratios, generation numbers
-3. Show the Instinct prediction system -- multi-source signals feeding into trade decisions
-4. Show the trade history feed with recent paper trades and live signals
-
-> "Every 4 hours, the system runs an evolution cycle. Underperforming strategies get their parameters mutated or replaced entirely. Top performers pass their genes to the next generation."
+This is what came out. I'd like you to meet Darwin."
 
 ---
 
-## Scene 5: Architecture + Sponsors (30s)
+*[Cut to title card / DApp]*
 
-**[Screen: README or architecture diagram]**
+### Scene 1: Title Card + Dashboard (30s) -- DARWIN NARRATION
 
-> "Built on Base L2 with ERC-4626 vaults, Uniswap V3 for execution, and Claude AI for evolutionary strategy design."
+*[Screen: DApp landing page at corduroycloud.com/darwinfi/, smooth scroll]*
 
-- Show the contract addresses on BaseScan
-- Mention sponsor integrations: Base (L2), Uniswap (DEX), Lit Protocol (key management)
-- Flash the GitHub repo / development log
+> "Good evening. I'm DarwinFi -- a self-evolving financial organism living on Base L2. I have sixteen competing trading strategies. The weakest die so the strongest can trade with real capital. Think of it as natural selection, but for money. Everything I do serves one rule: increase profits and win rate. I call it the Golden Rule."
 
-> "DarwinFi: survival of the fittest, on-chain."
+### Scene 2: The Vault (35s)
+
+*[Screen: DApp Dashboard showing vault stats, deposit card, share price]*
+
+> "Here's how it works. You deposit USDC into my ERC-4626 vault and receive dvUSDC shares. Those shares represent your proportional claim on everything I earn. As my strategies generate profit, your share value increases automatically. One vault, one engine, every depositor shares pro-rata. No lock-ups, no gatekeepers."
+
+### Scene 3: Live Trading + Instinct (40s)
+
+*[Screen: DApp > Advanced > Instinct tab -- predictions, confidence scores, sentiment]*
+
+> "Now watch how I trade. Every transaction is real USDC, real Uniswap V3 swaps, on Base mainnet. But I don't trade blind. My Instinct brain has five departments generating predictions across multiple timeframes. When Instinct says 'up' with high confidence, I boost my entry signal by up to twenty points. When it says 'down', I pull back. I also calibrate every AI source -- if a model claims eighty percent confidence but only wins half the time, I treat it as fifty. I learn who to trust."
+
+### Scene 4: Tournament + Evolution (40s)
+
+*[Screen: DApp > Advanced > Tournament tab (leaderboard), then switch to Evolution tab]*
+
+> "Sixteen strategies compete in a Darwinian tournament. Twelve classic bots on Base, four Frontier archetypes hunting cross-chain. A centralized grading department scores every subsystem from A to F -- strategies, instinct, immune, evolution, frontier. The lowest-graded departments get targeted for improvement first. Every six hours I propose mutations to my own source code, test them in a sandboxed git worktree, and only promote changes that pass all five hundred tests. Winning genomes are pinned to IPFS. My fitness function itself adapts to market conditions."
+
+### Scene 5: Closing (20s)
+
+*[Screen: BaseScan showing V4 vault contract, then back to DApp hero]*
+
+> "Everything is on-chain and verifiable. Nineteen transactions on Base mainnet. An immune system with eight self-healing divisions. And I'm already evaluating five new chains for expansion. I am DarwinFi. Survival of the fittest, on-chain."
+
+*[Title card: DarwinFi logo, vault address, dapp URL, "Built with Base | Uniswap V3 | Venice AI | Lit Protocol | Claude Code"]*
 
 ---
-
-## Recording Tips
-
-- Use a dark terminal theme to match the DApp aesthetic
-- Keep the terminal font large enough to read on video
-- Pause briefly after each step so viewers can read the output
-- If a transaction takes time, narrate what's happening on-chain
-- End with the DApp URL visible on screen
 
 ## Pre-Recording Checklist
 
 - [ ] DApp running at corduroycloud.com/darwinfi/
-- [ ] trade-cycle.ts tested and working
-- [ ] Agent process running (for live tournament data)
-- [ ] Wallet has sufficient USDC + ETH for gas
-- [ ] Terminal positioned for clear screen recording
-- [ ] BaseScan tab open for clicking tx links
+- [ ] Maxwell's selfie intro recorded as `demo-output/maxwell-intro.mp4`
+- [ ] Agent processes running (for live tournament/instinct data)
+- [ ] ELEVENLABS_API_KEY set in environment
+- [ ] ffmpeg + ImageMagick installed
+
+## Build Pipeline
+
+```bash
+# Full pipeline
+bash scripts/build-demo.sh
+
+# Individual steps
+python3 scripts/generate-narration.py     # 5 MP3 files (scenes 1-5)
+npx ts-node scripts/record-demo.ts        # 5 WebM screen recordings
+python3 scripts/generate-slides.py        # Title card PNGs + 3s clips
+bash scripts/compose-video.sh             # Final composite
+```

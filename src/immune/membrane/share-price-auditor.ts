@@ -15,30 +15,31 @@ export async function auditSharePrice(): Promise<CheckResult> {
   try {
     const client = new ContractClient();
 
-    if (!client.hasVaultV2()) {
+    if (!client.hasVaultV4()) {
       return {
         checkId: 'membrane.share_price_auditor',
         category: 'membrane',
         severity: 'warning',
-        message: 'VaultV2 address not configured -- skipping share price audit',
+        message: 'VaultV4 address not configured -- skipping share price audit',
         timestamp: Date.now(),
         durationMs: Date.now() - start,
       };
     }
 
     const [totalAssets, totalSupply, sharePrice] = await Promise.all([
-      client.vaultV2TotalAssets(),
-      client.vaultV2TotalSupply(),
-      client.vaultV2SharePrice(),
+      client.vaultV4TotalAssets(),
+      client.vaultV4TotalSupply(),
+      client.vaultV4SharePrice(),
     ]);
 
-    // If totalSupply is 0, sharePrice should be 1e6 (1:1 ratio in 6-decimal USDC)
+    // V4 uses 12-decimal shares (6 USDC + 6 offset), so sharePrice base is 1e12
+    // If totalSupply is 0, sharePrice should be 1e12 (1:1 ratio)
     let expectedSharePrice: bigint;
     if (totalSupply === 0n) {
-      expectedSharePrice = 1_000_000n;
+      expectedSharePrice = 1_000_000_000_000n;
     } else {
-      // sharePrice = totalAssets * 1e6 / totalSupply
-      expectedSharePrice = (totalAssets * 1_000_000n) / totalSupply;
+      // sharePrice = totalAssets * 1e12 / totalSupply
+      expectedSharePrice = (totalAssets * 1_000_000_000_000n) / totalSupply;
     }
 
     const mismatch = sharePrice > expectedSharePrice

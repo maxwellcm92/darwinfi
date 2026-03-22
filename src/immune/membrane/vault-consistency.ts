@@ -19,18 +19,18 @@ export async function checkVaultConsistency(): Promise<CheckResult> {
   try {
     const client = new ContractClient();
 
-    if (!client.hasVaultV2()) {
+    if (!client.hasVaultV4()) {
       return {
         checkId: 'membrane.vault_consistency',
         category: 'membrane',
         severity: 'warning',
-        message: 'VaultV2 address not configured -- skipping vault consistency check',
+        message: 'VaultV4 address not configured -- skipping vault consistency check',
         timestamp: Date.now(),
         durationMs: Date.now() - start,
       };
     }
 
-    const vaultAddress = client.getVaultV2Address()!;
+    const vaultAddress = client.getVaultV4Address()!;
     const baseClient = getBaseClient();
 
     // Get USDC balance of the vault
@@ -41,8 +41,8 @@ export async function checkVaultConsistency(): Promise<CheckResult> {
     );
 
     const [totalAssets, totalBorrowed, vaultUsdcBalance] = await Promise.all([
-      client.vaultV2TotalAssets(),
-      client.vaultV2TotalBorrowed(),
+      client.vaultV4TotalAssets(),
+      client.vaultV4TotalBorrowed(),
       usdcContract.balanceOf(vaultAddress) as Promise<bigint>,
     ]);
 

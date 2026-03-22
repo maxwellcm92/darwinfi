@@ -62,10 +62,21 @@ const TEAM_STRATEGY_MAP: Record<string, number> = {
 // Championship
 // ---------------------------------------------------------------------------
 
+/** Raw frontier data from the file-based bridge (cross-process). */
+interface FrontierWinnerData {
+  botId: string;
+  botName: string;
+  score: number;
+  pnl: number;
+  winRate: number;
+  trades: number;
+}
+
 export class Championship {
   private performanceTracker: PerformanceTracker;
   private strategyManager: StrategyManager | null;
   private frontierManager: FrontierManager | null;
+  private frontierData: FrontierWinnerData | null = null;
   private evaluationCount: number = 0;
   private lastStandings: ChampionshipStandings | null = null;
 
@@ -87,10 +98,18 @@ export class Championship {
   }
 
   /**
-   * Set the frontier manager (Team 4).
+   * Set the frontier manager (Team 4) -- in-process usage.
    */
   setFrontierManager(manager: FrontierManager): void {
     this.frontierManager = manager;
+  }
+
+  /**
+   * Set frontier data from the file-based bridge (cross-process).
+   * Used when frontierManager is null (separate PM2 process).
+   */
+  setFrontierData(data: FrontierWinnerData | null): void {
+    this.frontierData = data;
   }
 
   /**
@@ -143,6 +162,18 @@ export class Championship {
           winRate: Math.round((metrics?.winRate ?? 0) * 1000) / 1000,
         });
       }
+    } else if (this.frontierData) {
+      // File-based bridge: frontier runs in a separate PM2 process
+      champions.push({
+        teamId: 4,
+        teamName: 'Frontier',
+        strategyId: this.frontierData.botId,
+        strategyName: this.frontierData.botName,
+        compositeScore: this.frontierData.score,
+        trades: this.frontierData.trades,
+        pnl: this.frontierData.pnl,
+        winRate: this.frontierData.winRate,
+      });
     }
 
     // Sort by composite score descending

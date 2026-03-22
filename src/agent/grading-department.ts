@@ -300,11 +300,11 @@ export class GradingDepartment {
 
   private gradeFrontier(): DepartmentGrade {
     try {
-      const statePath = path.join(PROJECT_ROOT, 'data', 'agent-state.json');
+      const statePath = path.join(PROJECT_ROOT, 'data', 'frontier', 'agent-state.json');
       if (!fs.existsSync(statePath)) return this.noDataGrade('Frontier');
 
       const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
-      const frontier = state.frontier || state.frontierStrategies;
+      const frontier = state.frontier?.bots || state.frontierStrategies;
 
       if (!frontier || (Array.isArray(frontier) && frontier.length === 0)) {
         return this.noDataGrade('Frontier');

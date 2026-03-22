@@ -933,6 +933,19 @@ R6: 8.4/10  (+0.1 -- final polish, comprehensive docs, full sponsor integration)
 
 Each round's improvements were driven by Wave Sprints -- parallel agent execution via git worktrees, zero merge conflicts, 10 min wall clock time per wave. Session 41 ran the largest Wave Swarm (10 agents, 3 waves) to fix 5 broken claims identified in the demo narrative.
 
+### Session 42: Frontier State Bridge (March 22, post-submission)
+
+Closed the last major operational gap: the 4 frontier strategies (Team 4) were invisible to the main agent's dashboard and championship system because the two PM2 processes had zero inter-process communication.
+
+**Changes:**
+- Created `src/agent/frontier-state-reader.ts` -- file-based bridge that reads the frontier process's `data/frontier/agent-state.json` with 30s cache, returns formatted dashboard and championship data
+- Wired into `darwin-agent.ts` -- `updateDashboard()` now populates `frontierStrategies` and injects Team 4 into championship via `setFrontierData()`
+- Added `setFrontierData()` to `championship.ts` -- cross-process fallback when `frontierManager` is null
+- Fixed `grading-department.ts` -- was reading `data/agent-state.json` (main agent) instead of `data/frontier/agent-state.json` for the Frontier grade
+- Added 3 RPC endpoints to `chain-registry.ts` (publicnode for Base + Arbitrum, meowrpc for Base) to mitigate rate limiting on `1rpc.io`
+
+**Result:** Dashboard API now returns all 16 strategies (12 main + 4 frontier). Championship shows all 4 teams. The 16-strategy Darwinian tournament architecture described throughout this log is now fully operational end-to-end.
+
 ---
 
-*This development log covers 41 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~5 days.*
+*This development log covers 42 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~5 days.*

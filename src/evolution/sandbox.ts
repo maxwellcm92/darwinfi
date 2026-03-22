@@ -157,20 +157,65 @@ export async function createSandbox(proposal: EvolutionProposal): Promise<Sandbo
         return result;
       }
     } else {
-      // Fallback: Venice may have output unified diff -- try git apply --3way
-      console.log(`[Evolution] No SEARCH/REPLACE blocks found, falling back to git apply --3way for ${shortId}`);
-      const diffPath = path.join(worktreeDir, '.evolution-proposal.patch');
-      fs.writeFileSync(diffPath, proposal.diff, 'utf-8');
-      try {
-        exec(`git apply --3way "${diffPath}"`, worktreeDir);
-      } catch (applyErr) {
-        const errMsg = applyErr instanceof Error ? applyErr.message : String(applyErr);
-        result.compilationErrors.push(`Diff apply failed: ${errMsg}`);
-        result.compilationOutput = errMsg;
-        console.error(`[Evolution] git apply --3way failed for ${shortId}:`, errMsg.slice(0, 200));
-        return result;
-      } finally {
-        try { fs.unlinkSync(diffPath); } catch { /* ignore */ }
+      // Check if the diff contains SEARCH/REPLACE markers that the regex missed
+      // (e.g., due to whitespace differences or malformed markers)
+      const hasSearchReplaceMarkers = proposal.diff.includes('<<<<<<< SEARCH') || proposal.diff.includes('>>>>>>> REPLACE');
+
+      if (hasSearchReplaceMarkers) {
+        // Diff is in SEARCH/REPLACE format but parsing failed -- try relaxed parsing
+        console.log(`[Evolution] SEARCH/REPLACE markers detected but parsing failed for ${shortId}, trying relaxed parse`);
+
+        // Relaxed regex: allow optional whitespace around markers
+        const relaxedRegex = /<<<<<<<?[\s]*SEARCH\s*\n([\s\S]*?)\n={3,}\s*\n([\s\S]*?)\n>>>>>>>?[\s]*REPLACE/g;
+        const relaxedBlocks: SearchReplaceBlock[] = [];
+        let relaxedMatch;
+        while ((relaxedMatch = relaxedRegex.exec(proposal.diff)) !== null) {
+          relaxedBlocks.push({ search: relaxedMatch[1], replace: relaxedMatch[2] });
+        }
+
+        if (relaxedBlocks.length > 0) {
+          console.log(`[Evolution] Relaxed parse found ${relaxedBlocks.length} block(s) for ${shortId}`);
+          try {
+            for (const targetFile of proposal.targetFiles) {
+              const filePath = path.join(worktreeDir, targetFile);
+              if (!fs.existsSync(filePath)) {
+                throw new Error(`Target file not found: ${targetFile}`);
+              }
+              const content = fs.readFileSync(filePath, 'utf-8');
+              const updated = applySearchReplace(content, relaxedBlocks);
+              fs.writeFileSync(filePath, updated, 'utf-8');
+            }
+          } catch (applyErr) {
+            const errMsg = applyErr instanceof Error ? applyErr.message : String(applyErr);
+            result.compilationErrors.push(`SEARCH/REPLACE relaxed apply failed: ${errMsg}`);
+            result.compilationOutput = errMsg;
+            console.error(`[Evolution] SEARCH/REPLACE relaxed apply failed for ${shortId}:`, errMsg.slice(0, 200));
+            return result;
+          }
+        } else {
+          // Markers present but neither strict nor relaxed parsing found valid blocks
+          const errMsg = 'Diff contains SEARCH/REPLACE markers but no valid blocks could be parsed. Cannot git apply SEARCH/REPLACE format.';
+          result.compilationErrors.push(errMsg);
+          result.compilationOutput = errMsg;
+          console.error(`[Evolution] ${errMsg} (proposal ${shortId})`);
+          return result;
+        }
+      } else {
+        // Genuine unified diff format -- safe to use git apply
+        console.log(`[Evolution] Unified diff detected, applying via git apply --3way for ${shortId}`);
+        const diffPath = path.join(worktreeDir, '.evolution-proposal.patch');
+        fs.writeFileSync(diffPath, proposal.diff, 'utf-8');
+        try {
+          exec(`git apply --3way "${diffPath}"`, worktreeDir);
+        } catch (applyErr) {
+          const errMsg = applyErr instanceof Error ? applyErr.message : String(applyErr);
+          result.compilationErrors.push(`Unified diff apply failed: ${errMsg}`);
+          result.compilationOutput = errMsg;
+          console.error(`[Evolution] git apply --3way failed for ${shortId}:`, errMsg.slice(0, 200));
+          return result;
+        } finally {
+          try { fs.unlinkSync(diffPath); } catch { /* ignore */ }
+        }
       }
     }
 

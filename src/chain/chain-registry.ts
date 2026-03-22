@@ -23,6 +23,8 @@ const BASE_MAINNET_CONFIG: Omit<EVMClientConfig, 'privateKey'> = {
     'https://base.llamarpc.com',
     'https://mainnet.base.org',
     'https://1rpc.io/base',
+    'https://base-rpc.publicnode.com',
+    'https://base.meowrpc.com',
   ],
   maxGasPriceGwei: 5,
 };
@@ -33,6 +35,7 @@ const ARBITRUM_MAINNET_CONFIG: Omit<EVMClientConfig, 'privateKey'> = {
   rpcUrls: [
     'https://arb1.arbitrum.io/rpc',
     'https://1rpc.io/arb',
+    'https://arbitrum-one-rpc.publicnode.com',
   ],
   maxGasPriceGwei: 50,
 };

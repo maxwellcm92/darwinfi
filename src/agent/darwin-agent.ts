@@ -36,6 +36,7 @@ import { startDashboard, updateDashboardState, updateConversationLog, DashboardS
 import { ContractClient } from '../chain/contract-client';
 import { FilecoinStore } from '../integrations/filecoin';
 import { Championship } from './championship';
+import { getFrontierStrategies, getFrontierTeamWinner } from './frontier-state-reader';
 import { InstinctState } from '../instinct/types';
 import { StateWriter } from '../instinct/nerves/state-writer';
 import { GradingDepartment } from './grading-department';
@@ -1412,6 +1413,13 @@ export class DarwinAgent {
     const liveId = report.live;
     const liveMetrics = liveId ? this.performanceTracker.getMetrics(liveId) : null;
 
+    // Read frontier strategies from the frontier process state file
+    const frontierStrategies = getFrontierStrategies();
+
+    // Inject frontier data into championship for Team 4
+    const frontierWinner = getFrontierTeamWinner();
+    this.championship.setFrontierData(frontierWinner);
+
     // Championship evaluation (runs with dashboard update, hourly check)
     const championshipStandings = this.championship.evaluateChampionship();
 
@@ -1423,6 +1431,7 @@ export class DarwinAgent {
       uptime: uptimeSeconds,
       recentTrades: recentTrades.slice(0, 20),
       evolutionHistory,
+      frontierStrategies,
       championshipStandings: {
         champions: championshipStandings.champions,
         overallChampion: championshipStandings.overallChampion ? {

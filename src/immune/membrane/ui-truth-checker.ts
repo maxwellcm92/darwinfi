@@ -47,12 +47,12 @@ export async function checkUiTruth(): Promise<CheckResult> {
   try {
     const client = new ContractClient();
 
-    if (!client.hasVaultV2()) {
+    if (!client.hasVaultV4()) {
       return {
         checkId: 'membrane.ui_truth_checker',
         category: 'membrane',
         severity: 'warning',
-        message: 'VaultV2 address not configured -- skipping UI truth check',
+        message: 'VaultV4 address not configured -- skipping UI truth check',
         timestamp: Date.now(),
         durationMs: Date.now() - start,
       };
@@ -76,12 +76,12 @@ export async function checkUiTruth(): Promise<CheckResult> {
 
     const apiData = await response.json() as VaultApiResponse;
 
-    // Get on-chain values
+    // Get on-chain values (V4 vault)
     const [totalAssets, totalSupply, sharePrice, totalBorrowed] = await Promise.all([
-      client.vaultV2TotalAssets(),
-      client.vaultV2TotalSupply(),
-      client.vaultV2SharePrice(),
-      client.vaultV2TotalBorrowed(),
+      client.vaultV4TotalAssets(),
+      client.vaultV4TotalSupply(),
+      client.vaultV4SharePrice(),
+      client.vaultV4TotalBorrowed(),
     ]);
 
     // Compare tvl (totalAssets)

@@ -30,6 +30,7 @@ import { runTests } from './test-gate';
 import { startCanary, checkCanary, shouldRollback, isCanaryComplete, loadCanaryState, clearCanaryState } from './canary';
 import { rollback } from './rollback';
 import { auditProposalCreated, auditValidationResult, auditSandboxResult, auditTestResult, auditCanaryStarted, auditProposalPromoted, auditProposalRejected, auditRollback, auditCycleStarted, auditCycleCompleted } from './audit';
+import { ContractClient } from '../chain/contract-client';
 
 // Load environment from project root
 dotenv.config({ path: path.join(PROJECT_ROOT, '.env') });
@@ -38,6 +39,34 @@ const LOG_PREFIX = '[Evolution]';
 let shutdownRequested = false;
 let cycleTimer: ReturnType<typeof setTimeout> | null = null;
 let canaryMonitorTimer: ReturnType<typeof setInterval> | null = null;
+
+// On-chain logging (optional -- only if PerformanceLog deployed)
+let contractClient: ContractClient | null = null;
+if (process.env.PERFORMANCE_LOG_ADDRESS) {
+  try {
+    contractClient = new ContractClient();
+  } catch {
+    contractClient = null;
+  }
+}
+
+/**
+ * Log an evolution decision on-chain (non-blocking, fire-and-forget).
+ */
+function logEvolutionOnChain(
+  decision: 'proposal_created' | 'proposal_promoted' | 'proposal_rejected' | 'proposal_rolled_back',
+  proposalId: string,
+  zone: string,
+): void {
+  if (!contractClient?.hasPerformanceLog()) return;
+  contractClient.logEvolutionDecision(decision, proposalId, zone)
+    .then(hash => {
+      if (hash) console.log(`${LOG_PREFIX} On-chain evolution log: ${decision} -> ${hash}`);
+    })
+    .catch(err => {
+      console.warn(`${LOG_PREFIX} On-chain evolution log failed:`, err instanceof Error ? err.message : err);
+    });
+}
 
 // -------------------------------------------------------------------------
 // Metrics reading (from agent-state.json)
@@ -161,6 +190,7 @@ function startCanaryMonitoring(config: EvolutionConfig): void {
           rollbackReason: reason,
           rolledBackAt: Date.now(),
         };
+        logEvolutionOnChain('proposal_rolled_back', updated.proposalId, 'canary');
         recordOutcome(memory, proposal, 'rolled_back');
         stopCanaryMonitoring();
         return;
@@ -170,6 +200,7 @@ function startCanaryMonitoring(config: EvolutionConfig): void {
       if (isCanaryComplete(updated, config.velocityLimits.minCanaryDuration)) {
         console.log(`${LOG_PREFIX} Canary PASSED for ${updated.proposalId.slice(0, 8)}`);
         auditProposalPromoted(updated.proposalId);
+        logEvolutionOnChain('proposal_promoted', updated.proposalId, 'canary');
 
         // Record as promoted
         const proposal: EvolutionProposal = {
@@ -268,12 +299,14 @@ async function runEvolutionCycle(): Promise<void> {
   }
 
   auditProposalCreated(proposal);
+  logEvolutionOnChain('proposal_created', proposal.id, target.zone);
 
   // Check for duplicate diff
   if (isDuplicate(memory, proposal.diffHash)) {
     proposal.status = 'rejected';
     proposal.rejectionReason = 'Duplicate diff (already tried)';
     auditProposalRejected(proposal.id, proposal.rejectionReason);
+    logEvolutionOnChain('proposal_rejected', proposal.id, target.zone);
     recordOutcome(memory, proposal, 'rejected');
     console.log(`${LOG_PREFIX} Proposal rejected: duplicate diff`);
     auditCycleCompleted(proposal.id, 'duplicate_diff');
@@ -296,6 +329,7 @@ async function runEvolutionCycle(): Promise<void> {
       ...validation.errors,
     ].join('; ');
     auditProposalRejected(proposal.id, proposal.rejectionReason);
+    logEvolutionOnChain('proposal_rejected', proposal.id, target.zone);
     recordOutcome(memory, proposal, 'rejected');
     console.log(`${LOG_PREFIX} Proposal rejected: ${proposal.rejectionReason}`);
     auditCycleCompleted(proposal.id, 'validation_failed');
@@ -321,6 +355,7 @@ async function runEvolutionCycle(): Promise<void> {
     proposal.status = 'rejected';
     proposal.rejectionReason = `Compilation failed: ${sandboxResult.compilationErrors.slice(0, 3).join('; ')}`;
     auditProposalRejected(proposal.id, proposal.rejectionReason);
+    logEvolutionOnChain('proposal_rejected', proposal.id, target.zone);
     recordOutcome(memory, proposal, 'rejected');
     cleanupSandbox(sandboxResult.worktreePath);
     console.log(`${LOG_PREFIX} Proposal rejected: compilation failed`);
@@ -339,6 +374,7 @@ async function runEvolutionCycle(): Promise<void> {
     proposal.status = 'rejected';
     proposal.rejectionReason = `Tests failed: ${testResult.failingTests} failures`;
     auditProposalRejected(proposal.id, proposal.rejectionReason);
+    logEvolutionOnChain('proposal_rejected', proposal.id, target.zone);
     recordOutcome(memory, proposal, 'rejected');
     cleanupSandbox(sandboxResult.worktreePath);
     console.log(`${LOG_PREFIX} Proposal rejected: tests failed`);

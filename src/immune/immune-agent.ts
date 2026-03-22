@@ -19,6 +19,7 @@ dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') });
 
 import { CheckResult, ImmuneHealthSummary, DivisionStatus } from './types';
 import { CHECK_INTERVALS, IMMUNE_FILES, PROJECT_ROOT, MONITORED_PROCESSES } from './config';
+import { ContractClient } from '../chain/contract-client';
 import { LogAggregator } from './lymph/log-aggregator';
 import { AlertManager } from './lymph/alert-manager';
 import { PatrolScheduler } from './patrol/patrol-scheduler';
@@ -57,6 +58,7 @@ class ImmuneAgent {
   private fixEngine: FixEngine;
   private fixHistory: FixHistory;
   private genomeState: GenomeStateManager;
+  private contractClient: ContractClient | null = null;
 
   // Timers for non-patrol checks
   private timers: Map<string, ReturnType<typeof setInterval>> = new Map();
@@ -73,6 +75,15 @@ class ImmuneAgent {
   constructor() {
     this.logger = new LogAggregator();
     this.alertManager = new AlertManager(this.logger);
+
+    // On-chain logging (optional -- only if PerformanceLog deployed)
+    try {
+      if (process.env.PERFORMANCE_LOG_ADDRESS) {
+        this.contractClient = new ContractClient();
+      }
+    } catch {
+      this.contractClient = null;
+    }
     this.fixEngine = new FixEngine(this.logger, this.alertManager);
     this.fixHistory = this.fixEngine.getHistory();
     this.genomeState = new GenomeStateManager();
@@ -216,6 +227,19 @@ class ImmuneAgent {
   }
 
   /**
+   * Log critical immune actions on-chain for transparency.
+   */
+  private async logImmuneOnChain(action: 'fix_applied' | 'alert_raised' | 'division_degraded', details: string): Promise<void> {
+    try {
+      if (this.contractClient?.hasPerformanceLog()) {
+        await this.contractClient.logImmuneAction(action, details);
+      }
+    } catch {
+      // Non-critical: don't block immune system for on-chain logging
+    }
+  }
+
+  /**
    * Central handler for all check results.
    * Routes through alert manager and fix engine.
    */
@@ -248,6 +272,8 @@ class ImmuneAgent {
       if (recheckFn) {
         await this.fixEngine.processCheckResult(result, recheckFn);
       }
+      // Log critical immune actions on-chain for transparency
+      await this.logImmuneOnChain('alert_raised', `${result.checkId}: ${result.message.slice(0, 80)}`);
     }
   }
 

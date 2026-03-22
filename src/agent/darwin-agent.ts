@@ -1156,6 +1156,27 @@ export class DarwinAgent {
   }
 
   // -------------------------------------------------------------------------
+  // On-chain Evolution Logging
+  // -------------------------------------------------------------------------
+
+  /**
+   * Log evolution-related events on-chain for transparency.
+   */
+  private async logEvolutionOnChain(
+    decision: 'proposal_created' | 'proposal_promoted' | 'proposal_rejected' | 'proposal_rolled_back',
+    proposalId: string,
+    zone: string,
+  ): Promise<void> {
+    try {
+      if (this.contractClient?.hasPerformanceLog()) {
+        await this.contractClient.logEvolutionDecision(decision, proposalId, zone);
+      }
+    } catch {
+      // Non-critical: don't let on-chain logging failure affect operations
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Evolution Trigger
   // -------------------------------------------------------------------------
 
@@ -1267,6 +1288,9 @@ export class DarwinAgent {
                 this.contractClient.logPromotion(sid, promo)
                   .catch(err => console.error(`[DarwinFi] On-chain promotion log failed: ${err.message}`));
               }
+              // Also log as evolution decision
+              this.logEvolutionOnChain('proposal_promoted', promoMatch[1], 'strategy')
+                .catch(() => {});
             }
             if (demoMatch) {
               const sid = STRATEGY_ID_MAP[demoMatch[1]];

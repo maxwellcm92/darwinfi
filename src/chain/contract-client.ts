@@ -475,6 +475,76 @@ export class ContractClient {
   }
 
   // ---------------------------------------------------------------
+  // Convenience: Immune System Logging
+  // ---------------------------------------------------------------
+
+  /**
+   * Log a critical immune action on-chain via PerformanceLog.
+   * Uses strategyId 99 as the immune system identifier.
+   */
+  async logImmuneAction(
+    action: 'fix_applied' | 'alert_raised' | 'division_degraded',
+    details: string,
+  ): Promise<string | null> {
+    try {
+      if (!this.addresses.performanceLog) return null;
+      // Use strategyId 99n for immune system, encode action in reason
+      const reason = `immune:${action}:${details.slice(0, 100)}`;
+      const tx = await this.performanceLog.logDemotion(99n, reason);
+      const receipt = await tx.wait();
+      return receipt.hash;
+    } catch (err) {
+      console.warn(
+        '[ContractClient] Failed to log immune action on-chain:',
+        err instanceof Error ? err.message : err,
+      );
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // Convenience: Evolution Logging
+  // ---------------------------------------------------------------
+
+  /**
+   * Log an evolution decision on-chain.
+   * Uses strategyId 98 as the evolution engine identifier.
+   */
+  async logEvolutionDecision(
+    decision: 'proposal_created' | 'proposal_promoted' | 'proposal_rejected' | 'proposal_rolled_back',
+    proposalId: string,
+    zone: string,
+  ): Promise<string | null> {
+    try {
+      if (!this.addresses.performanceLog) return null;
+      const reason = `evolution:${decision}:${proposalId.slice(0, 8)}:${zone}`;
+
+      if (decision === 'proposal_promoted') {
+        const tx = await this.performanceLog.logPromotion(98n, reason);
+        const receipt = await tx.wait();
+        return receipt.hash;
+      } else {
+        const tx = await this.performanceLog.logDemotion(98n, reason);
+        const receipt = await tx.wait();
+        return receipt.hash;
+      }
+    } catch (err) {
+      console.warn(
+        '[ContractClient] Failed to log evolution decision on-chain:',
+        err instanceof Error ? err.message : err,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Check if PerformanceLog is configured.
+   */
+  hasPerformanceLog(): boolean {
+    return !!this.addresses.performanceLog;
+  }
+
+  // ---------------------------------------------------------------
   // Type-safe wrappers: DarwinVaultV2
   // ---------------------------------------------------------------
 

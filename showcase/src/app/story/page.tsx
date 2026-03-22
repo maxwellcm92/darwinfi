@@ -277,6 +277,162 @@ const sessions: SessionData[] = [
     codeImpact: "AI router + Ollama engine + autonomy gap fixes across multiple modules",
     type: "fix",
   },
+  {
+    number: 19,
+    title: "VaultV4 Security Hardening",
+    objective: "Deploy the security-hardened V4 vault with 6 audit fixes: 48h timelock, 80% max borrow ratio, proportional emergency withdrawal, 7-day borrow timeout.",
+    highlights: [
+      "48-hour timelock on agent/feeRecipient changes",
+      "80% maximum borrow ratio with bad debt write-off",
+      "80 Solidity tests covering all V4 security features",
+    ],
+    details: "Built DarwinVaultV4 with 12-decimal shares (6 USDC + 6 offset), proportional emergency withdrawal, 7-day borrow timeout with automatic bad debt write-off, and 7-day maximum lock time cap. Deployed to Base mainnet at 0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7.",
+    codeImpact: "VaultV4 contract + 80 tests + deploy script",
+    type: "deployment",
+  },
+  {
+    number: 20,
+    title: "Showcase Site v1",
+    objective: "Build the DarwinFi showcase website -- a Next.js marketing site explaining the system architecture, build story, and product.",
+    highlights: [
+      "Next.js 15 with App Router and Tailwind CSS",
+      "Interactive organism diagram with 6 organs",
+      "Live vault telemetry polling real API data",
+    ],
+    details: "Built darwinfi.corduroycloud.com as a standalone Next.js application with 4 pages: Home (hero + organism diagram + telemetry + Under the Hood), Live Results (vault stats + PnL chart + leaderboard), Build Story (development timeline), and Product (feature showcase + tech stack). Darwin chatbot with Claude Haiku backend.",
+    codeImpact: "Next.js showcase site, 15+ components, deployed via PM2",
+    type: "architecture",
+  },
+  {
+    number: 21,
+    title: "Lit Protocol Chipotle v3 Integration",
+    objective: "Implement Lit Protocol PKP cryptographic trading guardrails -- IPFS-hosted Lit Action enforces the trading policy before signing transactions.",
+    highlights: [
+      "Programmable Key Pair (PKP) minted on Lit naga-dev network",
+      "IPFS-hosted Lit Action with whitelisted contracts and tokens",
+      "SwapRouter calls restricted to exactInputSingle and multicall",
+    ],
+    details: "Built the full Lit Protocol integration: mint-pkp-direct.ts for PKP creation, IPFS-hosted Lit Action that enforces chain ID (Base 8453), whitelisted contracts (Uniswap V3 SwapRouter + DarwinVaultV4), approved token list (9 pairs), and restricted SwapRouter function selectors. Ready for Chipotle v3 mainnet launch.",
+    codeImpact: "Lit Protocol scripts + IPFS action + PKP minting",
+    type: "deployment",
+  },
+  {
+    number: 22,
+    title: "Judge Assessment Framework",
+    objective: "Build the 7-critical-judge assessment system -- automated scoring across Technical, Security, Innovation, UX, Business, Presentation, and Code Quality dimensions.",
+    highlights: [
+      "7 judge personas with distinct scoring rubrics",
+      "Automated HTML email report with score visualization",
+      "Score tracking across assessment rounds",
+    ],
+    details: "Created a judge simulation framework with 7 specialized personas. Each judge scores DarwinFi on their dimension (1-10), provides specific feedback, and identifies improvements. Results compiled into a styled HTML email report sent to the team. Used to drive iterative improvement sprints.",
+    codeImpact: "Assessment framework + HTML templates + scoring system",
+    type: "audit",
+  },
+  {
+    number: 23,
+    title: "Wave Sprint R1: Score 5.8 to 6.8",
+    objective: "First Wave Sprint execution -- parallel Claude Code agents on git worktrees addressing judge feedback from R1 (score 5.8/10).",
+    highlights: [
+      "4 parallel worktree agents executing simultaneously",
+      "Test suite expanded from 325 to 380+ tests",
+      "Circuit breaker documentation and Lit Protocol docs added",
+    ],
+    details: "Introduced the Wave Sprint methodology: analyze judge gaps, break into parallel workstreams, create git worktrees for file-level isolation, execute via concurrent Claude Code agents. R1 gaps addressed: missing documentation, incomplete test coverage, unclear evolution mechanics, sparse error handling.",
+    codeImpact: "Multi-agent parallel execution, +55 tests, documentation overhaul",
+    type: "audit",
+  },
+  {
+    number: 24,
+    title: "Wave Sprint R2: Score 6.8 to 7.7",
+    objective: "Second Wave Sprint targeting security, UX, and code quality improvements flagged by R2 judges.",
+    highlights: [
+      "VaultV4 security hardening (6 audit fixes)",
+      "DApp UI polish and responsive design",
+      "Code quality improvements across agent core",
+    ],
+    details: "Focused on the three lowest-scoring dimensions from R2. Security: deployed VaultV4 with all audit fixes. UX: improved DApp responsive layout, loading states, error messages. Code Quality: refactored strategy manager, added type safety, improved error handling patterns.",
+    codeImpact: "VaultV4 deployment + UI polish + code quality refactoring",
+    type: "audit",
+  },
+  {
+    number: 25,
+    title: "Wave Sprint R3: Score 7.7 to 8.0",
+    objective: "Third Wave Sprint pushing past 8.0 -- focused on showcase polish, chatbot, and sponsor integration depth.",
+    highlights: [
+      "Darwin chatbot with Claude Haiku SSE streaming",
+      "Showcase organism diagram interactivity",
+      "Sponsor integration documentation",
+    ],
+    details: "Built the Darwin chatbot system: Next.js API route spawning Claude CLI with DarwinFi-specific system prompt, SSE streaming, session persistence, rate limiting, and suggested actions. Polished the organism diagram with animated connections, pulse rings, and hover descriptions. Added comprehensive sponsor integration documentation.",
+    codeImpact: "Chatbot system + organism diagram + sponsor docs",
+    type: "architecture",
+  },
+  {
+    number: 26,
+    title: "Wave Sprint R4: Score 8.0 to 8.3",
+    objective: "Fourth Wave Sprint addressing remaining presentation and innovation gaps to push toward 8.5.",
+    highlights: [
+      "Self-Evolution Engine smoke tests and canary deploy",
+      "Live Results page with PnL chart and leaderboard",
+      "Under the Hood technical deep-dive sections",
+    ],
+    details: "Added 18 smoke tests gating every evolution mutation. Built the Live Results page with real-time vault stats, PnL chart (lightweight-charts), strategy leaderboard, evolution timeline, and instinct predictions. Created expandable Under the Hood sections explaining fitness scoring, circuit breakers, Lit Protocol policy, and test coverage.",
+    codeImpact: "Evolution smoke tests + Live Results page + Under the Hood",
+    type: "architecture",
+  },
+  {
+    number: 27,
+    title: "Wave Sprint R5: Score 8.3 to 8.4",
+    objective: "Fifth Wave Sprint -- diminishing returns territory, focusing on documentation completeness and edge case coverage.",
+    highlights: [
+      "Development log expanded to cover all 40 sessions",
+      "Product page with feature showcase and tech stack",
+      "Edge case test coverage for vault operations",
+    ],
+    details: "Comprehensive documentation pass: development log covering every session, product page with 6 feature sections, smart contract details, and tech stack grid. Added edge case tests for vault deposit/withdraw race conditions, emergency withdrawal during pause, and timelock expiry scenarios.",
+    codeImpact: "Documentation + product page + edge case tests",
+    type: "audit",
+  },
+  {
+    number: 28,
+    title: "Wave Swarm: 7 Parallel Agents",
+    objective: "Largest parallel execution yet -- 7 simultaneous Claude Code agents on isolated worktrees executing the final showcase polish sprint.",
+    highlights: [
+      "7 parallel worktree agents executing simultaneously",
+      "Showcase accuracy fixes across all pages",
+      "Dev log, Notion battle plan, and briefing page",
+    ],
+    details: "The Wave Swarm pattern: 7 agents working in parallel on isolated git worktrees, each with a self-contained prompt and clear success criteria. Delivered: showcase accuracy fixes, evolution SEARCH/REPLACE fix, Darwin persona refinement, 41-session dev log, 268-block Notion battle plan, briefing page, and Lit Protocol Chipotle v3 implementation.",
+    codeImpact: "7-agent parallel execution, showcase polish across all pages",
+    type: "deployment",
+  },
+  {
+    number: 29,
+    title: "Demo Video Pipeline",
+    objective: "Build the automated demo video generation pipeline: TTS narration, Playwright screen recording, slide generation, and ffmpeg composition.",
+    highlights: [
+      "ElevenLabs TTS narration with Daniel voice",
+      "Playwright-based DApp screen recording",
+      "ffmpeg video composition pipeline",
+    ],
+    details: "Built a 5-stage pipeline: generate-narration.py (ElevenLabs TTS), record-demo.ts (Playwright screen capture), generate-slides.py (ImageMagick title cards), compose-video.sh (ffmpeg assembly), and build-demo.sh (orchestrator). Each stage is independently runnable and testable.",
+    codeImpact: "5 pipeline scripts + orchestrator",
+    type: "architecture",
+  },
+  {
+    number: 30,
+    title: "Final Sprint: Deadline Day Polish",
+    objective: "March 22 deadline day -- final UI fixes, chatbot improvements, and DApp Live Results page migration.",
+    highlights: [
+      "Live Results migrated from showcase to DApp",
+      "Chatbot evolution thinking words",
+      "Logo spacing and organism diagram readability",
+    ],
+    details: "Final touches for hackathon submission: migrated Live Results from showcase to DApp for better integration, added evolution-themed thinking indicators to chatbot, fixed logo spacing in header, improved organism diagram text readability, updated Build Story and Product pages with accurate stats.",
+    codeImpact: "DApp Results page + chatbot polish + UI fixes",
+    type: "fix",
+  },
 ];
 
 export default function StoryPage() {
@@ -292,15 +448,15 @@ export default function StoryPage() {
               The Build Story
             </h1>
             <p className="text-darwin-text text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-              18 sessions. 106 source files. 27,000 lines of code. 325 tests.
-              Built across March 13-20, 2026 with Claude Code as the agent harness.
+              41 sessions. 111 source files. 29,740 lines of code. 423+ tests.
+              Built across March 13-22, 2026 with Claude Code as the agent harness.
             </p>
             <div className="flex flex-wrap justify-center gap-6 text-center">
               {[
-                { value: "18", label: "Sessions" },
-                { value: "106", label: "Files" },
-                { value: "27k", label: "Lines" },
-                { value: "325", label: "Tests" },
+                { value: "41", label: "Sessions" },
+                { value: "111", label: "Files" },
+                { value: "29.7k", label: "Lines" },
+                { value: "423+", label: "Tests" },
               ].map((stat) => (
                 <div key={stat.label}>
                   <p className="text-2xl md:text-3xl font-bold text-darwin-accent font-mono">

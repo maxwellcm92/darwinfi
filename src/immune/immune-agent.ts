@@ -186,6 +186,40 @@ class ImmuneAgent {
   }
 
   /**
+   * Get numerical scores for each immune division.
+   * Used by the GradingDepartment for cross-department comparison.
+   */
+  getDivisionScores(): Array<{ name: string; score: number; rank: number; metrics: Record<string, number> }> {
+    const scores: Array<{ name: string; score: number; metrics: Record<string, number> }> = [];
+
+    for (const [name, status] of Object.entries(this.divisionStatus)) {
+      const passRate = status.checksRun > 0
+        ? (status.checksRun - status.checksFailed) / status.checksRun
+        : 1;
+      const uptime = status.status === 'ok' ? 1 : status.status === 'warning' ? 0.7 : 0.3;
+
+      // Score: pass rate 60%, uptime status 30%, checks run volume 10%
+      const volumeScore = Math.min(1, (status.checksRun || 0) / 100); // normalize to 0-1
+      const score = Math.round((passRate * 60 + uptime * 30 + volumeScore * 10) * 100) / 100;
+
+      scores.push({
+        name,
+        score,
+        metrics: {
+          passRate: Math.round(passRate * 100),
+          checksRun: status.checksRun,
+          checksFailed: status.checksFailed,
+          uptimeScore: Math.round(uptime * 100),
+        },
+      });
+    }
+
+    // Rank by score (highest first)
+    scores.sort((a, b) => b.score - a.score);
+    return scores.map((s, i) => ({ ...s, rank: i + 1 }));
+  }
+
+  /**
    * Graceful shutdown.
    */
   stop(): void {
@@ -333,12 +367,24 @@ class ImmuneAgent {
    * Write immune health summary to disk (read by dashboard).
    */
   private writeStateToDisk(): void {
+    // Compute division scores for grading department
+    const divisionScores: Record<string, number> = {};
+    for (const [name, status] of Object.entries(this.divisionStatus)) {
+      const passRate = status.checksRun > 0
+        ? (status.checksRun - status.checksFailed) / status.checksRun
+        : 1;
+      const uptime = status.status === 'ok' ? 1 : status.status === 'warning' ? 0.7 : 0.3;
+      const volumeScore = Math.min(1, (status.checksRun || 0) / 100);
+      divisionScores[name] = Math.round((passRate * 60 + uptime * 30 + volumeScore * 10) * 100) / 100;
+    }
+
     const summary: ImmuneHealthSummary = {
       updatedAt: Date.now(),
       overall: this.alertManager.getOverallSeverity(),
       divisions: { ...this.divisionStatus },
       activeAlerts: this.alertManager.getActiveAlerts().length,
       fixesLast24h: this.fixHistory.getRecentFixes(500).filter(f => f.appliedAt >= Date.now() - 24 * 60 * 60_000).length,
+      divisionScores,
     };
 
     const filePath = path.join(PROJECT_ROOT, IMMUNE_FILES.state);

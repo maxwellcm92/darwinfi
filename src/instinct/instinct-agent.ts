@@ -445,6 +445,83 @@ class InstinctAgent {
       generatedAt: Date.now(),
     };
   }
+  /**
+   * Get department-level scores for instinct's 5 departments.
+   * Used by GradingDepartment for internal competition tracking.
+   */
+  getDepartmentScores(): Array<{ name: string; score: number; rank: number; metrics: Record<string, number | string> }> {
+    const departments: Array<{ name: string; score: number; metrics: Record<string, number | string> }> = [];
+
+    // Senses: score based on active sources and event production
+    const sources = this.sourceManager.getAllSources();
+    const activeSources = sources.filter(s => s.status === 'active');
+    const sensesScore = sources.length > 0
+      ? Math.round((activeSources.length / sources.length) * 80 + Math.min(20, activeSources.length * 5))
+      : 50;
+    departments.push({
+      name: 'Senses',
+      score: sensesScore,
+      metrics: {
+        activeSources: activeSources.length,
+        totalSources: sources.length,
+        avgFitness: sources.length > 0
+          ? (sources.reduce((s, src) => s + src.fitness.compositeScore, 0) / sources.length).toFixed(3)
+          : '0',
+      },
+    });
+
+    // Reflexes: score based on prediction accuracy
+    const accuracy = this.computeRollingAccuracy();
+    const reflexesScore = Math.round(accuracy * 100);
+    const strategies = this.predictionEngine.getActiveStrategies();
+    departments.push({
+      name: 'Reflexes',
+      score: reflexesScore,
+      metrics: {
+        accuracy: `${(accuracy * 100).toFixed(1)}%`,
+        activeStrategies: strategies.length,
+      },
+    });
+
+    // Cortex: score based on weight optimization activity
+    // Since cortex runs every 24h, score based on whether it's been active
+    const cortexActive = this.cortexTimer !== null;
+    const cortexScore = cortexActive ? 75 : 40;
+    departments.push({
+      name: 'Cortex',
+      score: cortexScore,
+      metrics: {
+        active: cortexActive ? 'yes' : 'no',
+        optimizationInterval: `${(this.config.cortexIntervalMs / 3_600_000).toFixed(0)}h`,
+      },
+    });
+
+    // Nerves: score based on state writer activity
+    const nervesActive = this.stateWriter !== null;
+    const nervesScore = nervesActive ? 80 : 30;
+    departments.push({
+      name: 'Nerves',
+      score: nervesScore,
+      metrics: {
+        stateWriterActive: nervesActive ? 'yes' : 'no',
+      },
+    });
+
+    // Marrow: score based on evolution cycle count and pattern detection
+    const marrowScore = Math.min(90, 50 + this.evolutionCount * 5);
+    departments.push({
+      name: 'Marrow',
+      score: marrowScore,
+      metrics: {
+        evolutionCycles: this.evolutionCount,
+        currentInterval: `${(this.config.evolution.currentIntervalMs / 3_600_000).toFixed(1)}h`,
+      },
+    });
+
+    // Rank by score
+    departments.sort((a, b) => b.score - a.score);
+    return departments.map((d, i) => ({ ...d, rank: i + 1 }));
+  }
 }
 
 // -------------------------------------------------------------------

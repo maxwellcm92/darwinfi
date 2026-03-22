@@ -5,6 +5,7 @@ import { ContractClient } from "../chain/contract-client";
 import { ethers } from "ethers";
 import { StateWriter } from "../instinct/nerves/state-writer";
 import { registerImmuneRoutes } from "../immune/lymph/dashboard-endpoint";
+import { GradingDepartment } from "../agent/grading-department";
 
 export interface DashboardState {
   strategies: Array<{
@@ -257,6 +258,18 @@ export function startDashboard(port: number = 3500): void {
       return res.json({ generatedAt: 0, tokens: {}, health: null, message: "Instinct not yet initialized" });
     }
     res.json(instinctState);
+  });
+
+  // Grading department endpoint
+  app.get("/api/grades", (_req, res) => {
+    try {
+      const grader = new GradingDepartment();
+      const report = grader.generateReport();
+      res.json(report);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: msg });
+    }
   });
 
   // Instinct candles endpoint (reads JSONL candle files)

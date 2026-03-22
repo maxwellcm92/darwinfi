@@ -20,6 +20,7 @@ import {
 } from "../src/evolution/types";
 
 import { FILE_RINGS, FORBIDDEN_PATTERNS, VELOCITY_LIMITS, EVOLUTION_ZONES } from "../src/evolution/config";
+import { convertUnifiedToSearchReplace } from "../src/evolution/sandbox";
 
 describe("Evolution Engine Smoke Tests", function () {
   // ------------------------------------------------------------------
@@ -240,5 +241,24 @@ describe("Evolution Engine Smoke Tests", function () {
       ];
       expect(validStatuses).to.have.length(9);
     });
+  });
+});
+
+// ------------------------------------------------------------------
+// Evolution Diff Converter (smoke)
+// ------------------------------------------------------------------
+
+describe("Evolution Diff Converter (smoke)", function () {
+  it("should convert basic unified diff", function () {
+    const diff = `--- a/file.ts\n+++ b/file.ts\n@@ -1,3 +1,3 @@\n const x = 1;\n-const y = 2;\n+const y = 3;\n const z = 4;`;
+    const result = convertUnifiedToSearchReplace(diff, {});
+    expect(result).to.not.be.null;
+    expect(result).to.include("<<<<<<< SEARCH");
+    expect(result).to.include(">>>>>>> REPLACE");
+  });
+
+  it("should return null for non-diff input", function () {
+    const result = convertUnifiedToSearchReplace("not a diff", {});
+    expect(result).to.be.null;
   });
 });

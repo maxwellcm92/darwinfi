@@ -23,7 +23,7 @@ const features = [
     title: "Tournament",
     subtitle: "Strategy Leaderboard",
     description:
-      "Watch 12+ strategies compete in real time. Ranked by composite fitness score across PnL, Sharpe ratio, win rate, consistency, and drawdown.",
+      "Watch 16 strategies compete in real time. Ranked by composite fitness score across PnL, Sharpe ratio, win rate, consistency, and drawdown.",
     capabilities: [
       "Live composite score rankings",
       "Strategy PnL + Sharpe ratio per strategy",
@@ -130,7 +130,7 @@ export default function ProductPage() {
             DApp Features
           </h2>
           <p className="text-darwin-text-dim text-center max-w-lg mx-auto mb-12">
-            Six pages, each exposing a different layer of the living organism.
+            Each page exposes a different layer of the living organism.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -141,8 +141,8 @@ export default function ProductPage() {
                   <div
                     className={`w-full h-40 rounded-lg mb-4 bg-gradient-to-br ${f.gradient} border border-darwin-border/30 flex items-center justify-center`}
                   >
-                    <span className="text-darwin-text-dim text-base font-mono">
-                      Screenshot pending
+                    <span className="text-darwin-text-dim text-base font-mono opacity-60">
+                      Live on DApp
                     </span>
                   </div>
 
@@ -192,7 +192,7 @@ export default function ProductPage() {
                 0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7
               </p>
               <p className="text-base text-darwin-text-dim mb-2">
-                48h timelock on agent/feeRecipient changes, 80% max borrow ratio, 12-decimal shares (6 USDC + 6 offset), 7-day borrow timeout with bad debt write-off. 488+ passing tests.
+                48h timelock on agent/feeRecipient changes, 80% max borrow ratio, 12-decimal shares (6 USDC + 6 offset), 7-day borrow timeout with bad debt write-off. 423+ passing tests.
               </p>
               <div className="flex gap-3">
                 <a
@@ -253,7 +253,7 @@ export default function ProductPage() {
             Tech Stack
           </h2>
           <p className="text-darwin-text-dim text-center max-w-lg mx-auto mb-12">
-            106 source files across 5 layers.
+            111 source files across 5 layers.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">

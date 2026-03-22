@@ -7,7 +7,7 @@ import { FAQ } from "./pages/FAQ";
 
 export function App() {
   return (
-    <div className="min-h-screen flex flex-col scanline-overlay">
+    <div className="min-h-screen flex flex-col scanline-overlay overflow-x-hidden">
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1 w-full">
         <Routes>

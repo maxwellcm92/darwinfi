@@ -156,52 +156,52 @@ export function Home() {
   if (!isConnected) {
     return (
       <div className="space-y-8">
-        <ShaderHero>
-          <div className="text-center px-6 max-w-4xl">
-            {/* Logo */}
-            <div className="mb-6">
-              <img
-                src="/darwinfi/darwinfi-logo-bg.png"
-                alt="DarwinFi"
-                className="w-auto h-20 mx-auto rounded-2xl opacity-95 shadow-lg shadow-darwin-accent/30"
-              />
+        {/* Full-bleed hero: break out of main's max-w-7xl constraint */}
+        <div className="w-screen relative left-1/2 -translate-x-1/2 -mt-12">
+          <ShaderHero>
+            <div className="text-center px-6 max-w-4xl">
+              {/* Logo */}
+              <div className="mb-6">
+                <img
+                  src="/darwinfi/darwinfi-logo-bg.png"
+                  alt="DarwinFi"
+                  className="w-auto h-20 mx-auto rounded-2xl opacity-95 shadow-lg shadow-darwin-accent/30"
+                />
+              </div>
+
+              {/* Live badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-darwin-accent/20 bg-darwin-accent/5 mb-8">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-darwin-accent opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-darwin-accent" />
+                </span>
+                <span className="text-xs font-mono font-medium text-darwin-accent tracking-wider uppercase">
+                  Live on Base L2
+                </span>
+              </div>
+
+              {/* Headline */}
+              <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-darwin-text-bright mb-6 leading-[1.05] tracking-tight">
+                Your Yield,{" "}
+                <span className="text-darwin-accent text-glow-accent">Evolved.</span>
+              </h1>
+
+              {/* Sub-text */}
+              <p className="font-sans text-lg md:text-xl text-darwin-text max-w-2xl mx-auto mb-10 leading-relaxed">
+                16 strategies compete. AI mutates the winners. You collect the yield.
+              </p>
+
+              {/* Connect CTA */}
+              <button
+                onClick={openConnectModal}
+                className="hero-connect-btn group relative overflow-hidden"
+              >
+                <span className="relative z-10">Connect Wallet</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+              </button>
             </div>
-
-            {/* Live badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-darwin-accent/20 bg-darwin-accent/5 mb-8">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-darwin-accent opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-darwin-accent" />
-              </span>
-              <span className="text-xs font-mono font-medium text-darwin-accent tracking-wider uppercase">
-                Live on Base L2
-              </span>
-            </div>
-
-            {/* Headline */}
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-darwin-text-bright mb-6 leading-[1.05] tracking-tight">
-              Your Yield,{" "}
-              <span className="text-darwin-accent text-glow-accent">Evolved.</span>
-            </h1>
-
-            {/* Sub-text */}
-            <p className="font-sans text-lg md:text-xl text-darwin-text max-w-2xl mx-auto mb-10 leading-relaxed">
-              16 strategies compete. AI mutates the winners. You collect the yield.
-            </p>
-
-            {/* Connect CTA */}
-            <button
-              onClick={openConnectModal}
-              className="group relative overflow-hidden px-10 py-4 rounded-xl font-mono text-base font-bold uppercase tracking-wider transition-all duration-200
-                bg-darwin-accent text-darwin-bg glow-accent
-                hover:scale-[1.03] hover:shadow-[0_0_24px_rgba(255,176,32,0.35)]
-                active:scale-[0.97]"
-            >
-              <span className="relative z-10">Connect Wallet</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-            </button>
-          </div>
-        </ShaderHero>
+          </ShaderHero>
+        </div>
 
         <PerformanceBar />
         <AnimatedSection><StepExplainer /></AnimatedSection>
@@ -270,40 +270,43 @@ export function Home() {
   // STATE 3: Connected, no position
   return (
     <div className="space-y-8">
-      <ShaderHero>
-        <div className="text-center px-6 max-w-4xl">
-          {/* Logo */}
-          <div className="mb-6">
-            <img
-              src="/darwinfi/darwinfi-logo-bg.png"
-              alt="DarwinFi"
-              className="w-auto h-20 mx-auto rounded-2xl opacity-95 shadow-lg shadow-darwin-accent/30"
-            />
+      {/* Full-bleed hero */}
+      <div className="w-screen relative left-1/2 -translate-x-1/2 -mt-12">
+        <ShaderHero>
+          <div className="text-center px-6 max-w-4xl">
+            {/* Logo */}
+            <div className="mb-6">
+              <img
+                src="/darwinfi/darwinfi-logo-bg.png"
+                alt="DarwinFi"
+                className="w-auto h-20 mx-auto rounded-2xl opacity-95 shadow-lg shadow-darwin-accent/30"
+              />
+            </div>
+
+            {/* Live badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-darwin-accent/20 bg-darwin-accent/5 mb-8">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-darwin-accent opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-darwin-accent" />
+              </span>
+              <span className="text-xs font-mono font-medium text-darwin-accent tracking-wider uppercase">
+                Live on Base L2
+              </span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-darwin-text-bright mb-6 leading-[1.05] tracking-tight">
+              Your Yield,{" "}
+              <span className="text-darwin-accent text-glow-accent">Evolved.</span>
+            </h1>
+
+            {/* Sub-text */}
+            <p className="font-sans text-lg md:text-xl text-darwin-text max-w-2xl mx-auto mb-6 leading-relaxed">
+              Your USDC earns yield from AI-managed trading. Deposit to get started.
+            </p>
           </div>
-
-          {/* Live badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-darwin-accent/20 bg-darwin-accent/5 mb-8">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-darwin-accent opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-darwin-accent" />
-            </span>
-            <span className="text-xs font-mono font-medium text-darwin-accent tracking-wider uppercase">
-              Live on Base L2
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-darwin-text-bright mb-6 leading-[1.05] tracking-tight">
-            Your Yield,{" "}
-            <span className="text-darwin-accent text-glow-accent">Evolved.</span>
-          </h1>
-
-          {/* Sub-text */}
-          <p className="font-sans text-lg md:text-xl text-darwin-text max-w-2xl mx-auto mb-6 leading-relaxed">
-            Your USDC earns yield from AI-managed trading. Deposit to get started.
-          </p>
-        </div>
-      </ShaderHero>
+        </ShaderHero>
+      </div>
 
       {/* DepositCard overlapping hero */}
       <div className="max-w-md mx-auto -mt-8 relative z-20">

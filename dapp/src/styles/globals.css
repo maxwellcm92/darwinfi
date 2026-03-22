@@ -200,6 +200,11 @@ input[type="number"] {
   box-shadow: 0 0 12px rgba(0, 240, 192, 0.2), 0 0 4px rgba(0, 240, 192, 0.1);
 }
 
+/* Nav pill hover glow */
+nav a:hover {
+  box-shadow: 0 0 20px rgba(255, 176, 32, 0.3);
+}
+
 /* Button shine hover effect */
 .btn-shine {
   position: relative;
@@ -229,11 +234,33 @@ input[type="number"] {
   animation: fade-in 0.2s ease-out;
 }
 
-/* Connect button hover polish */
+/* Hero Connect Wallet button -- matches RainbowKit navbar button size */
+.hero-connect-btn {
+  padding: 10px 14px !important;
+  border-radius: 12px;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--color-darwin-accent);
+  color: var(--color-darwin-bg);
+  box-shadow: 0 0 20px rgba(0, 240, 192, 0.15), 0 0 60px rgba(0, 240, 192, 0.05);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  cursor: pointer;
+  border: none;
+}
+.hero-connect-btn:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 32px rgba(255, 176, 32, 0.5);
+}
+.hero-connect-btn:active {
+  transform: scale(0.97);
+}
+
+/* RainbowKit Connect button hover polish */
 button[data-testid="rk-connect-button"] {
   transition: transform 200ms ease, box-shadow 200ms ease;
 }
 button[data-testid="rk-connect-button"]:hover {
   transform: scale(1.03);
-  box-shadow: 0 0 20px rgba(255, 176, 32, 0.3);
+  box-shadow: 0 0 32px rgba(255, 176, 32, 0.5);
 }

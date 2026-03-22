@@ -1,0 +1,22 @@
+{
+  "name": "DarwinFi",
+  "short_name": "DarwinFi",
+  "description": "Autonomous DeFi Vault on Base L2",
+  "start_url": "/darwinfi/",
+  "scope": "/darwinfi/",
+  "display": "standalone",
+  "background_color": "#0B0B1A",
+  "theme_color": "#00F0C0",
+  "icons": [
+    {
+      "src": "/darwinfi/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/darwinfi/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

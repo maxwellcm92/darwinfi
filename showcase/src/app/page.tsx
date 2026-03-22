@@ -49,9 +49,9 @@ export default function HomePage() {
           {/* Logo */}
           <div className="mb-6">
             <img
-              src="/darwinfi-logo.png"
+              src="/darwinfi-logo-bg-hero.webp"
               alt="DarwinFi"
-              className="w-auto h-24 mx-auto rounded-2xl opacity-95 shadow-lg shadow-darwin-accent/30"
+              className="w-auto h-32 mx-auto rounded-2xl opacity-95 shadow-lg shadow-darwin-accent/30"
             />
           </div>
 

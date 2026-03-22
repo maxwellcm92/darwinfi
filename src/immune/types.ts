@@ -75,6 +75,7 @@ export interface ImmuneHealthSummary {
   activeAlerts: number;
   fixesLast24h: number;
   lastTestRun?: TestRunSummary;
+  divisionScores?: Record<string, number>;
 }
 
 export interface DivisionStatus {

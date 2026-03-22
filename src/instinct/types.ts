@@ -193,6 +193,11 @@ export interface InstinctState {
   generatedAt: number;                // Unix ms
   tokens: Record<string, TokenInstinct>;
   health: InstinctHealth;
+  accuracy?: {
+    overall: number;                  // 0-1
+    totalPredictions: number;
+    perResolution: Record<string, { accuracy: number; predictions: number }>;
+  };
 }
 
 // -------------------------------------------------------------------
@@ -277,6 +282,27 @@ export interface InstinctConfig {
     statePath: string;
   };
   evolution: AdaptiveConfig;
+}
+
+// -------------------------------------------------------------------
+// Grading Report (for GradingDepartment consumption)
+// -------------------------------------------------------------------
+
+export interface InstinctGradingReport {
+  overallAccuracy: number;            // 0-1 rolling accuracy
+  totalPredictions: number;           // total graded predictions
+  perToken: Record<string, {
+    accuracy: number;
+    predictions: number;
+  }>;
+  perResolution: Record<string, {
+    accuracy: number;
+    predictions: number;
+  }>;
+  activeSources: number;
+  activeStrategies: number;
+  uptimeMs: number;
+  generatedAt: number;                // Unix ms
 }
 
 // -------------------------------------------------------------------

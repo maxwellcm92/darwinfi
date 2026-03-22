@@ -35,7 +35,7 @@ import { StateWriter } from './nerves/state-writer';
 import { PatternDetector } from './marrow/pattern-detector';
 import { WorkflowGenerator } from './marrow/workflow-generator';
 import { BacktestRunner } from './backtest/backtest-runner';
-import { AdaptiveConfig, DEFAULT_ADAPTIVE_CONFIG } from './types';
+import { AdaptiveConfig, DEFAULT_ADAPTIVE_CONFIG, InstinctGradingReport } from './types';
 import { ALL_TOKENS } from './data/pool-registry';
 
 // -------------------------------------------------------------------
@@ -306,7 +306,7 @@ class InstinctAgent {
     }
   }
 
-  private computeRollingAccuracy(): number {
+  public computeRollingAccuracy(): number {
     // Check predictions from last hour across all tokens and resolutions
     let correct = 0;
     let total = 0;
@@ -384,6 +384,66 @@ class InstinctAgent {
     console.log(`  Rolling accuracy: ${(accuracy * 100).toFixed(1)}%`);
     console.log(`  Next evolution: ${(this.config.evolution.currentIntervalMs / 3_600_000).toFixed(1)}h interval`);
     console.log(`${'='.repeat(50)}\n`);
+  }
+
+  /**
+   * Generate a grading report for the GradingDepartment.
+   * Exposes accuracy metrics, per-token and per-resolution breakdowns.
+   */
+  getGradingReport(): InstinctGradingReport {
+    let totalCorrect = 0;
+    let totalGraded = 0;
+    const perToken: Record<string, { correct: number; total: number }> = {};
+    const perResolution: Record<string, { correct: number; total: number }> = {};
+
+    for (const token of this.config.tokens) {
+      if (!perToken[token]) perToken[token] = { correct: 0, total: 0 };
+
+      for (const res of ['5m', '15m', '1h'] as const) {
+        if (!perResolution[res]) perResolution[res] = { correct: 0, total: 0 };
+
+        const predictions = this.predictionEngine.getRecentPredictions(token, res, 50);
+        for (const p of predictions) {
+          if (p.actual) {
+            totalGraded++;
+            perToken[token].total++;
+            perResolution[res].total++;
+            if (p.actual.directionCorrect) {
+              totalCorrect++;
+              perToken[token].correct++;
+              perResolution[res].correct++;
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      overallAccuracy: totalGraded > 0 ? totalCorrect / totalGraded : 0.5,
+      totalPredictions: totalGraded,
+      perToken: Object.fromEntries(
+        Object.entries(perToken).map(([token, stats]) => [
+          token,
+          {
+            accuracy: stats.total > 0 ? stats.correct / stats.total : 0.5,
+            predictions: stats.total,
+          },
+        ]),
+      ),
+      perResolution: Object.fromEntries(
+        Object.entries(perResolution).map(([res, stats]) => [
+          res,
+          {
+            accuracy: stats.total > 0 ? stats.correct / stats.total : 0.5,
+            predictions: stats.total,
+          },
+        ]),
+      ),
+      activeSources: this.sourceManager.getActiveSources().length,
+      activeStrategies: this.predictionEngine.getActiveStrategies().length,
+      uptimeMs: Date.now() - this.startTime,
+      generatedAt: Date.now(),
+    };
   }
 }
 

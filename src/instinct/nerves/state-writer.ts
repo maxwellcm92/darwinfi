@@ -147,6 +147,9 @@ export class StateWriter {
     const activeStrategies = this.predictionEngine.getActiveStrategies();
     const avgConfidence = this.computeOverallConfidence(tokens);
 
+    // Compute accuracy metrics for grading department consumption
+    const accuracyData = this.computeAccuracyMetrics();
+
     return {
       generatedAt: Date.now(),
       tokens,
@@ -157,6 +160,7 @@ export class StateWriter {
         lastUpdateAt: Date.now(),
         uptimeMs: Date.now() - this.startTime,
       },
+      accuracy: accuracyData,
     };
   }
 
@@ -208,5 +212,43 @@ export class StateWriter {
     }
     if (confidences.length === 0) return 0;
     return Math.round(confidences.reduce((s, c) => s + c, 0) / confidences.length);
+  }
+
+  private computeAccuracyMetrics(): { overall: number; totalPredictions: number; perResolution: Record<string, { accuracy: number; predictions: number }> } {
+    let totalCorrect = 0;
+    let totalGraded = 0;
+    const perResolution: Record<string, { correct: number; total: number }> = {};
+
+    const resolutions: Resolution[] = ['5m', '15m', '1h'];
+    for (const token of ALL_TOKENS) {
+      for (const res of resolutions) {
+        if (!perResolution[res]) perResolution[res] = { correct: 0, total: 0 };
+        const predictions = this.predictionEngine.getRecentPredictions(token, res, 20);
+        for (const p of predictions) {
+          if (p.actual) {
+            totalGraded++;
+            perResolution[res].total++;
+            if (p.actual.directionCorrect) {
+              totalCorrect++;
+              perResolution[res].correct++;
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      overall: totalGraded > 0 ? totalCorrect / totalGraded : 0.5,
+      totalPredictions: totalGraded,
+      perResolution: Object.fromEntries(
+        Object.entries(perResolution).map(([res, stats]) => [
+          res,
+          {
+            accuracy: stats.total > 0 ? stats.correct / stats.total : 0.5,
+            predictions: stats.total,
+          },
+        ]),
+      ),
+    };
   }
 }

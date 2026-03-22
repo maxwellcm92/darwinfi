@@ -38,6 +38,7 @@ import { FilecoinStore } from '../integrations/filecoin';
 import { Championship } from './championship';
 import { InstinctState } from '../instinct/types';
 import { StateWriter } from '../instinct/nerves/state-writer';
+import { GradingDepartment } from './grading-department';
 
 // ---------------------------------------------------------------------------
 // Strategy ID -> uint256 mapping for on-chain logging
@@ -116,6 +117,7 @@ export class DarwinAgent {
   private contractClient: ContractClient | null = null;
   private filecoinStore: FilecoinStore | null = null;
   private championship: Championship;
+  private gradingDepartment: GradingDepartment;
 
   private priceHistory: Map<string, Array<{price: number, timestamp: number}>> = new Map();
   private running: boolean = false;
@@ -129,6 +131,8 @@ export class DarwinAgent {
   private attributionEngine: AttributionEngine;
   private dexScreenerCache: Map<string, { volume24h: number; priceChange24h: number; timestamp: number }> = new Map();
   private readonly DEXSCREENER_CACHE_TTL = 60_000; // 60s cache
+  private lastGradingTime: Date = new Date(0); // Force grading on first eligible tick
+  private readonly GRADING_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 
   constructor(config: AgentConfig) {
     this.config = config;
@@ -159,6 +163,9 @@ export class DarwinAgent {
 
     // Championship (cross-team competition -- Team 4 added when frontier agent runs)
     this.championship = new Championship(this.performanceTracker, this.strategyManager);
+
+    // Grading department (system-wide grade report for evolution feedback)
+    this.gradingDepartment = new GradingDepartment();
 
     // On-chain logging (optional -- only if contract deployed)
     if (process.env.PERFORMANCE_LOG_ADDRESS) {
@@ -366,6 +373,9 @@ export class DarwinAgent {
         this.conversationLog.error('agent', `Signal tick error: ${msg}`);
       }
     }
+
+    // === GRADING TICK (every ~30min): System-wide grade report ===
+    this.runGradingCycle();
 
     // === EVOLUTION TICK (every ~4h): Venice API evolution cycle ===
     await this.checkEvolutionTrigger();
@@ -1173,6 +1183,32 @@ export class DarwinAgent {
       }
     } catch {
       // Non-critical: don't let on-chain logging failure affect operations
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Grading Department
+  // -------------------------------------------------------------------------
+
+  /**
+   * Run the grading department and log results.
+   * Called every 30 minutes to keep grades fresh for evolution context.
+   */
+  private runGradingCycle(): void {
+    const now = new Date();
+    const msSinceLastGrading = now.getTime() - this.lastGradingTime.getTime();
+    if (msSinceLastGrading < this.GRADING_INTERVAL_MS) return;
+
+    try {
+      const report = this.gradingDepartment.generateReport();
+      this.lastGradingTime = now;
+      this.conversationLog.system(
+        'grading',
+        `System Grade: ${report.overallLetter} (${report.overallScore}/100, GPA: ${report.overallGPA.toFixed(1)}) | ` +
+        report.departments.map(d => `${d.name}:${d.letter}`).join(' '),
+      );
+    } catch (err) {
+      console.warn('[DarwinFi] Grading cycle error:', err instanceof Error ? err.message : err);
     }
   }
 

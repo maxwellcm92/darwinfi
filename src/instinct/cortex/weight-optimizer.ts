@@ -47,6 +47,7 @@ export class WeightOptimizer {
   optimizeSourceWeights(
     sources: SourceConfig[],
     actualPerformanceRanking: string[], // Source IDs in order of actual performance
+    rankingMethod: string = 'prediction-accuracy-ranked',
   ): ScoringWeights {
     const currentWeights = this.scorer.getSourceWeights();
     if (sources.length < 2 || actualPerformanceRanking.length < 2) return currentWeights;
@@ -79,7 +80,7 @@ export class WeightOptimizer {
       newWeights: blended,
       optimalWeights: optimal,
       blendFactor: BLEND_FACTOR,
-      reason: `24h optimization: ${actualPerformanceRanking.length} sources ranked`,
+      reason: `24h optimization: ${actualPerformanceRanking.length} sources ${rankingMethod}`,
     });
 
     this.scorer.setSourceWeights(blended);
@@ -94,6 +95,7 @@ export class WeightOptimizer {
   optimizePredictionWeights(
     strategies: PredictionStrategyConfig[],
     actualPerformanceRanking: string[],
+    rankingMethod: string = 'accuracy-ranked',
   ): PredictionWeights {
     const currentWeights = this.scorer.getPredictionWeights();
     if (strategies.length < 2 || actualPerformanceRanking.length < 2) return currentWeights;
@@ -121,7 +123,7 @@ export class WeightOptimizer {
       newWeights: blended,
       optimalWeights: optimal,
       blendFactor: BLEND_FACTOR,
-      reason: `24h optimization: ${actualPerformanceRanking.length} strategies ranked`,
+      reason: `24h optimization: ${actualPerformanceRanking.length} strategies ${rankingMethod}`,
     });
 
     this.scorer.setPredictionWeights(blended);

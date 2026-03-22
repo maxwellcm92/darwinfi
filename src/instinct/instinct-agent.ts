@@ -22,6 +22,9 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
+import * as fs from 'fs';
+import * as path from 'path';
+
 import { CandleStore } from './data/candle-store';
 import { EventStore } from './data/event-store';
 import { SourceManager } from './senses/source-manager';
@@ -35,7 +38,7 @@ import { StateWriter } from './nerves/state-writer';
 import { PatternDetector } from './marrow/pattern-detector';
 import { WorkflowGenerator } from './marrow/workflow-generator';
 import { BacktestRunner } from './backtest/backtest-runner';
-import { AdaptiveConfig, DEFAULT_ADAPTIVE_CONFIG, InstinctGradingReport } from './types';
+import { AdaptiveConfig, DEFAULT_ADAPTIVE_CONFIG, InstinctGradingReport, Prediction, SourceConfig } from './types';
 import { ALL_TOKENS } from './data/pool-registry';
 
 // -------------------------------------------------------------------
@@ -327,21 +330,126 @@ class InstinctAgent {
   }
 
   // -------------------------------------------------------------------
+  // P&L Data Helpers (for Cortex optimization)
+  // -------------------------------------------------------------------
+
+  private readAgentPerformance(): Record<string, { totalPnL: number; rolling24hPnL: number; tradeHistory: any[] }> {
+    try {
+      const statePath = path.join(process.cwd(), 'data', 'agent-state.json');
+      if (!fs.existsSync(statePath)) return {};
+      const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+      const perf = state.performance || {};
+      const result: Record<string, { totalPnL: number; rolling24hPnL: number; tradeHistory: any[] }> = {};
+      for (const [strategyId, entry] of Object.entries(perf)) {
+        const e = entry as any;
+        result[strategyId] = {
+          totalPnL: e.totalPnL || 0,
+          rolling24hPnL: e.rolling24hPnL || 0,
+          tradeHistory: e.tradeHistory || [],
+        };
+      }
+      return result;
+    } catch (err) {
+      console.error('[Instinct] Failed to read agent performance:', (err as Error).message);
+      return {};
+    }
+  }
+
+  private buildPnlStrategyRanking(
+    agentPerf: Record<string, { totalPnL: number; rolling24hPnL: number; tradeHistory: any[] }>,
+  ): string[] {
+    const entries = Object.entries(agentPerf);
+    if (entries.length === 0) return [];
+    return entries
+      .sort(([, a], [, b]) => b.totalPnL - a.totalPnL)
+      .map(([id]) => id);
+  }
+
+  private buildPnlSourceRanking(
+    sources: SourceConfig[],
+    agentPerf: Record<string, { totalPnL: number; rolling24hPnL: number; tradeHistory: any[] }>,
+  ): string[] {
+    if (sources.length === 0 || Object.keys(agentPerf).length === 0) return [];
+
+    // Get recent predictions to map strategies -> events -> sources
+    const recentPredictions: Prediction[] = [];
+    for (const token of this.config.tokens) {
+      for (const res of ['1m', '5m', '15m', '1h'] as const) {
+        recentPredictions.push(...this.predictionEngine.getRecentPredictions(token, res, 50));
+      }
+    }
+
+    // Build source -> aggregate P&L attribution
+    const sourcePnl: Record<string, number> = {};
+    for (const source of sources) {
+      sourcePnl[source.id] = 0;
+    }
+
+    for (const pred of recentPredictions) {
+      const stratPerf = agentPerf[pred.strategyId];
+      if (!stratPerf) continue;
+
+      // Find which sources contributed events to this prediction
+      const contributingSources = new Set<string>();
+      for (const eventId of pred.eventIds) {
+        const event = this.eventStore.getEventById(eventId);
+        if (event) contributingSources.add(event.sourceId);
+      }
+
+      if (contributingSources.size === 0) continue;
+
+      // Attribute strategy P&L equally across contributing sources
+      const pnlShare = stratPerf.totalPnL / contributingSources.size;
+      for (const sourceId of contributingSources) {
+        if (sourcePnl[sourceId] !== undefined) {
+          sourcePnl[sourceId] += pnlShare;
+        }
+      }
+    }
+
+    return Object.entries(sourcePnl)
+      .sort(([, a], [, b]) => b - a)
+      .map(([id]) => id);
+  }
+
+  // -------------------------------------------------------------------
   // Cortex: Weight Optimization (24h cycle)
   // -------------------------------------------------------------------
 
   private runCortexOptimization(): void {
     console.log('[Instinct] Cortex: Running 24h weight optimization...');
 
-    // Rank sources by actual predictive value
     const sources = this.sourceManager.getAllSources();
-    const sourceRanking = sources
-      .sort((a, b) => b.fitness.predictiveScore - a.fitness.predictiveScore)
-      .map(s => s.id);
+    const strategies = this.predictionEngine.getAllStrategies();
+
+    // Read trade P&L data from agent-state.json
+    const agentPerf = this.readAgentPerformance();
+    const hasPnlData = Object.values(agentPerf).some(p => p.totalPnL !== 0 || p.tradeHistory.length > 0);
+
+    // Rank sources: prefer P&L attribution, fall back to predictive score
+    let sourceRanking: string[];
+    let sourceRankingMethod: string;
+    if (hasPnlData) {
+      const pnlRanking = this.buildPnlSourceRanking(sources, agentPerf);
+      if (pnlRanking.length >= 2) {
+        sourceRanking = pnlRanking;
+        sourceRankingMethod = 'P&L-ranked';
+      } else {
+        sourceRanking = sources
+          .sort((a, b) => b.fitness.predictiveScore - a.fitness.predictiveScore)
+          .map(s => s.id);
+        sourceRankingMethod = 'prediction-accuracy-ranked (P&L data insufficient)';
+      }
+    } else {
+      sourceRanking = sources
+        .sort((a, b) => b.fitness.predictiveScore - a.fitness.predictiveScore)
+        .map(s => s.id);
+      sourceRankingMethod = 'prediction-accuracy-ranked (cold start)';
+    }
 
     if (sourceRanking.length >= 2) {
       const oldWeights = this.scorer.getSourceWeights();
-      this.weightOptimizer.optimizeSourceWeights(sources, sourceRanking);
+      this.weightOptimizer.optimizeSourceWeights(sources, sourceRanking, sourceRankingMethod);
       const newWeights = this.scorer.getSourceWeights();
       const shift = this.weightOptimizer.computeWeightShift(
         oldWeights as unknown as Record<string, number>,
@@ -354,17 +462,32 @@ class InstinctAgent {
       }
     }
 
-    // Rank strategies by actual performance
-    const strategies = this.predictionEngine.getAllStrategies();
-    const strategyRanking = strategies
-      .sort((a, b) => b.fitness.directionAccuracy - a.fitness.directionAccuracy)
-      .map(s => s.id);
-
-    if (strategyRanking.length >= 2) {
-      this.weightOptimizer.optimizePredictionWeights(strategies, strategyRanking);
+    // Rank strategies: prefer P&L, fall back to direction accuracy
+    let strategyRanking: string[];
+    let strategyRankingMethod: string;
+    if (hasPnlData) {
+      const pnlRanking = this.buildPnlStrategyRanking(agentPerf);
+      if (pnlRanking.length >= 2) {
+        strategyRanking = pnlRanking;
+        strategyRankingMethod = 'P&L-ranked';
+      } else {
+        strategyRanking = strategies
+          .sort((a, b) => b.fitness.directionAccuracy - a.fitness.directionAccuracy)
+          .map(s => s.id);
+        strategyRankingMethod = 'accuracy-ranked (P&L data insufficient)';
+      }
+    } else {
+      strategyRanking = strategies
+        .sort((a, b) => b.fitness.directionAccuracy - a.fitness.directionAccuracy)
+        .map(s => s.id);
+      strategyRankingMethod = 'accuracy-ranked (cold start)';
     }
 
-    console.log('[Instinct] Cortex optimization complete');
+    if (strategyRanking.length >= 2) {
+      this.weightOptimizer.optimizePredictionWeights(strategies, strategyRanking, strategyRankingMethod);
+    }
+
+    console.log(`[Instinct] Cortex optimization complete (sources: ${sourceRankingMethod}, strategies: ${strategyRankingMethod})`);
   }
 
   // -------------------------------------------------------------------

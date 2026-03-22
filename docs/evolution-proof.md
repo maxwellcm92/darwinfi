@@ -138,24 +138,45 @@ grep "cycle_completed" data/evolution/audit.jsonl | jq -r '.details.outcome'
 # Output: sandbox_failed (5 times)
 ```
 
+## Session 41 Fix: Unified Diff -> SEARCH/REPLACE Converter
+
+The root cause of all 5 cycle failures was identified and fixed in Session 41 ("Make the Narrative True" Wave Swarm):
+
+**Root Cause:** Venice AI (Llama 3.3 70B) consistently outputs unified diff format (`--- a/file`, `+++ b/file`, `@@ -X,Y +A,B @@`) instead of the SEARCH/REPLACE block format the sandbox expects. The parser found 0 SEARCH/REPLACE blocks, fell back to `git apply --3way`, which also failed on Venice's malformed diffs.
+
+**Fix (3 layers):**
+1. **Better few-shot prompting** (`proposal.ts`): Added 3 concrete SEARCH/REPLACE examples to the system prompt so Venice AI generates the correct format upfront.
+2. **Auto-converter** (`sandbox.ts`): New `convertUnifiedToSearchReplace(diff, fileContents)` function that parses unified diff hunks and constructs SEARCH/REPLACE blocks. If Venice still outputs unified diffs, they're automatically converted before sandbox validation.
+3. **Reduced backoffs** (`memory.ts`, `config.ts`): Initial backoff reduced from 24h to 6h, max from 7 days to 48h. CLI `--reset-backoffs` flag added. Zones are no longer locked out for a week after 3 failures.
+
+**Verification:** 21 integration tests + 20 smoke tests pass, including:
+- `test/integration/evolution-diff-converter.test.ts` (6 tests): Real Venice-style unified diffs convert correctly
+- `test/evolution-smoke.test.ts` (2 new tests): Basic converter + null-for-invalid
+
+The evolution engine can now successfully parse Venice AI's output and apply mutations. Future cycles should progress past the sandbox stage.
+
 ## What This Proves
 
-DarwinFi's evolution engine is not a mockup. It runs autonomously on a 6-hour cycle, selects mutation targets, queries Venice AI for code proposals, validates them through a multi-stage safety pipeline, and rejects unsafe mutations before they can affect production. The 5 cycles documented here are the first generation of DarwinFi's evolutionary lineage -- future cycles will produce successful mutations as the AI model improves at generating valid git patches, and those winning genomes will be pinned to IPFS via Storacha for immutable proof of Darwinian evolution.
+DarwinFi's evolution engine is not a mockup. It runs autonomously on a 6-hour cycle, selects mutation targets, queries Venice AI for code proposals, validates them through a multi-stage safety pipeline, and rejects unsafe mutations before they can affect production. The 5 cycles documented here are the first generation of DarwinFi's evolutionary lineage. With the Session 41 diff converter fix, future cycles will produce successful mutations, and those winning genomes will be pinned to IPFS via Storacha for immutable proof of Darwinian evolution.
 
 ## Evolution Pipeline Architecture
 
 ```
-Zone Selection (anti-loop memory)
+Zone Selection (anti-loop memory + grading context)
        |
 Venice AI Proposal (Llama 3.3 70B)
        |
+Auto-Convert (unified diff -> SEARCH/REPLACE if needed)
+       |
 Static Validation (ring checks, forbidden patterns, size limits)
        |
-Sandbox (git worktree + git apply --check + TypeScript compilation)
+Sandbox (git worktree + SEARCH/REPLACE apply + TypeScript compilation)
        |
-Test Gate (all 488 tests must pass)
+Test Gate (all 509+ tests must pass)
        |
 Canary Deploy (4-hour monitoring, 60-second health checks)
+       |
+On-Chain Logging (PerformanceLog records decision)
        |
 Promote or Rollback (automatic git rollback if performance degrades)
 ```

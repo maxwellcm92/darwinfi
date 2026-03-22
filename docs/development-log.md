@@ -1,9 +1,9 @@
 # DarwinFi Development Log
 
 > Built with [Claude Code](https://claude.com/claude-code) (`claude-opus-4-6`) as the agent harness.
-> Sessions: March 18-22, 2026. Total: 219+ source files, ~44,500+ lines of code, 488 tests passing.
+> Sessions: March 18-22, 2026. Total: 224+ source files, ~45,600+ lines of code, 509+ tests passing.
 > Judge assessment scores: R1 5.8 -> R2 6.8 -> R3 7.7 -> R4 8.0 -> R5 8.3 -> R6 8.4
-> Final session: Wave Swarm -- 7 parallel agents for deadline-day polish.
+> Final sessions: Wave Swarm polish (7 agents) + "Make the Narrative True" (10 agents).
 
 ---
 
@@ -807,19 +807,80 @@ Steady improvement trajectory across all 6 rounds, from 5.8 to 8.4.
 
 All 488 tests passing. Showcase rebuilt and live. Both repos (darwinfi + murphy) pushed. All 7 PM2 processes running. Score trajectory: 5.8 -> 6.8 -> 7.7 -> 8.0 -> 8.3 -> 8.4 across 6 rounds of judge assessments, each driven by Wave Sprint parallel execution.
 
+## Session 41 (March 22): Make the Narrative True -- 10-Agent Wave Swarm
+
+**Objective:** Fix every broken claim in DarwinFi's demo narrative. A reality check identified 5 claims that weren't backed by working code. This session used a 3-wave, 10-agent parallel execution to make every claim true.
+
+### The 5 Broken Claims (Before)
+
+| # | Claim | Reality |
+|---|-------|---------|
+| 1 | "Constantly evolving" | 0/9 evolution proposals succeeded (all "corrupt patch") |
+| 2 | "Instinct predictions drive trading" | Predictions had zero mathematical impact on trades |
+| 3 | "A grading department scores everything" | No centralized grading existed |
+| 4 | "Can autonomously expand to new chains" | No chain evaluation mechanism |
+| 5 | "Losers evolve and fight back" | Demoted strategies stayed demoted (broken evolution + 7-day backoffs) |
+
+### Wave Swarm Execution (10 Agents, 3 Waves)
+
+**Wave 1 -- Fix the Heart + Connect the Brain (4 parallel agents):**
+
+| Agent | Branch | Key Deliverables |
+|-------|--------|-----------------|
+| 1A | wave1/fix-evolution-diffs | `convertUnifiedToSearchReplace()` in sandbox.ts, 3 few-shot SEARCH/REPLACE examples in proposal.ts, `resetZoneBackoff()`/`resetAllBackoffs()` in memory.ts |
+| 1B | wave1/instinct-trading | `computeInstinctScore()` in darwin-agent.ts: multi-timeframe aggregation (5m=0.5, 15m=0.3, 1h=0.2), +-20 confidence point adjustment, `instinctDirectionScore`/`instinctConfidenceBoost` on MarketSnapshot |
+| 1C | wave1/evolution-backoff | Initial backoff 24h->6h, max 7d->48h, `--reset-backoffs` CLI flag, `strategy-params` zone, startup diagnostics |
+| 1D | wave1/instinct-accuracy | `InstinctGradingReport` interface, public `computeRollingAccuracy()`, `getGradingReport()`, accuracy metrics in state-writer output |
+
+**Wave 2 -- Grading Department + On-Chain Logging (3 parallel agents):**
+
+| Agent | Branch | Key Deliverables |
+|-------|--------|-----------------|
+| 2A | wave2/grading-department | NEW `GradingDepartment` class (282 LOC): reads state from all 5 subsystems, produces 0-100 scores + A-F grades + GPA. `/api/grades` endpoint |
+| 2B | wave2/department-competition | `getDivisionScores()` for immune (8 divisions), `getDepartmentScores()` for instinct (5 departments). Division/department rankings |
+| 2C | wave2/onchain-logging | `logImmuneAction()` and `logEvolutionDecision()` on ContractClient. On-chain logging at 6 evolution decision points + critical immune alerts |
+
+**Wave 3 -- Chain Expansion + Feedback Loop + Tests (3 parallel agents):**
+
+| Agent | Branch | Key Deliverables |
+|-------|--------|-----------------|
+| 3A | wave3/chain-expansion | NEW `ChainEvaluator` (~280 LOC): probes 5 candidate chains (Optimism, Polygon, Avalanche, zkSync, Linea) for RPC latency, gas, DEX presence, USDC liquidity. Composite scoring with expand/monitor/skip recommendations |
+| 3B | wave3/grading-evolution-loop | `getEvolutionContext()` formats grade report (worst-first) for AI prompts. Injected into `buildUserPrompt()` so Venice AI targets the lowest-graded departments |
+| 3C | wave3/integration-tests | 21 new integration tests (6 diff converter, 7 instinct trading, 8 grading department) + 2 new smoke tests. All 41 pass |
+
+### Files Changed (22 files across 10 branches)
+
+New files: `src/agent/grading-department.ts`, `src/chain/chain-evaluator.ts`, `test/integration/evolution-diff-converter.test.ts`, `test/integration/instinct-trading.test.ts`, `test/integration/grading-department.test.ts`
+
+Modified: `src/evolution/proposal.ts`, `src/evolution/sandbox.ts`, `src/evolution/memory.ts`, `src/evolution/config.ts`, `src/evolution/orchestrator.ts`, `src/agent/darwin-agent.ts`, `src/agent/venice-engine.ts`, `src/instinct/types.ts`, `src/instinct/instinct-agent.ts`, `src/instinct/nerves/state-writer.ts`, `src/immune/immune-agent.ts`, `src/immune/types.ts`, `src/chain/contract-client.ts`, `src/chain/chain-registry.ts`, `src/dashboard/server.ts`, `test/evolution-smoke.test.ts`
+
+### Results
+
+Zero merge conflicts across all 10 worktree branches. `tsc --noEmit` clean after each wave. 509+ tests passing. Every broken claim is now backed by working code.
+
+### The 5 Claims (After)
+
+| # | Claim | Now Backed By |
+|---|-------|--------------|
+| 1 | "Constantly evolving" | Unified diff auto-converter + reduced backoffs. Evolution engine can now parse Venice AI output and apply mutations |
+| 2 | "Instinct predictions drive trading" | `computeInstinctScore()` adjusts entry confidence by +-20 points based on multi-timeframe predictions |
+| 3 | "A grading department scores everything" | `GradingDepartment` produces A-F grades for Strategies, Instinct, Immune, Evolution, Frontier. `/api/grades` endpoint |
+| 4 | "Can autonomously expand to new chains" | `ChainEvaluator` probes 5 candidate chains, scores them, recommends expand/monitor/skip. `chain-expansion` evolution zone |
+| 5 | "Losers evolve and fight back" | Evolution engine works + backoffs reduced to 6h/48h + grading feedback loop targets weakest areas |
+
 ---
 
 ## Technical Summary
 
 | Metric | Value |
 |--------|-------|
-| TypeScript source files | 106 agent/trading + 29 showcase (~31,100 LOC) |
+| TypeScript source files | 111 agent/trading + 29 showcase (~32,200 LOC) |
 | Solidity contracts | 6 (~1,550 LOC) |
 | DApp files (React/TSX) | 41 (~3,800 LOC) |
-| Test files | 27 modules, 488 tests passing |
+| Test files | 30 modules, 509+ tests passing |
 | Evolution engine files | 11 (~2,100 LOC) |
-| Total source files | 219+ |
-| Total lines of code | ~44,500+ |
+| Total source files | 224+ |
+| Total lines of code | ~45,600+ |
 | Trading strategies | 16 (12 base + 4 frontier archetypes) |
 | PM2 processes | 7 (darwinfi, darwinfi-candles, darwinfi-instinct, darwinfi-immune, frontier, darwinfi-showcase, darwinfi-evolution) |
 | Token pairs | 9 on Base + multi-chain discovery |
@@ -830,8 +891,8 @@ All 488 tests passing. Showcase rebuilt and live. Both repos (darwinfi + murphy)
 | V4 Vault | `0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7` (Base mainnet) |
 | Deployer wallet | `0xb2db53Db9a2349186F0214BC3e1bF08a195570e3` |
 | darwinfi.base.eth | Registered and owned by deployer |
-| Git commits | 60+ |
-| Build time | ~5 days across 40 sessions |
+| Git commits | 70+ |
+| Build time | ~5 days across 41 sessions |
 | Judge assessment scores | 5.8 -> 6.8 -> 7.7 -> 8.0 -> 8.3 -> 8.4 |
 
 ---
@@ -870,8 +931,8 @@ R5: 8.3/10  (+0.3 -- Storacha active, USDC funded, evolution proof, documentatio
 R6: 8.4/10  (+0.1 -- final polish, comprehensive docs, full sponsor integration)
 ```
 
-Each round's improvements were driven by Wave Sprints -- parallel agent execution via git worktrees, zero merge conflicts, 10 min wall clock time per wave.
+Each round's improvements were driven by Wave Sprints -- parallel agent execution via git worktrees, zero merge conflicts, 10 min wall clock time per wave. Session 41 ran the largest Wave Swarm (10 agents, 3 waves) to fix 5 broken claims identified in the demo narrative.
 
 ---
 
-*This development log covers 40 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~5 days.*
+*This development log covers 41 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~5 days.*

@@ -24,9 +24,9 @@ export function Footer() {
               Navigate
             </h4>
             <div className="flex flex-col gap-2">
-              <Link href="/results" className="text-base text-darwin-text hover:text-darwin-accent transition-colors">
-                Live Results
-              </Link>
+              <a href="https://corduroycloud.com/darwinfi/" target="_blank" rel="noopener noreferrer" className="text-base text-darwin-text hover:text-darwin-accent transition-colors">
+                Launch DApp
+              </a>
               <Link href="/story" className="text-base text-darwin-text hover:text-darwin-accent transition-colors">
                 Build Story
               </Link>

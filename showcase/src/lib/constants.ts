@@ -7,7 +7,6 @@ export const DEPLOYER_ADDRESS = "0xb2db53Db9a2349186F0214BC3e1bF08a195570e3";
 
 export const NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/results", label: "Live Results" },
   { href: "/story", label: "Build Story" },
   { href: "/product", label: "Product" },
 ] as const;

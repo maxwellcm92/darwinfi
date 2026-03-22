@@ -280,7 +280,7 @@ function OrganNode({
         y={organ.cy + organ.r + 18}
         textAnchor="middle"
         fill={active ? "#FFFFFF" : "#C8C8E0"}
-        fontSize="13"
+        fontSize="15"
         fontWeight="700"
         fontFamily="Inter, sans-serif"
         className="transition-all duration-300"
@@ -294,7 +294,7 @@ function OrganNode({
         y={organ.cy + organ.r + 33}
         textAnchor="middle"
         fill={active ? organ.color : "#6060A0"}
-        fontSize="10"
+        fontSize="12"
         fontFamily="JetBrains Mono, monospace"
         fontWeight="500"
         letterSpacing="0.08em"
@@ -404,15 +404,15 @@ export function OrganismDiagram() {
       >
         {activeOrgan ? (
           <>
-            <p className="section-header mb-1" style={{ color: activeOrgan.color }}>
+            <p className="text-sm font-bold uppercase tracking-wider mb-1" style={{ color: activeOrgan.color }}>
               {activeOrgan.role}
             </p>
-            <p className="text-base text-darwin-text leading-relaxed">
+            <p className="text-lg text-darwin-text leading-relaxed">
               {activeOrgan.description}
             </p>
           </>
         ) : (
-          <p className="text-base text-darwin-text-dim italic">
+          <p className="text-lg text-darwin-text italic">
             Hover or tap an organ to explore the anatomy
           </p>
         )}

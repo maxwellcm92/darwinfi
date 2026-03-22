@@ -82,21 +82,21 @@ export default function HomePage() {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/results"
-              className="group relative px-8 py-3.5 bg-darwin-accent text-darwin-bg font-semibold rounded-lg hover:bg-darwin-accent-dim transition-all glow-accent overflow-hidden"
-            >
-              <span className="relative z-10">See Live Results</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-            </Link>
             <a
               href={DAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
+              className="group relative px-8 py-3.5 bg-darwin-accent text-darwin-bg font-semibold rounded-lg hover:bg-darwin-accent-dim transition-all glow-accent overflow-hidden"
+            >
+              <span className="relative z-10">Launch DApp</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+            </a>
+            <Link
+              href="/story"
               className="px-8 py-3.5 border border-darwin-border text-darwin-text-bright rounded-lg hover:border-darwin-accent/50 hover:text-darwin-accent transition-colors"
             >
-              Launch DApp
-            </a>
+              Build Story
+            </Link>
           </div>
 
           {/* Vault address badge */}
@@ -776,13 +776,15 @@ export default function HomePage() {
               </button>
               {openSections["tests"] && (
                 <div className="mt-4 pt-4 border-t border-darwin-border/30 text-base text-darwin-text leading-relaxed space-y-4">
-                  <p>Every critical path is tested end-to-end:</p>
+                  <p>
+                    423+ tests across every critical path, end-to-end:
+                  </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
                       {
                         layer: "Solidity",
                         detail:
-                          "Foundry unit tests for vault deposit/withdraw, share math, and access control",
+                          "80 Solidity tests (VaultV4): deposit/withdraw, share math, access control, timelock, and emergency flows",
                         color: "text-darwin-accent",
                       },
                       {
@@ -849,13 +851,15 @@ export default function HomePage() {
                 the scores, and the evolution log.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-4">
-                <Link
-                  href="/results"
+                <a
+                  href={DAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="group relative inline-block px-10 py-4 bg-darwin-accent text-darwin-bg font-semibold rounded-lg hover:bg-darwin-accent-dim transition-colors text-lg overflow-hidden"
                 >
-                  <span className="relative z-10">See Live Results</span>
+                  <span className="relative z-10">Launch DApp</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                </Link>
+                </a>
                 <Link
                   href="/story"
                   className="px-10 py-4 border border-darwin-border text-darwin-text-bright rounded-lg hover:border-darwin-purple/50 hover:text-darwin-purple transition-colors text-lg"

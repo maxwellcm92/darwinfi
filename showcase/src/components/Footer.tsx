@@ -14,7 +14,7 @@ export function Footer() {
               </span>
             </div>
             <p className="text-darwin-text-dim text-base max-w-md">
-              Autonomous, self-evolving DeFi vault. 12 strategies compete via
+              Autonomous, self-evolving DeFi vault. AI strategies compete via
               Darwinian selection on Base L2. Built for the Synthesis Hackathon.
             </p>
           </div>

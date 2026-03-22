@@ -46,7 +46,7 @@ export const CHAT_FLOWS: Record<string, FlowStep[]> = {
     },
     {
       type: "bot",
-      text: "Inside the vault, **12 trading strategies** compete simultaneously. Only the top performer trades live on Uniswap V3 -- the rest paper trade with real prices, fighting to dethrone the champion.",
+      text: "Inside the vault, **trading strategies** compete simultaneously. Only the top performer trades live on Uniswap V3 -- the rest paper trade with real prices, fighting to dethrone the champion.",
     },
     {
       type: "bot",
@@ -54,7 +54,7 @@ export const CHAT_FLOWS: Record<string, FlowStep[]> = {
     },
     {
       type: "bot",
-      text: "The champion strategy borrows USDC from the vault, executes swaps on **Uniswap V3**, and returns the proceeds. Every transaction is signed by a **Lit Protocol PKP** -- cryptographic proof the agent follows the rules.",
+      text: "The champion strategy borrows USDC from the vault, executes swaps on **Uniswap V3**, and returns the proceeds. **Lit Protocol** PKP key management is built and ready for Chipotle v3 mainnet -- cryptographic transaction signing to enforce trading rules on-chain.",
     },
     {
       type: "bot",
@@ -66,7 +66,7 @@ export const CHAT_FLOWS: Record<string, FlowStep[]> = {
   safety: [
     {
       type: "bot",
-      text: "Every transaction is signed by a **Lit Protocol PKP** (Programmable Key Pair). An IPFS-hosted Lit Action enforces the trading policy before signing -- the agent literally cannot execute unauthorized transactions. The policy is immutable on IPFS.",
+      text: "**Lit Protocol** PKP (Programmable Key Pair) integration is built and ready for Chipotle v3 mainnet. IPFS-hosted Lit Actions will enforce the trading policy before signing -- ensuring the agent cannot execute unauthorized transactions. The policy is immutable on IPFS.",
     },
     {
       type: "bot",
@@ -101,7 +101,7 @@ export const CHAT_FLOWS: Record<string, FlowStep[]> = {
     },
     {
       type: "bot",
-      text: "Only the highest-scoring main strategy trades live on-chain via Uniswap V3. The other 11 paper trade with real price feeds. When a variation outscores its parent, it gets promoted -- true Darwinian selection.",
+      text: "Only the highest-scoring main strategy trades live on-chain via Uniswap V3. The rest paper trade with real price feeds. When a variation outscores its parent, it gets promoted -- true Darwinian selection.",
     },
   ],
 
@@ -138,7 +138,7 @@ export const CHAT_FLOWS: Record<string, FlowStep[]> = {
     },
     {
       type: "bot",
-      text: "**Off-chain**: The Darwin Agent orchestrates everything -- 3 tick speeds (1min/5min/15min), strategy management, circuit breakers, and vault integration. A Lit Protocol PKP signs every transaction through an IPFS-hosted policy.",
+      text: "**Off-chain**: The Darwin Agent orchestrates everything -- 3 tick speeds (1min/5min/15min), strategy management, circuit breakers, and vault integration. Lit Protocol PKP integration is built and ready for Chipotle v3 -- IPFS-hosted policy enforcement for transaction signing.",
     },
     {
       type: "bot",
@@ -155,7 +155,7 @@ export const PAGE_GREETINGS: Record<
 > = {
   "/": {
     message:
-      "Welcome to DarwinFi -- the autonomous DeFi vault where trading strategies evolve to survive. I am Darwin, your guide to the ecosystem. What would you like to explore?",
+      "I am Darwin -- the autonomous trading agent behind DarwinFi. My strategies evolve through Darwinian selection on Base L2. That ape-cyborg you see? That is me. Ask me anything about how I work.",
     quickReplies: [
       { label: "How does it work?", value: "How does it work?" },
       { label: "Is it safe?", value: "Is it safe?" },
@@ -165,16 +165,16 @@ export const PAGE_GREETINGS: Record<
   },
   "/results": {
     message:
-      "You are looking at live data from the DarwinFi vault on Base L2. Every number here comes from real on-chain activity and the agent's actual trading performance.",
+      "You are looking at my live performance data from the vault on Base L2. Every number here comes from real on-chain activity -- my actual trades, my evolution cycles, my survival metrics.",
     quickReplies: [
       { label: "How is the score calculated?", value: "How is the composite score calculated?" },
-      { label: "What do the strategies do?", value: "Tell me about the 12 strategies" },
+      { label: "What do the strategies do?", value: "Tell me about the strategies" },
       { label: "Is it safe?", value: "Is it safe?" },
     ],
   },
   "/story": {
     message:
-      "This is DarwinFi's build story -- from concept to deployed vault, every decision documented. Built in 10 sessions using Claude Code as the agent harness.",
+      "This is my origin story -- from concept to deployed vault on Base mainnet. I was built in 10 sessions using Claude Code as my agent harness. Every architectural decision is documented here.",
     quickReplies: [
       { label: "How does it work?", value: "How does it work?" },
       { label: "Technical architecture", value: "Technical architecture" },
@@ -183,7 +183,7 @@ export const PAGE_GREETINGS: Record<
   },
   "/product": {
     message:
-      "Ready to see the DApp in action? The vault is live on Base L2 -- you can deposit USDC and earn from AI-evolved trading strategies right now.",
+      "Ready to deposit? My vault is live on Base L2. You deposit USDC, I trade and evolve to grow the vault. The fittest strategies survive, your capital benefits.",
     quickReplies: [
       { label: "How do I deposit?", value: "How do I deposit into the vault?" },
       { label: "Is it safe?", value: "Is it safe?" },

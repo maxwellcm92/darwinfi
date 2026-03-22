@@ -10,6 +10,7 @@ export interface AgentState {
   totalPnl?: number;
   winRate?: number;
   totalTrades?: number;
+  activeStrategies?: number;
 }
 
 export interface Strategy {

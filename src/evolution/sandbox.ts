@@ -1,7 +1,7 @@
 /**
  * DarwinFi Evolution Engine - Sandbox (Git Worktree)
  * Isolates proposal testing in a separate git worktree.
- * Applies diff, runs type-check, cleans up on failure.
+ * Applies SEARCH/REPLACE mutations, runs type-check, cleans up on failure.
  */
 
 import { execSync } from 'child_process';
@@ -13,6 +13,11 @@ import { PROJECT_ROOT } from './config';
 const SANDBOX_PREFIX = '.darwin-sandbox-';
 const TSC_TIMEOUT = 120_000; // 2 minutes
 
+interface SearchReplaceBlock {
+  search: string;
+  replace: string;
+}
+
 function exec(cmd: string, cwd: string, timeoutMs: number = 60_000): string {
   return execSync(cmd, {
     cwd,
@@ -22,8 +27,29 @@ function exec(cmd: string, cwd: string, timeoutMs: number = 60_000): string {
   });
 }
 
+function parseSearchReplaceBlocks(diff: string): SearchReplaceBlock[] {
+  const blocks: SearchReplaceBlock[] = [];
+  const regex = /<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE/g;
+  let match;
+  while ((match = regex.exec(diff)) !== null) {
+    blocks.push({ search: match[1], replace: match[2] });
+  }
+  return blocks;
+}
+
+function applySearchReplace(fileContent: string, blocks: SearchReplaceBlock[]): string {
+  let result = fileContent;
+  for (const block of blocks) {
+    if (!result.includes(block.search)) {
+      throw new Error(`SEARCH block not found in file: ${block.search.substring(0, 80)}...`);
+    }
+    result = result.replace(block.search, block.replace);
+  }
+  return result;
+}
+
 /**
- * Create a git worktree sandbox, apply the proposal diff, and type-check.
+ * Create a git worktree sandbox, apply the proposal mutations, and type-check.
  */
 export async function createSandbox(proposal: EvolutionProposal): Promise<SandboxResult> {
   const shortId = proposal.id.slice(0, 8);
@@ -48,22 +74,45 @@ export async function createSandbox(proposal: EvolutionProposal): Promise<Sandbo
     console.log(`[Evolution] Creating sandbox worktree: ${worktreeDir}`);
     exec(`git worktree add "${worktreeDir}" -b "${branchName}" HEAD`, PROJECT_ROOT);
 
-    // Write the diff to a temporary file and apply it
-    const diffPath = path.join(worktreeDir, '.evolution-proposal.patch');
-    fs.writeFileSync(diffPath, proposal.diff, 'utf-8');
+    // Try SEARCH/REPLACE blocks first, fall back to git apply --3way
+    const blocks = parseSearchReplaceBlocks(proposal.diff);
 
-    try {
-      exec(`git apply --check "${diffPath}"`, worktreeDir);
-      exec(`git apply "${diffPath}"`, worktreeDir);
-    } catch (applyErr) {
-      const errMsg = applyErr instanceof Error ? applyErr.message : String(applyErr);
-      result.compilationErrors.push(`Diff apply failed: ${errMsg}`);
-      result.compilationOutput = errMsg;
-      console.error(`[Evolution] Diff apply failed for ${shortId}:`, errMsg.slice(0, 200));
-      return result;
-    } finally {
-      // Clean up the patch file
-      try { fs.unlinkSync(diffPath); } catch { /* ignore */ }
+    if (blocks.length > 0) {
+      // Apply SEARCH/REPLACE blocks directly to target files
+      console.log(`[Evolution] Applying ${blocks.length} SEARCH/REPLACE block(s) for ${shortId}`);
+      try {
+        for (const targetFile of proposal.targetFiles) {
+          const filePath = path.join(worktreeDir, targetFile);
+          if (!fs.existsSync(filePath)) {
+            throw new Error(`Target file not found: ${targetFile}`);
+          }
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const updated = applySearchReplace(content, blocks);
+          fs.writeFileSync(filePath, updated, 'utf-8');
+        }
+      } catch (applyErr) {
+        const errMsg = applyErr instanceof Error ? applyErr.message : String(applyErr);
+        result.compilationErrors.push(`SEARCH/REPLACE apply failed: ${errMsg}`);
+        result.compilationOutput = errMsg;
+        console.error(`[Evolution] SEARCH/REPLACE apply failed for ${shortId}:`, errMsg.slice(0, 200));
+        return result;
+      }
+    } else {
+      // Fallback: Venice may have output unified diff -- try git apply --3way
+      console.log(`[Evolution] No SEARCH/REPLACE blocks found, falling back to git apply --3way for ${shortId}`);
+      const diffPath = path.join(worktreeDir, '.evolution-proposal.patch');
+      fs.writeFileSync(diffPath, proposal.diff, 'utf-8');
+      try {
+        exec(`git apply --3way "${diffPath}"`, worktreeDir);
+      } catch (applyErr) {
+        const errMsg = applyErr instanceof Error ? applyErr.message : String(applyErr);
+        result.compilationErrors.push(`Diff apply failed: ${errMsg}`);
+        result.compilationOutput = errMsg;
+        console.error(`[Evolution] git apply --3way failed for ${shortId}:`, errMsg.slice(0, 200));
+        return result;
+      } finally {
+        try { fs.unlinkSync(diffPath); } catch { /* ignore */ }
+      }
     }
 
     // Run TypeScript type-checking (no emit)

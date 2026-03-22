@@ -73,11 +73,11 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="font-sans text-lg md:text-xl text-darwin-text max-w-2xl mx-auto mb-4 leading-relaxed">
-            12 strategies compete. AI mutates the winners. Natural selection
+            AI strategies compete. The engine mutates the winners. Natural selection
             picks your yield.
           </p>
           <p className="font-mono text-sm text-darwin-text-dim max-w-lg mx-auto mb-10 tracking-wide">
-            ERC-4626 Vault &middot; Lit Protocol Guardrails &middot; Multi-AI
+            ERC-4626 Vault &middot; Lit Protocol Integration (Chipotle v3 Ready) &middot; Multi-AI
             Consensus &middot; Base Mainnet
           </p>
 
@@ -189,7 +189,7 @@ export default function HomePage() {
                 </svg>
               }
               title="Cryptographically Safe"
-              description="Lit Protocol enforces spending limits, position sizes, and circuit breakers on-chain. Not even the deployer can override."
+              description="Lit Protocol integration built for Chipotle v3 mainnet. PKP key management, spending limits, position sizes, and circuit breakers ready for on-chain enforcement."
             />
             <FeatureCard
               accentColor="warning"
@@ -284,8 +284,8 @@ export default function HomePage() {
               />
               <StatCounter
                 label="Active Strategies"
-                value={12}
-                loading={false}
+                value={state?.activeStrategies ?? null}
+                loading={loading}
               />
               <StatCounter
                 label="Evolution Cycles"
@@ -424,7 +424,7 @@ export default function HomePage() {
               {
                 step: "02",
                 title: "Compete & Evolve",
-                desc: "12 trading strategies compete simultaneously. Each is scored on PnL, Sharpe ratio, drawdown, and consistency. Every 4 hours, AI mutates winners and eliminates the weak.",
+                desc: "Trading strategies compete simultaneously. Each is scored on PnL, Sharpe ratio, drawdown, and consistency. Every 4 hours, AI mutates winners and eliminates the weak.",
                 accentClass: "text-darwin-purple",
                 borderClass: "border-darwin-purple/20",
                 icon: (
@@ -737,9 +737,9 @@ export default function HomePage() {
                     ))}
                   </div>
                   <p className="text-darwin-text-dim text-sm border-l-2 border-darwin-purple/30 pl-3">
-                    Even if the agent is compromised, the PKP policy prevents
-                    unauthorized fund movement. The deployer wallet cannot
-                    bypass these constraints.
+                    Lit Protocol integration is built and ready for Chipotle v3 mainnet.
+                    PKP key management and IPFS-hosted policy enforcement will ensure
+                    the deployer wallet cannot bypass trading constraints.
                   </p>
                 </div>
               )}

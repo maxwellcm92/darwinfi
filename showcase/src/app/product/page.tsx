@@ -92,7 +92,7 @@ const features = [
 ];
 
 const techStack = [
-  { category: "Smart Contracts", items: ["Solidity", "Hardhat", "OpenZeppelin ERC-4626", "VaultV3 (fee model)", "Base Mainnet"] },
+  { category: "Smart Contracts", items: ["Solidity", "Hardhat", "OpenZeppelin ERC-4626", "VaultV4 (security hardened)", "Base Mainnet"] },
   { category: "Agent Core", items: ["TypeScript", "ethers.js v6", "Uniswap V3 SDK", "1inch Aggregator"] },
   { category: "AI Models", items: ["Claude Haiku (signals)", "Venice AI / Llama 3.3 70B (evolution)", "Ollama/Gemma2 (local fallback)", "Grok/X (sentiment)"] },
   { category: "DApp", items: ["React", "Vite", "Wagmi", "RainbowKit", "Tailwind CSS"] },
@@ -116,7 +116,7 @@ export default function ProductPage() {
               See DarwinFi in Action
             </h1>
             <p className="text-darwin-text text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-              A full-stack DeFi application: ERC-4626 vault, 16 competing strategies,
+              A full-stack DeFi application: ERC-4626 vault, AI-evolved competing strategies,
               biological AI systems, self-evolving code, and cross-chain expansion. All live on Base mainnet.
             </p>
           </AnimatedSection>
@@ -183,17 +183,20 @@ export default function ProductPage() {
           <div className="max-w-4xl mx-auto space-y-4">
             <div className="darwin-card">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-darwin-text-bright">DarwinVaultV2 (ERC-4626)</h3>
+                <h3 className="font-semibold text-darwin-text-bright">DarwinVaultV4 (Security Hardened)</h3>
                 <span className="text-sm font-mono text-darwin-accent bg-darwin-accent/10 px-2 py-0.5 rounded">
                   Live
                 </span>
               </div>
               <p className="font-mono text-base text-darwin-text-dim mb-2 break-all">
-                {VAULT_ADDRESS}
+                0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7
+              </p>
+              <p className="text-base text-darwin-text-dim mb-2">
+                48h timelock on agent/feeRecipient changes, 80% max borrow ratio, 12-decimal shares (6 USDC + 6 offset), 7-day borrow timeout with bad debt write-off. 488+ passing tests.
               </p>
               <div className="flex gap-3">
                 <a
-                  href={`https://basescan.org/address/${VAULT_ADDRESS}`}
+                  href="https://basescan.org/address/0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-darwin-accent hover:text-darwin-accent-dim transition-colors"
@@ -205,13 +208,16 @@ export default function ProductPage() {
 
             <div className="darwin-card">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-darwin-text-bright">DarwinVaultV3 (Fee Model)</h3>
+                <h3 className="font-semibold text-darwin-text-bright">DarwinVaultV2 (ERC-4626)</h3>
                 <span className="text-sm font-mono text-darwin-purple bg-darwin-purple/10 px-2 py-0.5 rounded">
-                  Built
+                  Fallback
                 </span>
               </div>
+              <p className="font-mono text-base text-darwin-text-dim mb-2 break-all">
+                0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3
+              </p>
               <p className="text-base text-darwin-text-dim mb-2">
-                1% management fee + 5% performance fee (high water mark). 325 passing tests. Ready for mainnet deployment.
+                Original ERC-4626 vault. Maintained as fallback if V4 requires migration.
               </p>
             </div>
 

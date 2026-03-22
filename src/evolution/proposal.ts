@@ -30,7 +30,7 @@ const SYSTEM_PROMPT = `You are the DarwinFi Evolution Engine. Your purpose is to
 
 RULES:
 1. Output ONLY valid JSON with keys: rationale, targetFiles, diff
-2. The "diff" must be in unified diff format (--- a/file, +++ b/file, @@ hunks)
+2. The "diff" must use SEARCH/REPLACE block format (see below). Do NOT use unified diff format.
 3. Focus on improving PnL, win rate, and risk-adjusted returns
 4. Respect existing function signatures - do not change exported interfaces
 5. Only modify files you are told are evolvable
@@ -38,12 +38,21 @@ RULES:
 7. Do NOT use eval(), new Function(), exec(), spawn(), or global state
 8. Keep changes focused and small (under 200 added lines, 50 modified)
 9. Each proposal should target one specific improvement
+10. SEARCH blocks must contain EXACT text from the current file (whitespace-sensitive)
+11. Each SEARCH/REPLACE block changes one contiguous section. Use multiple blocks for multiple changes.
+
+DIFF FORMAT (SEARCH/REPLACE blocks):
+<<<<<<< SEARCH
+exact text to find in the file
+=======
+replacement text
+>>>>>>> REPLACE
 
 OUTPUT FORMAT (strict JSON, no markdown):
 {
   "rationale": "Brief explanation of what this change improves and why",
   "targetFiles": ["src/path/to/file.ts"],
-  "diff": "unified diff content"
+  "diff": "<<<<<<< SEARCH\\nexact old code\\n=======\\nnew improved code\\n>>>>>>> REPLACE"
 }`;
 
 function buildUserPrompt(
@@ -84,23 +93,30 @@ ${zoneDescription}
 }
 
 function parseDiffStats(diff: string): { linesAdded: number; linesModified: number; filesChanged: number } {
-  const lines = diff.split('\n');
+  const blockRegex = /<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE/g;
   let added = 0;
   let modified = 0;
-  const files = new Set<string>();
+  let blockCount = 0;
+  let match;
 
-  for (const line of lines) {
-    if (line.startsWith('+++') && !line.startsWith('+++ /dev/null')) {
-      const filePath = line.replace('+++ b/', '').trim();
-      if (filePath) files.add(filePath);
-    } else if (line.startsWith('+') && !line.startsWith('+++')) {
-      added++;
-    } else if (line.startsWith('-') && !line.startsWith('---')) {
-      modified++;
+  while ((match = blockRegex.exec(diff)) !== null) {
+    blockCount++;
+    const searchLines = match[1].split('\n').length;
+    const replaceLines = match[2].split('\n').length;
+    modified += searchLines;
+    added += replaceLines;
+  }
+
+  // Fallback: if no SEARCH/REPLACE blocks found, try unified diff stats
+  if (blockCount === 0) {
+    const lines = diff.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('+') && !line.startsWith('+++')) added++;
+      else if (line.startsWith('-') && !line.startsWith('---')) modified++;
     }
   }
 
-  return { linesAdded: added, linesModified: modified, filesChanged: files.size || 1 };
+  return { linesAdded: added, linesModified: modified, filesChanged: 1 };
 }
 
 export async function generateProposal(

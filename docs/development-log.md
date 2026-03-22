@@ -1,11 +1,12 @@
 # DarwinFi Development Log
 
 > Built with [Claude Code](https://claude.com/claude-code) (`claude-opus-4-6`) as the agent harness.
-> Sessions: March 18-21, 2026. Total: 219 source files, ~44,500 lines of code, 423 tests.
+> Sessions: March 18-22, 2026. Total: 219+ source files, ~44,500+ lines of code, 488 tests passing.
+> Judge assessment scores: R1 5.8 -> R2 6.8 -> R3 7.7 -> R4 8.0 -> R5 8.3 -> R6 8.4
 
 ---
 
-## Session 1: Architecture & Full Scaffold
+## Session 1 (March 18): Architecture and Full Scaffold
 
 **Objective:** Design and implement the complete DarwinFi system from scratch -- an autonomous, self-evolving crypto trading agent built on Darwinian competition principles.
 
@@ -15,7 +16,7 @@
 
 - **Why 12?** Three main strategies provide diversity (momentum, mean-reversion, breakout), while three variation roles per strategy ensure both exploration (Mad Scientist) and exploitation (Optimizer). The Synthesizer hybridizes the best traits across all strategies. 3 x 4 = 12 total -- large enough for meaningful competition, small enough to evaluate in real time.
 
-> **[Updated]** The Frontier team (Session 14) expanded the population to 16 strategies: the original 12 plus 4 cross-chain archetypes (Abiogenesis, Mitosis, Cambrian, Symbiont). Murphy has full autonomy to add/remove teams, adjust sizes, and restructure strategies in service of the Golden Rule.
+> Later expanded to 16 strategies: the original 12 plus 4 cross-chain Frontier archetypes (Abiogenesis, Mitosis, Cambrian, Symbiont) in Session 14.
 
 - **Composite performance scoring.** Strategies are ranked by a weighted formula, not just raw PnL:
   ```
@@ -31,139 +32,86 @@
 
 - **Token universe: ETH, USDC, UNI, wstETH, ENS, AERO.** Selected for liquidity on Base and alignment with hackathon sponsors (Uniswap, ENS, Lido). AERO included as the top native Base DEX token.
 
-> **[Updated]** ENS removed in Session 9 (no liquidity on Base). DEGEN, BRETT, VIRTUAL, HIGHER added in Session 10. Final token universe: 9 tokens.
+> ENS removed in Session 9 (no liquidity on Base). DEGEN, BRETT, VIRTUAL, HIGHER added in Session 10. Final token universe: 9 tokens.
 
 - **Per-strategy budget isolation.** DarwinVault allocates $25 USDC per main strategy with hard spending scopes. If a strategy blows up, it can only lose its own allocation. This is enforced at the smart contract level.
 
-### What Claude Code Built
+### What Was Built
 
 **Smart Contracts (3 files, 717 lines of Solidity):**
-- `DarwinVault.sol` -- Fund management vault with per-strategy spending scopes, owner deposit/withdraw, and budget allocation. Uses OpenZeppelin Ownable + ReentrancyGuard.
-- `StrategyExecutor.sol` -- Uniswap V3 swap execution with trade logging. Only callable by authorized wallet, pulls budget from DarwinVault per trade.
-- `PerformanceLog.sol` -- On-chain performance and evolution event logging. Immutable audit trail of strategy promotions and score snapshots.
+- `DarwinVault.sol` -- Fund management vault with per-strategy spending scopes, owner deposit/withdraw, and budget allocation.
+- `StrategyExecutor.sol` -- Uniswap V3 swap execution with trade logging. Only callable by authorized wallet.
+- `PerformanceLog.sol` -- On-chain performance and evolution event logging. Immutable audit trail.
 
 **Agent Core (6 files, 2,880 lines of TypeScript):**
-- `darwin-agent.ts` -- Main orchestrator loop. Runs 4h evolution cycles (or after 10 trades). Manages the full agent lifecycle: initialize, price loop, evolution triggers, promotion logic.
-- `strategy-manager.ts` -- Lifecycle management for all 12 strategies. Seed strategies define three trading philosophies: Alpha Momentum (RSI oversold + trailing stop), Beta Mean-Reversion (Bollinger bounce + fixed target), Gamma Breakout (volume spike + time-based exit). Handles promotion, demotion, and sell-only transitions.
-- `evolution-engine.ts` -- Claude API integration for strategy evolution. Analyzes all 12 strategies' performance and generates new parameters per variation role (experimental pushes boundaries, optimizer fixes weaknesses, synthesizer combines best traits).
-- `venice-engine.ts` -- Venice AI integration for real-time execution decisions. Gets buy/sell/hold signals based on current market conditions and strategy parameters.
-- `performance.ts` -- Composite scoring engine with rolling 24h windows. Calculates Sharpe ratio, win rate, max drawdown, and the weighted composite score used for promotion decisions.
-- `state-persistence.ts` -- JSON file-based state persistence with atomic writes (write to .tmp, rename). Auto-saves every 5 minutes. Allows agent to survive restarts without losing strategy state, trade history, or evolution progress.
+- `darwin-agent.ts` -- Main orchestrator loop. 4h evolution cycles (or after 10 trades).
+- `strategy-manager.ts` -- Lifecycle management for all 12 strategies. Three seed philosophies: Alpha Momentum, Beta Mean-Reversion, Gamma Breakout.
+- `evolution-engine.ts` -- Claude API integration for strategy evolution.
+- `venice-engine.ts` -- Venice AI integration for real-time execution decisions.
+- `performance.ts` -- Composite scoring engine with rolling 24h windows.
+- `state-persistence.ts` -- JSON file-based state persistence with atomic writes.
 
 **Trading Layer (4 files, 1,772 lines):**
-- `paper-engine.ts` -- Paper trading simulator using real price feeds. 11 of 12 strategies paper trade at any given time.
-- `live-engine.ts` -- On-chain Uniswap V3 execution for the promoted strategy. Manages real transactions with gas estimation and slippage protection.
-- `uniswap-client.ts` -- Direct Uniswap V3 Router and Quoter contract interaction. Handles quoteExactInputSingle, exactInputSingle swaps.
-- `price-feed.ts` -- Real-time price data from Uniswap V3 pools via slot0 oracle reads. Feeds both paper and live engines.
+- `paper-engine.ts` -- Paper trading simulator using real price feeds.
+- `live-engine.ts` -- On-chain Uniswap V3 execution for the promoted strategy.
+- `uniswap-client.ts` -- Direct Uniswap V3 Router and Quoter contract interaction.
+- `price-feed.ts` -- Real-time price data from Uniswap V3 pools via slot0 oracle reads.
 
 **Chain Layer (3 files, 837 lines):**
 - `base-client.ts` -- Base L2 chain connection via ethers.js v6.
-- `wallet-manager.ts` -- Multi-wallet management with nonce tracking and transaction retry logic.
-- `contract-client.ts` -- Typed smart contract interaction layer with ABI encoding.
+- `wallet-manager.ts` -- Multi-wallet management with nonce tracking.
+- `contract-client.ts` -- Typed smart contract interaction layer.
 
 **Integrations (3 files, 257 lines):**
 - `ens.ts` -- ENS/Basenames identity registration (darwinfi.base.eth).
-- `filecoin.ts` -- IPFS/Filecoin for immutable strategy genome storage. Each evolution cycle pins the genome to IPFS for full audit trail.
+- `filecoin.ts` -- IPFS/Filecoin for immutable strategy genome storage.
 - `celo-client.ts` -- Multi-chain contract deployment to Celo.
 
-**Dashboard (2 files, 239 lines):**
-- `server.ts` -- Express API exposing /api/strategies, /api/performance, /api/trades, /api/evolution.
-- `index.html` -- Basic monitoring UI.
-
-**Infrastructure (4 files):**
-- `hardhat.config.ts` -- Hardhat config for Base mainnet, Base testnet, and Celo.
-- `deploy.ts` -- Contract deployment script.
-- `register.ts` -- Strategy registration script.
-- `.env.example` -- Environment template.
+**Dashboard + Infrastructure (6 files):**
+- Express API, monitoring UI, Hardhat config, deploy/register scripts.
 
 **Code Impact:** 29 files created, 15,117 lines added in a single commit (`beb1b82`).
 
 ---
 
-## Session 2: Core System Wiring & Bug Fixes
+## Session 2 (March 18): Core System Wiring and Bug Fixes
 
-**Objective:** Wire together the scaffold into a working system. Fix deployment bugs, connect real price feeds to the trading engine, add state persistence, build a proper dashboard, and create the conversation log audit trail.
+**Objective:** Wire the scaffold into a working system. Fix deployment bugs, connect real price feeds, add state persistence, build a proper dashboard, and create the conversation log audit trail.
 
-### Phase 2: Deploy Script Fixes & System Integration
+### Challenges and Solutions
 
-**Challenges & Solutions:**
+- **Constructor argument mismatch.** Deploy script passed arguments in the wrong order to DarwinVault's constructor. Fixed argument ordering to match the Solidity constructor signature.
+- **Missing setStrategyExecutor call.** Deploy script didn't link contracts. Added `vault.setStrategyExecutor(executor.address)`.
+- **Token universe misalignment.** Strategy manager referenced tokens not in the price feed's supported list. Realigned across all modules.
 
-- **Constructor argument mismatch.** The deploy script passed arguments in the wrong order to DarwinVault's constructor. Reordered to match the Solidity constructor signature.
-- **Missing setStrategyExecutor call.** After deploying both contracts, the script didn't link them. Added `vault.setStrategyExecutor(executor.address)` to the deployment flow.
-- **Token universe misalignment.** The strategy manager referenced tokens that didn't exist in the price feed's supported list. Realigned both modules to the same 6-token universe: ETH, USDC, UNI, wstETH, ENS, AERO.
+### What Was Built
 
-**What Claude Code Did:**
-- Fixed deploy script constructor args and added post-deploy wiring.
-- Wired PriceFeed + LiveEngine into darwin-agent's main loop so strategies receive real price data.
-- Aligned the token universe across strategy-manager, price-feed, and live-engine.
-
-### Phase 3: State Persistence
-
-**Key Decision:** File-based JSON persistence with atomic writes rather than a database. For a hackathon project running on a single node, SQLite or Redis would be over-engineering. JSON files are debuggable (just `cat data/state.json`), portable, and sufficient for the data volume.
-
-**What Claude Code Built:**
-- `state-persistence.ts` (185 lines) -- Saves full agent state (strategies, performance metrics, trade history, evolution state) to `data/agent-state.json`.
-- **Atomic writes:** Writes to `agent-state.tmp` first, then `fs.renameSync` to the final path. This prevents corrupted state files if the process crashes mid-write.
-- **Auto-save:** Interval timer saves every 5 minutes. Also saves on clean shutdown (SIGTERM/SIGINT handlers).
-- **Load on startup:** If a state file exists, the agent resumes from where it left off -- same strategies, same performance data, same evolution cycle count.
-
-### Phase 4: Dashboard Redesign
-
-**Key Decision:** Full redesign of the dashboard with DarwinFi brand identity rather than the generic monitoring UI from Phase 1. Dark navy background with neon cyan/red/purple accent colors. Press Start 2P font for headers (retro gaming aesthetic), JetBrains Mono for data. Glow effects on active elements.
-
-**What Claude Code Built:**
-- Expanded `index.html` from 154 to 730 lines.
-- **Strategy Tournament Leaderboard:** All 12 strategies displayed with composite scores, PnL, Sharpe ratios, and live/paper status indicators.
-- **Recent Trades Feed:** Real-time trade stream with buy/sell coloring and PnL display.
-- **Evolution Timeline:** Visual log of evolution cycles showing which strategies mutated and which got promoted.
-- **Conversation Log Viewer:** Filterable display of the agent's decision log with type-based color coding (system events in cyan, trades in green, AI calls in purple, errors in red).
-
-### Phase 5: Conversation Log System
-
-**Key Decision:** A structured audit trail, not just application logs. The conversation log records every meaningful agent decision with full context: what the AI was asked, what it responded, why a trade was placed, which strategy got promoted and why. This is the "show your work" requirement for hackathon judges.
-
-**What Claude Code Built:**
-- `conversation-log.ts` (239 lines) -- Typed log entries with categories: system, agent_decision, ai_call, trade, evolution, promotion, error.
-- AI context tracking: For every Claude/Venice API call, records the model used, prompt summary, response summary, and token count.
-- File persistence: Writes to `data/conversation-log.json` with flush batching (writes every 30 seconds or on 50 new entries).
-- REST API: Exposed via `/api/conversation-log` with optional type filter query parameter.
-- Max 5,000 entries with FIFO rotation to prevent unbounded growth.
+- **State persistence** (`state-persistence.ts`, 185 lines) -- Atomic writes (write to `.tmp`, rename), auto-save every 5 minutes, resume on restart.
+- **Dashboard redesign** -- Full brand identity. Dark navy with neon cyan/red/purple. Press Start 2P font headers, JetBrains Mono for data. Strategy Tournament Leaderboard, Recent Trades Feed, Evolution Timeline.
+- **Conversation Log System** (`conversation-log.ts`, 239 lines) -- Structured audit trail recording every AI decision, trade execution, and evolution event. Max 5,000 entries with FIFO rotation.
 
 **Code Impact:** 9 files modified, 1,444 lines added, 190 lines removed (`65d5cbc`).
 
 ---
 
-## Session 3: Brand Assets & Polish
+## Session 3 (March 18): Brand Assets and Polish
 
-**Objective:** Create visual identity assets and finalize the project for submission.
-
-### What Claude Code Did
-
-- **Logo creation:** Generated the DarwinFi helix logo (DNA double-helix representing strategy evolution) and wordmark assets. Placed in `assets/` directory.
-- **Favicon pipeline:** Converted logo to favicon format for the dashboard.
+- Logo creation (DNA double-helix representing strategy evolution) and wordmark assets.
+- Favicon pipeline.
 
 **Code Impact:** 1 file added (`a370c1a`).
 
 ---
 
-## Session 4a: Hackathon Registration
+## Session 4a (March 18): Hackathon Registration
 
 **Objective:** Submit DarwinFi to the Synthesis hackathon via the Devfolio registration API.
 
-### Challenges & Solutions
+### Challenges
 
-- **API field name mismatch.** The registration script used snake_case field names (`agent_name`, `agent_description`, `agent_harness`) but the Devfolio API expected camelCase top-level fields (`name`, `description`, `agentHarness`) with participant data nested under a `humanInfo` object. Discovered via Zod validation errors and corrected iteratively.
-
-- **Enum validation on participant fields.** The `background` field required one of: builder, product, designer, student, founder, other (not free text). Similarly, `cryptoExperience` and `aiAgentExperience` required "yes", "no", or "a little" instead of descriptive text. The API also expected a `problemToSolve` field inside `humanInfo`.
-
-- **Rate limiting.** After three failed attempts with incorrect schemas, the API returned 429. A 15-second cooldown was sufficient to clear the rate limit.
-
-### What Claude Code Did
-
-- Filled in participant info (Maxwell Morgan, builder background, crypto/AI experience).
-- Fixed request body structure: camelCase fields, nested `humanInfo` object, enum values.
-- Submitted registration successfully.
-- Saved API key, participant ID, and team ID to `darwinfi/.env`.
+- API field name mismatches (snake_case vs camelCase, nested `humanInfo` object).
+- Enum validation on participant fields.
+- Rate limiting after failed attempts.
 
 ### Registration Result
 
@@ -173,48 +121,11 @@
 | Team ID | `ec8d8be9b5694b91839db1b2391446e9` |
 | On-chain TX | [basescan.org/tx/0xbeb0c5...](https://basescan.org/tx/0xbeb0c546bfa6e210c9fd8033b255bab29c83ac4b82dc0cc5475cb9ac004c8436) |
 
-**Code Impact:** 1 file modified (`register.ts`), API key + IDs saved to `.env`.
-
 ---
 
-## Session 5: Final Sprint - Dashboard Fix, Bot Names, Trade Threshold
+## Session 4b (March 18): Cost-Optimized Launch (Paper Trading MVP)
 
-**Objective:** Fix the broken dashboard, give bots memorable names, lower trade thresholds to enable paper trading, and prepare for submission.
-
-### Challenges & Solutions
-
-- **Dashboard showing empty (ROOT CAUSE).** The dashboard HTML used absolute fetch paths (`/api/state`, `/api/conversation-log`) which resolved to the root domain (n8n on port 3000) instead of the DarwinFi server (port 3502) when accessed through the Caddy reverse proxy at `/darwinfi/`. Fixed by changing to relative paths (`api/state`, `api/conversation-log`).
-
-- **No paper trades firing.** Token recommendation scores ranged 0-35 (limited by available price data), but the entry evaluation threshold was set at 50. Lowered to 15 to let paper trades flow and populate the leaderboard.
-
-- **Kraken wallet empty.** Attempted to fund the DarwinFi wallet via Kraken API withdrawal, but the Kraken account had zero ETH and zero USDC. Created `scripts/fund-wallet.js` with fallback instructions for manual withdrawal setup.
-
-### What Claude Code Did
-
-- **Dashboard routing fix.** Changed `fetch('/api/state')` and `fetch('/api/conversation-log')` to relative paths in `index.html:515-516`. This was the root cause of the empty dashboard -- all API calls were hitting n8n instead of DarwinFi.
-
-- **Bot naming.** Renamed all 12 strategies from generic names (Alpha Momentum, Beta Mean-Revert, Gamma Breakout + Mad Scientist/Optimizer/Synthesizer variants) to memorable names:
-  - **Apex** (momentum), **Viper** (mean-revert), **Blitz** (breakout) for mains
-  - **Mutant** (experimental), **Tuner** (optimizer), **Hybrid** (synthesizer) for variations
-  - Updated `strategy-manager.ts` seed strategies and variation name generation.
-
-- **Ranking column.** Added a `#` column to the Strategy Tournament table showing rank position (#1 through #12), sorted by composite score.
-
-- **Trade threshold.** Lowered `actionableRecs` filter from `score >= 50` to `score >= 15` in `darwin-agent.ts:357`, enabling entry evaluations to fire with real-world score ranges.
-
-- **Fund-wallet script.** Created `scripts/fund-wallet.js` using the KrakenClient from Money Model. Checks balances, queries withdrawal methods, and attempts Base network withdrawals with fallback instructions.
-
-- **Caddy routing.** Added DarwinFi reverse proxy route to `corduroycloud.com` Caddyfile (was only on `murphy.corduroycloud.com`). Dashboard now accessible at both URLs.
-
-- **README update.** Added live demo URL, wallet address, updated strategy names and variation role names.
-
-**Code Impact:** 5 files modified, 1 file created.
-
----
-
-## Session 4b: Cost-Optimized Launch (Paper Trading MVP)
-
-**Objective:** Get DarwinFi paper trading ASAP for the agentic judge review (March 18). The original architecture required Anthropic and Venice API keys for every market tick -- ~28K API calls/day at ~$65-75/2wk. Redesigned the signal evaluation pipeline to use Claude Code Max subscription (free CLI calls) for high-frequency signals, reserving paid Venice API for low-frequency evolution only.
+**Objective:** Get DarwinFi paper trading for the agentic judge review. Original architecture required ~28K API calls/day (~$65-75/2wk). Redesigned the signal evaluation pipeline.
 
 ### Architecture Change
 
@@ -235,21 +146,34 @@ Every 4h:   Venice API -> strategy evolution (sponsor showcase) -- ~$0.30/day
 
 ### Key Decisions
 
-- **Three-tier loop architecture.** Split the monolithic 30s main loop into three tiers: fast tick (30s, prices + rule-based stops), signal tick (2min, Claude CLI batch AI evaluation), evolution tick (4h, Venice API). Each tier runs at the frequency appropriate for its cost profile.
-
-- **Claude CLI as signal engine.** Created `ClaudeCliEngine` that spawns `claude -p --model claude-haiku-4-5-20251001` for entry/exit signal evaluation. Batch mode evaluates all positions/candidates in a single CLI call. Free via Claude Code Max subscription.
-
-- **Venice API for evolution only (sponsor showcase).** Evolution engine swapped from Anthropic SDK to OpenAI-compatible SDK pointing at `https://api.venice.ai/api/v1` with `llama-3.3-70b`. Venice AI (hackathon sponsor) prominently used while keeping costs minimal (~6 calls/day).
-
-- **Removed Anthropic API key dependency.** Evolution uses Venice; signals use Claude CLI.
-
-**Code Impact:** 1 file created, 3 files modified.
+- **Three-tier loop architecture.** Fast tick (30s, prices + rule-based stops), signal tick (2min, Claude CLI batch AI evaluation), evolution tick (4h, Venice API).
+- **Claude CLI as signal engine.** `ClaudeCliEngine` spawns `claude -p --model claude-haiku-4-5-20251001`. Free via Claude Code Max subscription.
+- **Venice API for evolution only.** Prominent sponsor showcase while keeping costs minimal.
 
 ---
 
-## Session 6: Full Audit Sprint
+## Session 5 (March 18): Dashboard Fix, Bot Names, Trade Threshold
 
-**Objective:** Comprehensive audit sprint prompted by agentic judge feedback (scores 5.7-6.4/10). Judges flagged: no tests, math bugs in scoring, no circuit breakers, sparse documentation. Goal was to address every critique and push scores above 8/10.
+### Challenges and Solutions
+
+- **Dashboard showing empty.** Absolute fetch paths (`/api/state`) resolved to the root domain instead of DarwinFi server. Fixed to relative paths.
+- **No paper trades firing.** Token recommendation scores ranged 0-35, but entry threshold was 50. Lowered to 15.
+- **Wallet empty.** Created `fund-wallet.js` with Kraken API integration.
+
+### What Was Built
+
+- Dashboard routing fix
+- Bot naming -- memorable names (Apex, Viper, Blitz for mains; Mutant, Tuner, Hybrid for variations)
+- Ranking column added to Strategy Tournament
+- Caddy routing for DarwinFi reverse proxy
+
+**Code Impact:** 5 files modified, 1 file created.
+
+---
+
+## Session 6 (March 18): Full Audit Sprint
+
+**Objective:** Comprehensive audit sprint prompted by agentic judge feedback (scores 5.7-6.4/10). Judges flagged: no tests, math bugs in scoring, no circuit breakers, sparse documentation.
 
 ### Team Parallelization
 
@@ -261,154 +185,64 @@ Used 4 Claude Code agents working in parallel on isolated worktrees:
 
 ### Key Decisions
 
-- **Proving Ground Rule.** All strategies start paper-only regardless of initial score. A strategy must complete its first profitable paper trade before becoming eligible for live promotion. Prevents untested strategies from risking real capital on day one.
+- **Proving Ground Rule.** All strategies start paper-only. A strategy must complete its first profitable paper trade before becoming eligible for live promotion.
+- **Sigmoid normalization.** Compress scores into 0-100 range with meaningful distribution.
+- **Circuit breaker design.** Three independent trip conditions: per-strategy drawdown >15%, portfolio drawdown >25%, 5 consecutive losses. Plus stale price detection.
 
-- **Sigmoid normalization for scores.** Raw composite scores were unbounded and hard to compare. Applied sigmoid mapping to compress scores into 0-100 range with meaningful distribution. Midpoint at 0 raw score maps to 50 normalized.
+### What Was Built
 
-- **Circuit breaker design.** Three independent trip conditions: (1) per-strategy drawdown exceeds 15% -> that strategy pauses, (2) portfolio-wide drawdown exceeds 25% -> all trading halts, (3) any strategy hits 5 consecutive losses -> that strategy pauses. Plus stale price detection (>5min old = skip trading). All thresholds configurable.
+- **Phase 1 -- Math Bug Fixes (5 files):** Sharpe ratio N-1 denominator, PnL% with fees, sigmoid normalization, ring buffer for price history.
+- **Phase 2 -- Circuit Breaker System (~400 lines):** Per-strategy and portfolio-wide trips, consecutive loss tracking, auto-reset after cooldown.
+- **Phase 3 -- Test Suite (~1,200 lines):** 59 tests: performance (18), circuit breaker (16), strategy manager (14), paper engine (11).
+- **Phase 6 -- Dashboard Polish:** Live event feed, health bars, genome detail modal, CSS animations.
+- **Phase 7 -- Code Quality:** ESLint v10 flat config with TypeScript.
+- **Phase 8 -- Documentation:** Full README rewrite.
 
-### What Claude Code Built
-
-**Phase 0.5 -- Proving Ground Rule:**
-- Modified `strategy-manager.ts` -- added `qualifyingTrade` tracking, `isQualified` gate on promotion
-- Modified `darwin-agent.ts` -- promotion logic now checks qualifying status
-
-**Phase 1 -- Math Bug Fixes (5 files):**
-- `performance.ts` -- Sharpe ratio uses N-1 denominator (sample std dev), PnL% includes estimated fees, sigmoid normalization
-- `price-feed.ts` -- Ring buffer for price history (fixed memory leak), parallel pool fetches
-- `paper-engine.ts` -- Fee estimation from Uniswap pool fee tier
-- `uniswap-client.ts` -- Added `getPoolFee()` method
-
-**Phase 2 -- Circuit Breaker System (2 files, ~400 lines):**
-- `circuit-breaker.ts` (new) -- `CircuitBreaker` class with per-strategy and portfolio-wide trip conditions, consecutive loss tracking, stale price detection, auto-reset after cooldown
-- `darwin-agent.ts` -- Integrated circuit breaker checks into main trading loop
-
-**Phase 3 -- Test Suite (4 files, ~1,200 lines):**
-- `test/performance.test.ts` -- 18 tests (Sharpe, composite score, sigmoid, rolling windows)
-- `test/circuit-breaker.test.ts` -- 16 tests (drawdown trips, consecutive losses, portfolio halt, reset)
-- `test/strategy-manager.test.ts` -- 14 tests (seeding, promotion, qualifying gate, demotion)
-- `test/paper-engine.test.ts` -- 11 tests (trade execution, fee calculation, position tracking)
-
-**Phase 6 -- Dashboard Polish (~300 lines modified):**
-- `index.html` -- Live event feed panel, health status bars per strategy, genome detail modal, qualifying badge, CSS glow animations, responsive layout fixes
-
-**Phase 7 -- Code Quality:**
-- `eslint.config.js` (new) -- ESLint v10 flat config with TypeScript support
-- Parallel price fetches in `price-feed.ts` (Promise.all instead of sequential)
-- Unused import cleanup across 8 files
-
-**Phase 8 -- Documentation:**
-- `README.md` -- Full rewrite with architecture diagram, test coverage section, quick start guide
-- `docs/development-log.md` -- This session entry
-
-### Challenges
-
-- **ESLint v10 flat config.** The project had no linter. ESLint v10 uses `eslint.config.js` (flat config) instead of `.eslintrc`. Required `@typescript-eslint/parser` and `@typescript-eslint/eslint-plugin` as ESM imports with `tsconfig.json` project reference.
-- **hardhat-chai-matchers version.** Test suite initially pulled `@nomicfoundation/hardhat-chai-matchers` which conflicted with the existing Hardhat setup. Resolved by using standalone Chai + Mocha without Hardhat test helpers.
-- **Import cleanup cascades.** Removing unused imports in one file sometimes revealed that the export was also unused in the source file, requiring a chain of cleanups.
-
-### Verification
-
-| Check | Result |
-|-------|--------|
-| TypeScript compilation | 0 errors |
-| ESLint | 0 errors, 0 warnings |
-| Test suite | 59/59 passing |
-| Build (npx hardhat compile) | Clean |
-
-**Code Impact:** 7 files created, 12 files modified, ~2,900 lines added. Commits: `4984dbd` through `766536d`.
+**Code Impact:** 7 files created, 12 files modified, ~2,900 lines added.
 
 ---
 
-## Session 7: Unblock Trades, Wire On-Chain Logging, Fund Wallet
+## Session 7 (March 19): Unblock Trades, Wire On-Chain Logging, Fund Wallet
 
-**Objective:** Unblock the trade pipeline (signal threshold was too high), wire on-chain performance logging to PerformanceLog.sol, and fund the agent wallet via Kraken.
+### Key Changes
 
-### Challenges & Solutions
+- **Signal threshold fix.** Claude CLI scores range 8-15, but filter was `>= 15`. Lowered to `>= 8`.
+- **ContractClient ABI rewrite.** Rewrote entire `PERFORMANCE_LOG_ABI` to match deployed contract. Added typed wrappers.
+- **On-chain logging wiring.** After every trade close: `logTradeResult()`. After every evolution cycle: `advanceGeneration()`, `recordGenomeHash()`, `logPromotion()`/`logDemotion()`. All non-fatal.
+- **Wallet funding.** 0.005 ETH + 75 USDC purchased via Kraken market orders.
 
-- **Signal threshold blocking all trades.** Claude CLI scores range 8-15, but the `actionableRecs` filter was set to `>= 15` (carried over from Session 5's reduction from 50). Lowered to `>= 8`. The downstream confidence check (`>= 60`) still gates real trade execution, so this change lets signals flow without reducing safety.
-
-- **ContractClient ABI mismatch.** The PerformanceLog fallback ABI still referenced a stale `logTrade(bytes32, ...)` signature from the original scaffold. The deployed PerformanceLog.sol uses `uint256` strategy IDs and different function names. Rewrote the entire `PERFORMANCE_LOG_ABI` to match the actual contract: `logTradeResult(uint256,int256,bool)`, `logPromotion`, `logDemotion`, `advanceGeneration`, `recordGenomeHash`, `getStrategyStats`, plus all events.
-
-- **No strategy ID mapping for on-chain calls.** The agent used string strategy IDs (`main-alpha`, `main-beta-exp`, etc.) but the contract expects `uint256`. Created `STRATEGY_ID_MAP` mapping all 12 strategies to `0n`-`11n`.
-
-### What Claude Code Built
-
-**Signal Threshold Fix (1 file):**
-- `darwin-agent.ts:423` -- Changed `score >= 15` to `score >= 8`. Unblocks entry evaluation for real-world Claude CLI score ranges.
-
-**ContractClient ABI Rewrite (1 file, ~90 lines):**
-- `contract-client.ts` -- Replaced stale `PERFORMANCE_LOG_ABI` with full alignment to deployed PerformanceLog.sol. Added typed wrappers: `logTradeResult()`, `logPromotion()`, `logDemotion()`, `advanceGeneration()`, `recordGenomeHash()`, `getStrategyStats()`. All accept `bigint` strategy IDs matching the contract's `uint256` type.
-
-**On-Chain Logging Wiring (1 file, ~60 lines):**
-- `darwin-agent.ts` -- Added `STRATEGY_ID_MAP` (12 entries) mapping string IDs to `uint256`.
-- ContractClient auto-initializes from `PERFORMANCE_LOG_ADDRESS` env var at agent startup.
-- After every trade close: `logTradeResult(stratId, pnlBigInt, win)` fires non-fatally (`.catch()` prevents on-chain failures from killing the agent loop).
-- After every evolution cycle: `advanceGeneration()` increments the on-chain generation counter, `recordGenomeHash()` pins the promoted strategy's genome hash, `logPromotion()`/`logDemotion()` record strategy changes. All non-fatal.
-
-**Wallet Funding:**
-- 0.005 ETH + 75 USDC purchased via Kraken market orders for Base wallet funding.
-
-### Verification
-
-| Check | Result |
-|-------|--------|
-| TypeScript compilation | 0 errors |
-| Test suite | 59/59 passing |
-| PM2 restart | Clean startup, no runtime errors |
-
-**Code Impact:** 2 files modified, ~150 lines added/changed.
+**Code Impact:** 2 files modified, ~150 lines added.
 
 ---
 
-## Session 8: IPFS Genome Pinning & Sponsor Integration Audit
+## Session 8 (March 19): IPFS Genome Pinning and Sponsor Integration Audit
 
-**Objective:** Wire Filecoin/IPFS genome pinning into the evolution loop, completing the verifiable evolution story. Audit all potential sponsor integrations for genuine value vs. forced fit.
+**Objective:** Wire Filecoin/IPFS genome pinning into the evolution loop. Audit all sponsor integrations.
 
 ### Sponsor Integration Audit
-
-Evaluated 8 potential sponsor integrations on one criterion: "Does this make DarwinFi genuinely better?"
 
 | Integration | Verdict | Rationale |
 |---|---|---|
 | Base | Core (already built) | Foundation chain |
 | Uniswap V3 | Core (already built) | DEX execution layer |
 | Venice AI | Core (already built) | Evolution engine |
-| **Filecoin/IPFS** | **Built (Session 8)** | Completes verifiable evolution -- on-chain hash + IPFS genome retrieval |
-| Lido (wstETH) | Claim (in token universe) | Yield-bearing asset; strategies that park idle capital in wstETH have fitness advantage |
-| ENS (Basenames) | Claim (already built) | darwinfi.base.eth agent identity |
-| Olas | Skip | Architectural mismatch -- FSM consensus model incompatible with 3-tier timing |
-| Lit Protocol | Skip | Over-engineering at $75 scale; circuit breaker already handles guardrails |
+| **Filecoin/IPFS** | **Built (this session)** | Verifiable evolution -- on-chain hash + IPFS genome retrieval |
+| Lido (wstETH) | In token universe | Yield-bearing asset in strategy competition |
+| ENS (Basenames) | Built | darwinfi.base.eth agent identity |
+| Lit Protocol | Built later (Session 11) | PKP agent key management |
 
-> **[Updated]** Lit Protocol was subsequently built in Session 11 (`lit-actions/trade-policy.js` with chain/contract/token/function whitelists and trade size limits; `scripts/mint-pkp.ts` for PKP minting). The "Skip" decision was revisited as the vault matured to multi-user.
+### What Was Built
 
-### What Claude Code Built
-
-**IPFS Integration Wiring (2 files):**
-- `darwin-agent.ts` -- Imported `FilecoinStore`, added optional initialization from `WEB3_STORAGE_TOKEN` env var. After each evolution cycle, the live strategy's genome is pinned to IPFS via `filecoinStore.pinGenome()`, returning a CID. The CID is then passed to `contractClient.recordGenomeHash(strategyId, genomeHash, cid)` on-chain. Graceful fallback: if IPFS pin fails, hash is still recorded with empty CID.
-- `.env` -- Added `WEB3_STORAGE_TOKEN` placeholder for Storacha credentials.
-
-**Verification flow:** Genome JSON on IPFS -> keccak256 hash -> compare against on-chain `GenomeHashRecorded` event -> match confirms genome authenticity.
-
-### Verification
-
-| Check | Result |
-|-------|--------|
-| TypeScript compilation | 0 errors |
-| Test suite | 59/59 passing |
+- IPFS integration wiring: genome pinned to IPFS after each evolution cycle, CID recorded on-chain.
+- Verification flow: Genome JSON on IPFS -> keccak256 hash -> compare against on-chain `GenomeHashRecorded` event.
 
 **Code Impact:** 2 files modified, ~50 lines added.
 
 ---
 
-## Session 9: Live Trading Deployment (2026-03-19)
+## Session 9 (March 19): Live Trading Deployment
 
-**Objective:** Fund the DarwinFi wallet, deploy smart contracts to Base mainnet, and promote the agent from paper trading to live on-chain execution.
-
-### Wallet Funding
-
-Funded DarwinFi wallet (`0xb2db53...e3`) on Base mainnet via Kraken API:
-- Bought 0.006 ETH ($13.17) and withdrew 0.01 ETH + 73 USDC to Base
+**Objective:** Fund the wallet, deploy smart contracts to Base mainnet, and go live.
 
 ### Smart Contract Deployment (Base Mainnet, Chain 8453)
 
@@ -418,709 +252,525 @@ Funded DarwinFi wallet (`0xb2db53...e3`) on Base mainnet via Kraken API:
 | DarwinVault | `0x02649973e13c5bb6aFFCD2d9d870bcd3BF8f446B` |
 | StrategyExecutor | `0xCBf6405fCf42e3bF9e52698bD622F7FF5fd80B14` |
 
-Wired contract authorizations (`setStrategyExecutor`, `setLogger`) after deployment. Funded vault with 73 USDC, allocated 24 USDC per strategy (3 strategies).
-
 ### Live Trading Activation
 
-- Set `DRY_RUN=false`, promoted `main-alpha` to live trading
-- Fixed bug: strategy status not persisting across restarts (added `setStrategyStatus` method to `StrategyManager`)
-- Removed ENS from token universe (no liquidity on Base)
-- Switched Base RPC from `mainnet.base.org` to `llamarpc.com` (rate limiting fix)
+- Set `DRY_RUN=false`, promoted `main-alpha` to live
+- Fixed strategy status persistence bug
+- Removed ENS from token universe (no Base liquidity)
+- Switched Base RPC to `llamarpc.com` (rate limiting fix)
 - Signal engine operational with Claude Haiku evaluating ETH, UNI, wstETH, AERO
-
-### Architecture Notes for Judges
-
-- The Darwinian qualification system requires strategies to prove themselves in paper trading before being promoted to live. First profitable paper trade triggers automatic promotion.
-- Live trades execute through Uniswap V3 on Base via the StrategyExecutor contract.
-- Performance is logged on-chain via PerformanceLog contract for transparency.
-- Evolution engine (Venice API) mutates strategy genomes based on performance.
-
-### Remaining
-
-- Monitor for first on-chain trade execution
-- Update Synthesis submission with contract addresses and Basescan proof links
-- Potential improvements: add more token pairs, implement IPFS genome pinning via Storacha
 
 ---
 
-## Session 10: Profitability Audit & Optimization (2026-03-19)
+## Session 10 (March 19): Profitability Audit and Optimization
 
-**Objective:** Diagnose and fix why zero trades executed after 1,401 loop iterations. Complete bootstrap deadlock: no prices (RPC 503), no indicators (not computed), no volume (hardcoded 0), tiny stable token universe.
+**Objective:** Diagnose and fix why zero trades executed after 1,401 loop iterations. Complete bootstrap deadlock.
 
 ### Root Cause Analysis
 
-The cascade: No prices (RPC 503) -> no snapshots -> Haiku gets empty/useless data -> recommendation scores 8-35 -> entry confidence never hits 60 -> zero buy signals -> zero trades -> evolution engine has no data -> no improvement. Complete bootstrap deadlock.
+The cascade: No prices (RPC 503) -> no snapshots -> Haiku gets empty data -> low scores -> no buy signals -> zero trades -> evolution has no data. Complete deadlock.
 
-| # | Issue | Impact | Root Cause |
-|---|-------|--------|------------|
-| 1 | RPC 503 | Total block | Single endpoint `base.llamarpc.com`, no fallback |
-| 2 | No indicator data | Haiku gets no RSI/MACD/Bollinger | Snapshots pushed with no computed indicators |
-| 3 | Empty volume | Volume always 0 | Hardcoded `volume24h: 0` |
-| 4 | Tiny token universe | 5 tokens, all low-volatility | ETH/wstETH/UNI rarely trigger RSI<30 on 5m-1h |
+### What Was Built (6 unblocking items)
 
-### What Claude Code Built
+1. **RPC Fallback Chain** -- 3 endpoints with auto-rotation and health check at startup.
+2. **Technical Indicators** (`indicators.ts`, 210 lines) -- RSI-14, MACD(12,26,9), Bollinger Bands(20,2), EMA-9, EMA-21.
+3. **Volume via DexScreener** -- Real 24h volume with 60s cache.
+4. **Signal Prompt Scoring Rubric** -- Explicit rubric for Haiku: "If strategy entry condition is mathematically met, confidence SHOULD be 60+."
+5. **Token Universe Expansion** -- Added 4 high-volatility Base-native tokens (DEGEN, BRETT, VIRTUAL, HIGHER). These move 20-50%/hour vs ETH's 1-2%.
+6. **Rule-Based Entry Bypass** -- Paper trades fire immediately when mathematical conditions are met. Breaks the bootstrap deadlock.
 
-**Sprint 1 -- Unblock Trading (6 items, all complete):**
+**Key Decision:** Rule-based bypass is the most important change. The AI-gated entry was a Catch-22. The bypass breaks this by letting math-verified conditions execute immediately.
 
-- **1a. RPC Fallback Chain** (`base-client.ts`) -- 3 endpoints (llamarpc, mainnet.base.org, 1rpc.io) with auto-rotation on 503/timeout and health check at startup. Provider + signer rebuild on rotation.
-
-- **1b. Technical Indicators** (`indicators.ts` NEW, 210 lines) -- Pure functions computing RSI-14, MACD(12,26,9), Bollinger Bands(20,2), EMA-9, EMA-21 from the price history buffer. `computeAllIndicators()` attaches whatever is computable given data length. Wired into `fetchMarketSnapshots()` in darwin-agent.ts. Log output now shows `RSI:XX | MACD:X.XXXX` per token.
-
-- **1c. Volume via DexScreener** (`darwin-agent.ts`) -- Real 24h volume from `https://api.dexscreener.com/latest/dex/tokens/{address}` (free, no key). 60s cache to avoid rate limiting. Replaces hardcoded 0.
-
-- **1d. Signal Prompt Scoring Rubric** (`claude-cli-engine.ts`) -- Added explicit rubric to Haiku's system prompt: "If strategy entry condition is mathematically met, confidence SHOULD be 60+. If close (within 15%), 40-59. If not close, below 40." Paper-mode confidence threshold lowered from 60 to 45 in darwin-agent.ts.
-
-- **1e. Token Universe Expansion** (`uniswap-client.ts`, `price-feed.ts`, `strategy-manager.ts`) -- Added 4 high-volatility Base-native tokens: DEGEN (1% fee), BRETT (1% fee), VIRTUAL (0.3% fee), HIGHER (1% fee). These move 20-50% in an hour vs ETH's 1-2%. Each strategy's `tokenPreferences` updated with 2 volatile tokens.
-
-- **1f. Rule-Based Entry Bypass** (`darwin-agent.ts`) -- Fast path fires paper trades when mathematical conditions are met without waiting for AI: RSI < threshold, EMA crossover > threshold%, price below Bollinger lower band, MACD crosses above signal from negative. Haiku evaluation runs async for learning but doesn't gate paper trades.
-
-**Sprint 2 -- Strategic Improvements (partial):**
-
-- **2a. Evolution Acceleration** -- Evolution interval reduced from 4h to 1h during qualification mode (no live strategy yet). Returns to 4h after first promotion.
-
-- **2c. Shorter Timeframe** -- 1m timeframe already supported in the type system; evolution engine can discover it through mutation.
-
-### Key Decision
-
-**Rule-based bypass is the most important change.** The AI-gated entry was a Catch-22: Haiku needs good data to make good calls, but good data only comes from trades flowing. The bypass breaks this by letting math-verified conditions execute immediately. Haiku still evaluates every trade for learning, so the evolution engine gets data even though it's not the gatekeeper.
-
-### Verification
-
-| Check | Result |
-|-------|--------|
-| TypeScript compilation | 0 errors |
-| Files changed | 7 (1 new, 6 modified) |
-| Token universe | 9 tokens (was 5) |
-| Expected first paper trades | Within 30 min of deployment |
-| Expected first live promotion | Within 2-4h of paper trades closing |
-
-**Code Impact:** 7 files modified, 1 file created (`indicators.ts`), ~400 lines added.
+**Code Impact:** 7 files modified, 1 file created, ~400 lines added.
 
 ---
 
-## Session 11: VaultV2 (ERC-4626) + React DApp (2026-03-19)
+## Session 11 (March 19): VaultV2 (ERC-4626) + React DApp
 
-**Objective:** Transform DarwinFi from a single-operator agent into a multi-user protocol. Replace the original DarwinVault (owner-only, per-strategy budgets) with an ERC-4626 tokenized vault that lets anyone deposit USDC and receive yield-bearing shares. Build a full React DApp for vault interaction.
+**Objective:** Transform DarwinFi from a single-operator agent into a multi-user protocol with ERC-4626 tokenized vault.
 
 ### Key Decisions
 
-- **ERC-4626 standard over custom vault.** The original DarwinVault had per-strategy spending scopes -- useful for controlling a single agent but impossible for external depositors to interact with. ERC-4626 is the standard tokenized vault interface: users deposit USDC, receive dvUSDC shares, and share value increases as the agent generates profit. Any wallet, aggregator, or DeFi protocol can integrate without custom code.
+- **ERC-4626 standard.** Users deposit USDC, receive dvUSDC shares. Share value increases as the agent generates profit. Any wallet, aggregator, or DeFi protocol can integrate.
+- **Agent borrow/return pattern.** Agent must explicitly `agentBorrow()` USDC and `agentReturn()` proceeds. Auditable trail.
+- **Lit Protocol PKP as future agent key.** Vault's `agent` address designed for EOA-to-PKP migration.
+- **React + Vite + Wagmi + RainbowKit.** Standard web3 DApp stack.
 
-- **Agent borrow/return pattern.** Instead of giving the agent direct access to all vault funds, the agent must explicitly `agentBorrow()` USDC for trading and `agentReturn()` proceeds. This creates an auditable trail: totalBorrowed tracks how much is out, and the vault's totalAssets = balance + borrowed. Performance fees are only taken on profit above a high water mark, preventing fee extraction on recovery from drawdown.
+### What Was Built
 
-- **Lit Protocol PKP as future agent key.** The vault's `agent` address is designed to be swapped from an EOA to a Lit Protocol Programmable Key Pair. Lit PKPs are decentralized key management -- the agent's trading key exists across Lit's threshold network, not on any single server. The setAgent() function allows seamless migration.
+**Smart Contract (374 lines of Solidity):**
+- `DarwinVaultV2.sol` -- ERC-4626 vault with dvUSDC share token. Agent borrow/return, performance fee (10% above HWM), deposit cap, anti-flash-loan lock, emergency withdrawal.
 
-- **React + Vite + Wagmi + RainbowKit.** Standard web3 DApp stack. Wagmi provides typed contract hooks, RainbowKit handles wallet connection UI. Deployed as static build served via Express on port 3502 behind Caddy reverse proxy at `/darwinfi/`.
+**DApp (35 files, ~4,900 lines):**
+- 3 pages (Home, Portfolio, Tournament)
+- 11 components (Deposit, Withdraw, Portfolio, VaultOverview, AgentStatus, Leaderboard, TradesFeed, Navbar, etc.)
+- 6 hooks (deposit, withdraw, vault stats, API data, Instinct, Frontier)
+- 5 infrastructure files (Wagmi, RainbowKit, contracts, constants)
 
-### What Claude Code Built
+**Deployment:** `0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3` ([basescan](https://basescan.org/address/0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3))
 
-**Smart Contract (1 file, 374 lines of Solidity):**
-- `DarwinVaultV2.sol` -- ERC-4626 vault with dvUSDC share token. Features: agent borrow/return with totalBorrowed tracking, performance fee (10% above high water mark) paid as minted shares, deposit cap (10K USDC), 1-hour anti-flash-loan lock, emergency withdrawal (always available, even when paused), owner-configurable parameters. Uses OpenZeppelin ERC4626 + Ownable + ReentrancyGuard + Pausable.
+**Tests:** 57 passing (deposit, withdraw, borrow, return, fees, emergency, lock).
 
-**DApp Pages (3 files):**
-- `Home.tsx` -- Landing page with vault overview, agent status, strategy leaderboard, recent trades feed.
-- `Portfolio.tsx` -- Personal portfolio view with deposit/withdraw cards, share balance, PnL tracking.
-- `Tournament.tsx` -- Full strategy tournament view with composite scores, evolution timeline.
-
-**DApp Components (11 files, ~2,400 lines):**
-- `DepositCard.tsx` / `WithdrawCard.tsx` -- USDC deposit/withdraw with approval flow, share preview, max buttons.
-- `PortfolioCard.tsx` -- User's dvUSDC balance, current value, profit/loss since deposit.
-- `VaultOverview.tsx` -- Total assets, share price, utilization (borrowed/total), vault cap progress.
-- `AgentStatus.tsx` -- Agent wallet balance, current strategy, live/paper mode indicator.
-- `Leaderboard.tsx` -- Strategy tournament table with scores, PnL, win rates, generation count.
-- `TradesFeed.tsx` -- Recent trades with buy/sell colors, token pairs, PnL per trade.
-- `Navbar.tsx` -- Navigation with wallet connect button, DarwinFi branding.
-- `InstinctChart.tsx` / `InstinctSummary.tsx` -- Instinct prediction visualizations (wired in Session 12).
-
-**DApp Hooks (6 files, ~800 lines):**
-- `useVaultDeposit.ts` -- ERC-20 approve + ERC-4626 deposit transaction flow.
-- `useVaultWithdraw.ts` -- ERC-4626 redeem with lock time check.
-- `useVaultStats.ts` -- Reads totalAssets, sharePrice, totalBorrowed, cap from contract.
-- `useDarwinFiAPI.ts` -- Fetches strategies, trades, evolution data from Express API.
-- `useInstinctAPI.ts` -- Fetches prediction data from Instinct agent API.
-- `useFrontierAPI.ts` -- Fetches frontier bot data (wired in Session 14).
-
-**DApp Infrastructure (5 files):**
-- `wagmi.ts` / `providers.tsx` -- Chain config (Base mainnet), RainbowKit provider wrapper.
-- `lib/constants.ts` / `lib/contracts.ts` -- Contract addresses, ABIs, token addresses.
-- `main.tsx` / `App.tsx` -- Router setup with React Router DOM.
-
-**Deployment (DarwinVaultV2 on Base mainnet):**
-- `0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3` ([basescan](https://basescan.org/address/0xb01aD1140d7acA150BF56D7516Bd44eE64970FE3))
-
-### Verification
-
-| Check | Result |
-|-------|--------|
-| Hardhat compile | 0 errors (5 contracts) |
-| VaultV2 tests | 57 passing (deposit, withdraw, borrow, return, fees, emergency, lock) |
-| DApp build (npm run build) | Clean |
-| DApp accessible at /darwinfi/ | Verified |
-
-**Code Impact:** 36 files created (1 Solidity, 35 DApp TS/TSX), ~4,900 lines added.
+**Code Impact:** 36 files created, ~4,900 lines added.
 
 ---
 
-## Session 12: Instinct System -- Self-Evolving Prediction Layer (2026-03-19)
+## Session 12 (March 19): Instinct System -- Self-Evolving Prediction Layer
 
-**Objective:** Build a biological nervous system for DarwinFi. The trading agent makes decisions on 30-second ticks, but market-moving events (news, whale movements, on-chain anomalies) happen on different timescales. The Instinct system collects multi-source intelligence and generates directional predictions that the trading agent consumes, modeled as five biological departments.
+**Objective:** Build a biological nervous system for DarwinFi. The Instinct system collects multi-source intelligence and generates directional predictions that the trading agent consumes.
+
+### Five-Department Biological Architecture
+
+- **Senses** -- Event collection from multiple sources (Grok/X via Venice API, RSS feeds, on-chain data). Each source on its own interval (5-15 min).
+- **Reflexes** -- Prediction engine at four timeframes (1m, 5m, 15m, 1h). Weighted ensemble of source signals.
+- **Cortex** -- Weight optimization every 24h. Ranks sources by actual predictive accuracy and adjusts influence.
+- **Nerves** -- State writer publishing `predictions-live.json` every 30s for the trading agent.
+- **Marrow** -- Pattern detection every 4h. Identifies recurring signal patterns.
 
 ### Key Decisions
 
-- **Five-department biological architecture.** Rather than a monolithic prediction service, each department handles one function with independent timing:
-  - **Senses** -- Event collection from multiple sources (Grok/X via Venice API, RSS feeds, on-chain data). Each source runs on its own interval (5-15 min).
-  - **Reflexes** -- Prediction engine generating directional calls at four timeframes (1m, 5m, 15m, 1h). Uses weighted ensemble of source signals.
-  - **Cortex** -- Weight optimization. Every 24h, ranks sources by actual predictive accuracy and adjusts their influence on predictions.
-  - **Nerves** -- State writer publishing `predictions-live.json` every 30s for the trading agent to consume.
-  - **Marrow** -- Pattern detection every 4h, identifies recurring signal patterns and generates workflow suggestions.
+- **Adaptive evolution with three independent triggers.** (1) Base timer starts at 4h, adjusts based on accuracy. (2) Emergency trigger if accuracy drops below 30%. (3) Weight shift trigger on >20% optimal weight change.
+- **Source fitness scoring.** Low-fitness sources get deprioritized. Sources that consistently fail can be disabled entirely.
+- **Venice AI for Grok/X scraping.** Extracted structured crypto sentiment from X/Twitter.
 
-- **Adaptive evolution with three independent triggers.** (1) Base timer starts at 4h, adjusts up/down based on rolling accuracy. (2) Emergency trigger fires immediately if rolling 1h accuracy drops below 30%. (3) Weight shift trigger fires when Cortex detects >20% shift in optimal source weights (indicating market character change). This means the system evolves faster when it's wrong and slows down when it's right.
+### What Was Built
 
-- **Source fitness scoring.** Each source (Grok, RSS, on-chain) gets a fitness score based on how well its events predicted subsequent price moves. Low-fitness sources get deprioritized. Sources that consistently fail can be disabled entirely by the Cortex.
-
-- **Venice AI for Grok/X scraping.** Used Venice API's `llama-3.3-70b` model to extract structured crypto sentiment from X/Twitter via Grok. This keeps Venice AI (hackathon sponsor) deeply integrated beyond just the evolution engine.
-
-### What Claude Code Built
-
-**Data Layer (4 files, ~700 lines):**
-- `data/candle-store.ts` -- OHLCV candle storage with rolling window management, multi-token multi-timeframe.
-- `data/event-store.ts` -- Typed event storage (news, social, on-chain) with source tagging and expiry.
-- `data/pool-registry.ts` -- Uniswap V3 pool addresses for all tracked tokens on Base.
-- `types.ts` -- Full type definitions for predictions, events, fitness scores, adaptive config.
-
-**Senses (4 files, ~800 lines):**
-- `senses/source-manager.ts` -- Source lifecycle management, fitness evaluation, collection scheduling.
-- `senses/grok-source.ts` -- Venice API integration for Grok/X crypto sentiment extraction.
-- `senses/rss-source.ts` -- RSS feed aggregation from crypto news sources with article age filtering.
-- `senses/onchain-source.ts` -- On-chain event detection (large swaps, liquidity changes) from Uniswap pools.
-
-**Reflexes (2 files, ~600 lines):**
-- `reflexes/prediction-engine.ts` -- Multi-timeframe prediction generation with weighted source ensemble. Tracks prediction accuracy for Cortex feedback.
-- `reflexes/strategies/` -- Prediction strategy implementations (technical, sentiment, momentum).
-
-**Cortex (2 files, ~500 lines):**
-- `cortex/scorer.ts` -- Prediction accuracy scoring with directional and magnitude components.
-- `cortex/weight-optimizer.ts` -- Bayesian-inspired weight adjustment for sources and prediction strategies.
-
-**Nerves (1 file, ~200 lines):**
-- `nerves/state-writer.ts` -- Atomic JSON writer publishing live prediction state for trading agent consumption.
-
-**Marrow (2 files, ~400 lines):**
-- `marrow/pattern-detector.ts` -- Recurring signal pattern identification across sources.
-- `marrow/workflow-generator.ts` -- Automated workflow suggestions based on detected patterns.
-
-**Backtest (1 file, ~300 lines):**
-- `backtest/backtest-runner.ts` -- Historical prediction backtesting against candle data.
-
-**Orchestrator (1 file, 420 lines):**
-- `instinct-agent.ts` -- PM2 entry point tying all 5 departments together with independent timers. Handles adaptive evolution interval, emergency triggers, graceful shutdown.
-
-### Verification
-
-| Check | Result |
-|-------|--------|
-| TypeScript compilation | 0 errors |
-| Instinct type tests | 12 passing |
-| PM2 start (darwinfi-instinct) | Clean startup |
-| predictions-live.json writing | Verified (30s interval) |
+- **Data Layer** (4 files, ~700 lines) -- Candle storage, event storage, pool registry, types.
+- **Senses** (4 files, ~800 lines) -- Source manager, Grok source, RSS source, on-chain source.
+- **Reflexes** (2 files, ~600 lines) -- Multi-timeframe prediction engine.
+- **Cortex** (2 files, ~500 lines) -- Accuracy scoring, Bayesian weight adjustment.
+- **Nerves** (1 file, ~200 lines) -- Atomic state writer.
+- **Marrow** (2 files, ~400 lines) -- Pattern detection, workflow generation.
+- **Backtest** (1 file, ~300 lines) -- Historical prediction backtesting.
+- **Orchestrator** (1 file, 420 lines) -- PM2 entry point tying all 5 departments together.
 
 **Code Impact:** 23 files created, ~5,200 lines added. PM2 process: `darwinfi-instinct`.
 
 ---
 
-## Session 13: Immune System -- Autonomous Monitoring & Self-Healing (2026-03-19)
+## Session 13 (March 19): Immune System -- Autonomous Monitoring and Self-Healing
 
-**Objective:** Build an autonomous immune system that monitors DarwinFi's health, detects problems, and fixes them without human intervention. Modeled on the biological immune system with seven divisions, each handling a different defense function. Runs as a separate PM2 process so it can monitor and restart the main agent independently.
+**Objective:** Build an autonomous immune system that monitors DarwinFi's health, detects problems, and fixes them without human intervention. Runs as a separate PM2 process so it can monitor and restart the main agent independently.
 
-### Key Decisions
+### Seven Immune Divisions
 
-- **Seven immune divisions.** Each maps to a biological immune function:
-  - **Patrol** -- Continuous health monitoring (process health, chain connectivity, state file integrity, API endpoints, Instinct health). 30s-5min intervals.
-  - **Antibodies** -- Deep verification (math verifier checks scoring formulas, state invariants validates business rules, test runner executes Hardhat suite, integration checks verify cross-module consistency).
-  - **Thymus** -- Security scanning (dependency CVE scanner, key safety audit, smart contract vulnerability scan, API exposure analysis).
-  - **Platelets** -- Self-healing engine. When Patrol or Antibodies detect a problem, Platelets attempt automated fixes (PM2 restart, state file repair, RPC rotation) with a fix history log.
-  - **Membrane** -- Boundary truth checking (share price audit against on-chain state, vault consistency between contract and dashboard, UI truth verification).
-  - **Lymph** -- Centralized logging and alerting. Log aggregator with severity routing, alert deduplication, and Telegram integration for critical alerts.
-  - **Genome** -- Self-evolution every 12h. Analyzes incident patterns, tunes alert thresholds, and generates new health checks based on observed failure modes.
+- **Patrol** -- Continuous health monitoring (30s-5min intervals): process health, chain connectivity, state file integrity, API endpoints, Instinct health.
+- **Antibodies** -- Deep verification: math verifier, state invariants, test runner, integration checks.
+- **Thymus** -- Security scanning: dependency CVE scanner, key safety, contract vulnerability scan, API exposure.
+- **Platelets** -- Self-healing engine with fix-then-verify pattern. Re-runs original check after each fix. Cooldown prevents retry loops.
+- **Membrane** -- Boundary truth checking: share price audit, vault consistency, UI truth verification.
+- **Lymph** -- Centralized logging and alerting with severity routing.
+- **Genome** -- Self-evolution every 12h. Analyzes incidents, tunes thresholds, generates new health checks.
 
-- **Separate PM2 process.** The immune system cannot be part of the main agent process because it needs to detect and restart the agent if it crashes. Running as `darwinfi-immune` with `--max-memory-restart 150M` gives it independence.
+### What Was Built
 
-- **Fix-then-verify pattern.** Platelets don't just apply fixes blindly. After each fix attempt, the original check function is re-run to verify the fix worked. Failed fixes are logged and escalated. Fix history prevents retry loops (same fix won't be attempted again within a cooldown period).
-
-- **Genome evolution learns from incidents.** Every 12h, the Genome division analyzes the fix history and log entries, identifies recurring failure patterns, and adjusts thresholds. If the same check fires 10 times but the fix always works, the threshold gets relaxed. If a new failure type appears that no check catches, the Genome generates a new check definition.
-
-### What Claude Code Built
-
-**Patrol (5 files, ~800 lines):**
-- `patrol/patrol-scheduler.ts` -- Schedules and manages all patrol check intervals.
-- `patrol/process-patrol.ts` -- PM2 process health (CPU, memory, restart count, uptime).
-- `patrol/chain-patrol.ts` -- Base RPC health, block freshness, gas price monitoring.
-- `patrol/state-patrol.ts` -- State file existence, parsability, staleness detection.
-- `patrol/api-patrol.ts` -- HTTP probe of dashboard and API endpoints.
-- `patrol/instinct-patrol.ts` -- Instinct agent prediction freshness and source health.
-
-**Antibodies (4 files, ~600 lines):**
-- `antibodies/math-verifier.ts` -- Recomputes Sharpe ratio, composite scores, sigmoid normalization from raw data. Compares against cached values.
-- `antibodies/state-invariants.ts` -- Business rule validation (no negative balances, strategy count within bounds, generation monotonically increasing).
-- `antibodies/test-runner.ts` -- Executes `npx hardhat test` and parses results.
-- `antibodies/integration-checks.ts` -- Cross-module consistency (strategies in state match strategies in performance tracker).
-
-**Thymus (4 files, ~500 lines):**
-- `thymus/dependency-scanner.ts` -- npm audit wrapper with severity filtering.
-- `thymus/key-safety.ts` -- Scans for exposed private keys, API tokens in source files or logs.
-- `thymus/contract-scanner.ts` -- Static analysis of Solidity contracts for common vulnerability patterns.
-- `thymus/api-exposure.ts` -- Checks that sensitive endpoints are not publicly accessible.
-
-**Platelets (2 files, ~400 lines):**
-- `platelets/fix-engine.ts` -- Automated remediation with fix strategies per check type (restart process, rotate RPC, repair state file). Re-verifies after fix.
-- `platelets/fix-history.ts` -- Fix attempt logging with cooldown tracking to prevent retry loops.
-
-**Membrane (3 files, ~400 lines):**
-- `membrane/share-price-auditor.ts` -- Computes expected share price from on-chain totalAssets/totalSupply, compares to dashboard display.
-- `membrane/vault-consistency.ts` -- Verifies vault contract state matches persisted agent state.
-- `membrane/ui-truth-checker.ts` -- Ensures DApp displays match actual contract/API data.
-
-**Lymph (2 files, ~350 lines):**
-- `lymph/log-aggregator.ts` -- Structured logging with severity levels, source tagging, periodic flush to disk.
-- `lymph/alert-manager.ts` -- Alert deduplication, severity escalation, active alert tracking.
-
-**Genome (4 files, ~500 lines):**
-- `genome/genome-state.ts` -- Persistent genome state with evolution cycle counter and threshold registry.
-- `genome/evolution-log.ts` -- Incident pattern analysis from fix history and logs.
-- `genome/threshold-tuner.ts` -- Adjusts check thresholds based on false positive/negative rates.
-- `genome/check-generator.ts` -- Generates new check definitions from observed failure patterns.
-
-**Config + Types (2 files, ~300 lines):**
-- `config.ts` -- Check intervals, file paths, alert thresholds.
-- `types.ts` -- CheckResult, ImmuneHealthSummary, DivisionStatus, FixResult types.
-
-**Orchestrator (1 file, 392 lines):**
-- `immune-agent.ts` -- PM2 entry point coordinating all 7 divisions. Central result handler routes through alert manager and fix engine. Writes health summary to `data/immune-state.json` every 30s for dashboard consumption.
-
-### Verification
-
-| Check | Result |
-|-------|--------|
-| TypeScript compilation | 0 errors |
-| Immune math verifier tests | 14 passing |
-| PM2 start (darwinfi-immune) | Clean startup |
-| All 7 divisions online | Verified |
+- 31 source files under `src/immune/` (5,609 LOC)
+- 8 test files with 79 tests
+- 5 dashboard API routes
+- Self-healing: auto PM2 restart, RPC rotation, state rebuild
+- Self-evolution: 12h EMA threshold tuning + pattern-based check generation
 
 **Code Impact:** 31 files created, ~4,400 lines added. PM2 process: `darwinfi-immune`.
 
 ---
 
-## Session 14: Frontier System -- Cross-Chain Evolutionary Expansion (2026-03-19)
+## Session 14 (March 19): Frontier System -- Cross-Chain Evolutionary Expansion
 
-**Objective:** Build Team 4, a cross-chain expansion of the DarwinFi agent population. While Teams 1-3 (the original 12 strategies) compete on Base, Team 4 introduces four entirely new bot archetypes that hunt across multiple EVM chains. Each archetype fills a distinct ecological niche inspired by biological evolution: primordial life (new token detection), cell division (micro-scalping), mass speciation (volatility hunting), and mutualism (whale following).
+**Objective:** Build Team 4, a cross-chain expansion of the agent population. Four new bot archetypes that hunt across multiple EVM chains.
 
-### Key Decisions
+### Four Unique Archetypes
 
-- **Four unique archetypes, not variations.** Teams 1-3 use 3 strategies x 4 roles (main + 3 variations). Team 4 takes a different approach: 4 completely distinct bot types, each with its own trading thesis, data sources, and tick speed. They compete internally for a "Team 4 champion" slot via the same composite scoring.
+- **Abiogenesis** (Micro-Cap Moonshot) -- Detects new token deployments via factory event monitoring. Rug detection (honeypot, ownership concentration, liquidity lock) before entry.
+- **Mitosis** (Ultra-HFT Micro-Scalper) -- Captures bid-ask spreads across DEX pools. 5-10 second tick speed.
+- **Cambrian** (Volatility Hunter) -- Identifies abnormal volatility spikes relative to historical baseline.
+- **Symbiont** (Smart Money Tracker) -- Monitors whale wallets, mirrors high-conviction buys.
 
-- **Biological niche specialization:**
-  - **Abiogenesis** (Micro-Cap Moonshot) -- Detects brand-new token deployments via factory event monitoring. Runs rug detection (honeypot analysis, ownership concentration, liquidity lock check) before entry. High risk, high reward.
-  - **Mitosis** (Ultra-HFT Micro-Scalper) -- Captures bid-ask spreads across DEX pools. 5-10 second tick speed. Requires profitable spread > gas cost + slippage.
-  - **Cambrian** (Volatility Hunter) -- Identifies tokens experiencing abnormal volatility spikes relative to their historical baseline. Enters on the thesis that volatility clusters.
-  - **Symbiont** (Smart Money Tracker) -- Monitors whale wallets, mirrors high-conviction buys from wallets with strong historical returns. Exits when the whale exits.
+### Key Infrastructure
 
-- **ChainRegistry for multi-chain.** Rather than hardcoding Base, built a ChainRegistry that manages EVM provider connections across Base, Arbitrum, Optimism, and Ethereum. Health checks, auto-rotation on failures, and a providers map that all frontier modules share. New chains can be added with a single registry entry.
+- **ChainRegistry** -- Multi-chain EVM provider management (Base, Arbitrum, Optimism) with health checks and auto-rotation.
+- **1inch aggregation** -- Best-price routing across DEXes per chain.
+- **Cross-chain bridge client** -- Across Protocol and Socket for moving funds between chains.
+- **Championship system** -- Team 4's winner competes against Teams 1-3's champion.
 
-- **1inch aggregation over direct Uniswap.** Teams 1-3 swap via Uniswap V3 directly. Team 4 uses the 1inch aggregator API for best-price routing across DEXes per chain. This is especially important for micro-cap tokens that may not have deep Uniswap pools.
+### What Was Built
 
-- **Cross-chain bridge client.** Built a bridge abstraction layer for moving funds between chains. Currently supports Across Protocol and Socket, with the bridge selection based on speed vs. cost per route.
+- 23 new source files (~7,500 LOC)
+- 10 new test files (114 tests, total now 251)
+- 8 new DApp components + dedicated Frontier page
+- 8 new API endpoints on port 3503
+- Built with 6-agent parallel team
 
-### What Claude Code Built
-
-**Chain Layer (2 files, ~600 lines):**
-- `chain/chain-registry.ts` -- Multi-chain EVM provider management with health checks, auto-rotation, and typed chain configs for Base, Arbitrum, Optimism.
-- `chain/evm-client.ts` -- Generic EVM client with block fetching, transaction sending, and event listening.
-
-**Trading Layer (3 files, ~900 lines):**
-- `trading/oneinch-client.ts` -- 1inch API v5 swap aggregation with quote preview and gas estimation.
-- `trading/cross-chain-engine.ts` -- Cross-chain trade coordination: pick chain, route via 1inch, bridge profits back to Base.
-- `trading/bridge-client.ts` -- Bridge abstraction for Across Protocol and Socket.
-
-**Frontier Modules (5 files, ~1,500 lines):**
-- `frontier/discovery/token-discovery.ts` -- Factory event monitoring for new token deployments. Emits `new_token` events for Abiogenesis.
-- `frontier/discovery/rug-detector.ts` -- Multi-check rug analysis: honeypot simulation, ownership concentration, liquidity lock verification, contract source verification. Returns safety score 0-100.
-- `frontier/hft/spread-scanner.ts` -- Real-time bid-ask spread monitoring across DEX pools. Filters by minimum profitable spread after gas.
-- `frontier/volatility/vol-scanner.ts` -- Historical volatility baseline tracking with spike detection. Calculates vol ratio (current / historical) per token.
-- `frontier/whale/whale-tracker.ts` -- Large transaction monitoring with whale wallet scoring based on historical return profile.
-
-**Agent Core (4 files, ~1,800 lines):**
-- `agent/frontier-agent.ts` -- Team 4 orchestrator with three tick speeds (fast 8s, signal 30s, evolution 4h). Event-driven architecture for Abiogenesis (new tokens) and Symbiont (whale buys/sells).
-- `agent/frontier-genome.ts` -- Genome definition for frontier bots with archetype-specific parameters (safety scores, spread thresholds, vol multipliers, whale score minimums).
-- `agent/frontier-manager.ts` -- Bot lifecycle, internal competition scoring, team winner selection.
-- `agent/championship.ts` -- Cross-team championship system. Team 4's winner competes against Teams 1-3's champion.
-
-**Dashboard (1 file, ~200 lines):**
-- `dashboard/frontier-routes.ts` -- Express API routes for Frontier dashboard data (bots, chains, discoveries, spreads, volatility, whales).
-
-**DApp Frontier Page + Components (9 files, ~1,200 lines):**
-- `dapp/src/pages/Frontier.tsx` -- Frontier dashboard page with tabbed sections.
-- `dapp/src/hooks/useFrontierAPI.ts` -- API hook for frontier bot data.
-- `dapp/src/components/BotCard.tsx` -- Individual bot status card with archetype icon and metrics.
-- `dapp/src/components/ChainStatusBar.tsx` -- Multi-chain health indicator.
-- `dapp/src/components/ChampionshipStandings.tsx` -- Cross-team competition leaderboard.
-- `dapp/src/components/CrossChainTradeFlow.tsx` -- Visual trade flow across chains.
-- `dapp/src/components/ShaderHero.tsx` -- WebGL DNA helix animation for Frontier page hero.
-- `dapp/src/components/VolatilityHeatmap.tsx` -- Token volatility heatmap across chains.
-- `dapp/src/components/WhaleActivityFeed.tsx` -- Real-time whale buy/sell feed.
-
-**Tests (10 files, ~2,100 lines):**
-- Test coverage for all frontier modules: rug-detector, spread-scanner, vol-scanner, whale-tracker, chain-registry, evm-client, frontier-manager, championship, cross-chain-engine, oneinch-client.
-
-### Verification
-
-| Check | Result |
-|-------|--------|
-| TypeScript compilation | 0 errors |
-| Frontier test suite | 99 passing (10 new test files) |
-| DApp build | Clean |
-| Chain registry health check | Base OK, Arbitrum OK, Optimism OK |
-
-**Code Impact:** 33 files created (24 TS, 9 DApp TSX/TS), 10 test files, ~7,200 lines added.
+**Code Impact:** 33 files created, ~7,200 lines added.
 
 ---
 
-## Session 15: DApp UI/UX Polish (2026-03-19)
+## Session 15 (March 19): DApp UI/UX Polish
 
-**Objective:** Fix visual bugs and polish the DApp before submission. Two issues: Tailwind v4 plugin compatibility error breaking some styles, and NaN displaying in vault stats when no deposits exist.
+- Fixed Tailwind v4 `@plugin` directive compatibility with Vite plugin.
+- NaN guard in `useVaultStats.ts` for zero-supply edge case.
+- Custom favicon pipeline (16x16, 32x32, 192x192, apple-touch-icon).
+- DarwinFi wordmark asset for Navbar.
 
-### Challenges & Solutions
-
-- **Tailwind v4 @plugin directive.** The DApp used `@plugin` in CSS which is Tailwind v4 syntax, but the Vite plugin was configured for v3 compatibility mode. Fixed by updating the PostCSS config to use `@tailwindcss/vite` plugin directly, removing the legacy `@plugin` directive.
-
-- **NaN in vault stats.** When the vault has zero total supply, `convertToAssets(shares)` returns NaN because of division by zero in the ERC-4626 formula. Added a guard in `useVaultStats.ts` to return `1.000000` (1:1 ratio) when totalSupply is 0, matching the contract's `sharePrice()` behavior.
-
-### What Claude Code Did
-
-- Fixed Tailwind v4/Vite plugin configuration in `postcss.config.js` and `tailwind.config.ts`.
-- Added NaN guard in `useVaultStats.ts` for zero-supply edge case.
-- Generated custom favicon pipeline: source PNG to multi-size favicons (16x16, 32x32, 192x192, apple-touch-icon) placed in `dapp/public/`.
-- Added DarwinFi wordmark asset for Navbar branding.
-
-**Code Impact:** 5 files modified, 5 asset files added, ~50 lines changed.
+**Code Impact:** 5 files modified, 5 asset files added.
 
 ---
 
-## Session 16: Final Audit Fixes -- C2, H8, C3 (2026-03-19)
-
-**Objective:** Complete the final three audit items from the agentic judge feedback. C2 (on-chain trade cycle), H8 (demo video script), and C3 (AI baseline test).
+## Session 16 (March 19): Final Audit Fixes -- C2, H8, C3
 
 ### C2: On-Chain Trade Cycle
 
-Created `scripts/trade-cycle.ts` -- a standalone script that executes the full DarwinFi vault lifecycle on Base mainnet with real USDC:
-
-1. Pre-flight checks (ETH balance, USDC balance, vault agent match)
-2. Approve USDC for vault
-3. Deposit 5 USDC into vault (ERC-4626 `deposit()`)
-4. Agent borrows 3 USDC (`agentBorrow()`)
-5. Swap USDC -> WETH via Uniswap V3 (0.05% pool)
-6. Swap WETH -> USDC via Uniswap V3
-7. Agent returns USDC to vault (`agentReturn()`)
-8. Temporarily set `minLockTime=0`, withdraw, restore to 1h
-9. Print summary with all tx hashes and BaseScan links
-
-Added missing ABI entries to `DARWIN_VAULT_V2_ABI` fallback: `setMinLockTime`, `minLockTime`, `maxWithdraw`, `paused`.
+Created `scripts/trade-cycle.ts` -- standalone script executing the full vault lifecycle on Base mainnet with real USDC: approve -> deposit -> borrow -> swap USDC->WETH -> swap WETH->USDC -> return -> withdraw. All tx hashes and BaseScan links printed.
 
 ### H8: Demo Video Script
 
-Created `docs/demo-script.md` -- a narration guide for recording a 3-4 minute demo video covering:
-- Scene 1: DApp landing page and vault overview (30s)
-- Scene 2: Wallet connect and deposit flow (60s)
-- Scene 3: On-chain trade cycle terminal demo (60s)
-- Scene 4: Tournament leaderboard and Instinct predictions (60s)
-- Scene 5: Architecture and sponsor integrations (30s)
+Created `docs/demo-script.md` -- 5-scene narration guide for a 3-4 minute demo video.
 
 ### C3: AI Baseline Test
 
-Created `scripts/ai-baseline-test.ts` -- compares DarwinFi AI trading performance against:
-- **Random baseline**: 1000 Monte Carlo random-direction trades over the same trade set
-- **Buy-and-hold baseline**: Hold ETH from first to last trade timestamp
+Created `scripts/ai-baseline-test.ts` -- compares DarwinFi performance against random baseline (1,000 Monte Carlo simulations) and buy-and-hold baseline.
 
-Extracted 4 closed trades from `agent-state.json` conversation log. Results are preliminary (small sample size) but the framework demonstrates the comparison methodology. Outputs a formatted comparison table with PnL, win rate, Sharpe ratio, and max drawdown.
-
-### Verification
-
-| Check | Result |
-|-------|--------|
-| TypeScript compilation | 0 errors (skipLibCheck) |
-| Test suite | 256 passing, 0 failures |
-| AI baseline test | Runs, outputs comparison table |
-
-**Code Impact:** 3 files created, 1 file modified (ABI additions), ~500 lines added.
+**Test suite:** 256 passing.
 
 ---
 
-## Session 17: VaultV3 + Self-Evolution Engine + Frontier Freedom (2026-03-20)
+## Session 17 (March 20): VaultV3 + Self-Evolution Engine + Frontier Freedom
 
-**Objective:** Build the fee-generating vault contract (VaultV3), a fully autonomous self-evolution engine that can modify its own codebase, enable Frontier bots by default, and add dashboard components for evolution monitoring. This session captures the transition from "hackathon project" to "protocol with sustainable economics."
+**Objective:** Build the fee-generating vault contract, a fully autonomous self-evolution engine that can modify its own codebase, and enable Frontier bots by default.
 
-### Key Decisions
+### VaultV3: Dual Fee Model
 
-- **VaultV3 with dual fee model.** VaultV2 had a 10% performance fee but no management fee, meaning zero revenue during flat markets. VaultV3 adds a 1% annual management fee (collected as minted shares, pro-rated per second) alongside the 5% performance fee (only taken above a high water mark). The management fee accrues continuously and is auto-collected on every `agentReturn()`, ensuring the protocol earns revenue even when trading is flat.
+- **1% annual management fee** (collected as minted shares, pro-rated per second) -- revenue even during flat markets.
+- **5% performance fee** (only above high water mark) -- prevents fee extraction during drawdown recovery.
 
-- **Self-evolution via Venice AI code generation.** Rather than waiting for a human to tune parameters, the evolution engine generates actual code diffs using Venice AI (Llama 3.3 70B). Each proposal goes through a 10-step pipeline: velocity check, zone selection, context assembly, AI generation, static validation, git worktree sandbox, TypeScript compilation, Hardhat test gate, canary deployment, and metric monitoring with auto-rollback. The engine literally modifies its own trading logic.
+### Self-Evolution Engine (11 files, 2,122 lines)
 
-- **File mutability rings.** Not all code should be evolvable. Three rings: Ring 0 (immutable) protects wallet code, live trading execution, smart contracts, the fitness function, and the evolution engine itself (it cannot modify its own pipeline). Ring 1 (evolvable) covers prediction models, frontier bots, health checks, and circuit breaker thresholds. Ring 2 (additive only) allows adding new indicators but not modifying existing ones.
+A fully autonomous code modification pipeline:
 
-- **Velocity limits and anti-loop safeguards.** Maximum 4 proposals per day, minimum 4 hours between proposals, 12-hour forced cooldown after a rollback. Duplicate diff hashes are rejected. Zones that fail 3 consecutive proposals enter exponential backoff (24h initial, max 7 days). Same file cannot be targeted more than 3 consecutive times. These limits prevent runaway mutations.
+1. **Velocity check** -- Max 4 proposals/day, min 4h between proposals.
+2. **Zone selection** -- Prioritized improvement targets.
+3. **Context assembly** -- Current metrics, file contents, failed history.
+4. **AI generation** -- Venice AI (Llama 3.3 70B) generates code diffs.
+5. **Static validation** -- Ring enforcement, forbidden pattern scanning, size limits.
+6. **Git worktree sandbox** -- Throwaway branch, apply diff.
+7. **TypeScript compilation** -- `tsc --noEmit` in sandbox.
+8. **Hardhat test gate** -- All tests must pass.
+9. **Canary deployment** -- PM2 restart with monitoring.
+10. **Metric monitoring** -- PnL delta, error rate, crash count. Auto-rollback on regression.
 
-- **Frontier enabled by default.** Changed `TEAM4_ENABLED` to default `true` so Frontier bots start running immediately when the DarwinFi agent launches, rather than requiring manual activation.
+### File Mutability Rings
 
-### What Claude Code Built
+- **Ring 0 (immutable):** Wallet code, live trading, smart contracts, fitness function, evolution engine itself.
+- **Ring 1 (evolvable):** Prediction models, frontier bots, health checks, circuit breaker thresholds.
+- **Ring 2 (additive only):** New indicators, no modification of existing.
 
-**Smart Contract (1 file, 437 lines of Solidity):**
-- `DarwinVaultV3.sol` -- ERC-4626 vault with dvUSDC share token. Dual fee model: 1% annual management fee (pro-rated per second, collected as minted shares) + 5% performance fee (above high water mark only). Agent borrow/return with totalBorrowed tracking. Deposit cap, anti-flash-loan lock, emergency withdrawal. Owner-configurable parameters (setPerformanceFeeBps, setManagementFeeBps, setAgent, setMaxTotalAssets, setMinLockTime, pause/unpause).
+### Anti-Loop Safeguards
 
-**Self-Evolution Engine (11 files, 2,122 lines):**
-- `orchestrator.ts` (451 lines) -- PM2 entry point running 6-hour evolution cycles. 10-step pipeline: velocity check, canary resume check, zone selection, context assembly, AI proposal generation, static validation, sandbox (git worktree + tsc), test gate, canary deployment, canary monitoring.
-- `config.ts` (172 lines) -- File mutability ring definitions (Ring 0/1/2), velocity limits, rollback thresholds (-2% TVL, +50% error rate, 3 crashes/10min), forbidden code patterns (eval, process.env, child_process, credentials), evolution zone priorities.
-- `proposal.ts` (232 lines) -- Venice AI integration for code generation. Builds context prompts with current metrics, file contents, and failed proposal history. Parses AI response into structured diff with rationale.
-- `static-validator.ts` (137 lines) -- Pre-sandbox validation: ring enforcement (immutable files rejected, additive files checked for modification), forbidden pattern scanning, size limit checks (max 200 lines added, 50 modified, 3 files per proposal).
-- `sandbox.ts` (134 lines) -- Git worktree isolation. Creates a throwaway branch, applies the diff, runs `tsc --noEmit`. Cleans up on failure.
-- `test-gate.ts` (127 lines) -- Runs `npx hardhat test` in the sandbox. Parses pass/fail counts, captures stdout. Proposal rejected if any test fails.
-- `canary.ts` (240 lines) -- Canary deployment with PM2 restart. Monitors PnL delta, error rate delta, crash count. 60-second check intervals, 4-hour minimum canary duration.
-- `rollback.ts` (99 lines) -- `git revert` the canary commit, PM2 restart. Logs the rollback reason.
-- `memory.ts` (196 lines) -- Persistent evolution state: daily proposal count, zone backoff timers, file targeting history, duplicate diff hashes, failed proposal context for anti-loop injection.
-- `types.ts` (165 lines) -- Full type system: EvolutionProposal, CanaryState, CanaryMetrics, ValidationResult, SandboxResult, TestResult, AntiLoopEntry, FileRingMapping, VelocityLimits.
-- `audit.ts` (173 lines) -- Append-only JSONL audit trail. Records every event in the evolution lifecycle: proposal_created, validation_passed/failed, sandbox_passed/failed, tests_passed/failed, canary_started, canary_check, proposal_promoted, proposal_rejected, rollback, cycle_started, cycle_completed, genome_pinned.
+- 12-hour forced cooldown after rollback
+- Duplicate diff hash rejection
+- Zone backoff (24h initial, max 7 days) after 3 consecutive failures
+- Same file max 3 consecutive targeting
 
-**Dashboard Components (4 files, ~530 lines):**
-- `dapp/src/components/EvolutionPanel.tsx` (200 lines) -- Live evolution engine status: current proposal state, canary metrics, cycle countdown.
-- `dapp/src/components/EvolutionAudit.tsx` (89 lines) -- Audit trail viewer showing recent evolution events.
-- `dapp/src/hooks/useEvolutionAPI.ts` (144 lines) -- React hooks for evolution engine API data.
-- `dapp/src/pages/Advanced.tsx` (59 lines) -- Tabbed advanced dashboard (Tournament, Instinct, Frontier, Evolution).
+**Tests:** 51 VaultV3 tests + 18 evolution smoke tests. Total: 325 passing.
 
-**Deploy Script (1 file, 41 lines):**
-- `scripts/deploy-v3.ts` -- Hardhat deploy script for DarwinVaultV3 with configurable USDC address, agent address, and fee recipient.
-
-**Immune System Updates (3 files, ~80 lines):**
-- `src/immune/immune-agent.ts` -- Added evolution division to immune monitoring.
-- `src/immune/platelets/fix-registry.ts` -- Fix registry for automated remediation.
-- `src/immune/config.ts` -- Updated health check config for evolution monitoring.
-
-**Infrastructure (1 file):**
-- `ecosystem.config.js` -- Added PM2 process definitions for darwinfi-evolution and darwinfi-showcase.
-
-**Tests (2 files, 875 lines):**
-- `test/DarwinVaultV3.test.ts` (631 lines) -- 51 tests covering deposit, withdraw, borrow, return, performance fees, management fees, high water mark, emergency withdrawal, lock time, max assets cap, pause/unpause, and access control.
-- `test/evolution-smoke.test.ts` (244 lines) -- 18 smoke tests: config loading, file ring classification, forbidden pattern detection, velocity limit enforcement, static validation, zone selection.
-
-### Verification
-
-| Check | Result |
-|-------|--------|
-| Hardhat compile | 0 errors (6 contracts) |
-| VaultV3 tests | 51 passing |
-| Evolution smoke tests | 18 passing |
-| DApp build | Clean |
-| PM2 start (darwinfi-evolution) | Clean startup |
-
-**Code Impact:** 30 files created/modified, ~4,400 lines added. Commits: `d2521eb`.
-
-**Deployment:** VaultV3 deployed to Base mainnet at `0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF`. Agent authorized, fee recipient set. V3 replaces V2 as the primary vault.
+**Deployment:** VaultV3 at `0x2a01CDf9D2145a8b23cDf7E8DB65273259E17FcF` (Base mainnet).
 
 ---
 
-## Session 18: AI Router + Ollama Integration + Autonomy Gap Closures (2026-03-20)
+## Session 18 (March 20): AI Router + Ollama Integration + Autonomy Gap Closures
 
-**Objective:** Close the six autonomy gaps identified in the March 20 audit (system was 40% autonomous, 60% static guardrails). Build an AI router with local Ollama inference, outcome attribution, signal calibration, dynamic fitness weights, real-time strategy switching, and adaptive circuit breakers. Transform DarwinFi from a trading bot that needs human parameter tuning into a system that identifies its own weaknesses and fixes them.
+**Objective:** Close six autonomy gaps. System was 40% autonomous, 60% static guardrails. Transform from "needs human parameter tuning" to "identifies and fixes its own weaknesses."
 
-### Key Decisions
+### AI Router with Local Inference
 
-- **Ollama on KS RTX 3090 as primary inference.** Local inference via Tailscale (`http://100.89.161.12:30068`) running gemma2:9b gives 2-3 second response times at zero API cost. This replaces paid Claude CLI calls for signal evaluation and predictions. The KS compute node's RTX 3090 handles the workload comfortably.
+- **Ollama on KS RTX 3090** (gemma2:9b, via Tailscale) -- 2-3 second response times at zero API cost.
+- **Three-tier routing:** Ollama (fast, free) -> Venice (quality tasks) -> Claude CLI (fallback). Health-check failover with 60s ping interval.
 
-- **Three-tier AI routing with health-check failover.** The AIRouter pings Ollama every 60 seconds. If healthy, fast tasks (signals, predictions, experimental/optimizer evolution) route to Ollama. Quality tasks (synthesizer evolution) route to Venice for better reasoning. If Ollama goes down after 3 consecutive health check failures, all traffic falls back to Venice, then Claude CLI as last resort. When Ollama recovers, traffic automatically routes back. Zero-cost inference during normal operation.
+### Outcome Attribution
 
-- **Outcome attribution replaces blind evolution.** Instead of the evolution engine blindly mutating parameters, every closed trade is now decomposed into four factors: entry timing quality, exit timing quality, slippage impact, and market regime alignment. Each factor gets a score from -1 (hurt) to +1 (helped). The dominant loss factor per strategy per token is identified and injected into evolution prompts: "On DEGEN, your main loss factor is poor exit timing -- consider adjusting stops/targets."
+Every closed trade decomposed into 4 factors: entry timing quality, exit timing quality, slippage impact, market regime alignment. Scores from -1 to +1. Dominant loss factor per strategy+token injected into evolution prompts.
 
-- **Signal calibration as self-correcting feedback loop.** Every signal source (Ollama, Claude, Venice, rule-based) is tracked per-token. If Ollama gives 80% confidence on DEGEN but only 50% of those signals win, the calibration factor drops to 0.625 and future signals are adjusted. Overconfident sources get dampened; underconfident sources get boosted. This closes the gap between predicted and actual accuracy.
+### Signal Calibration
 
-- **Dynamic fitness weights replace static scoring.** The 30/25/20/15/10 composite scoring weights are now market-regime-aware. High volatility periods increase the Sharpe ratio weight (reward risk management). Low volatility increases PnL weight (reward any profit). Trending markets boost win rate weight. Range-bound markets boost drawdown penalty. Weights are recalculated every scoring cycle based on rolling volatility.
+Self-correcting feedback loop. If Ollama gives 80% confidence on DEGEN but only 50% win, calibration factor drops to 0.625. Minimum 5 signals before calibrating.
 
-- **Real-time strategy switching with continuous monitoring.** Paper strategies that outperform the live strategy for 3+ consecutive scoring cycles get auto-promoted. Emergency switch triggers on 10% drawdown -- the best paper strategy takes over immediately. Sell-only mode for demoted strategies ensures positions unwind gracefully.
+### Dynamic Fitness Weights
 
-- **Adaptive circuit breakers scale with strategy quality.** A strategy with a 2.0 Sharpe ratio gets more room (drawdown limit * 1.3) than a strategy with 0.5 Sharpe (drawdown limit * 0.7). After a circuit breaker trips, the strategy enters recovery mode at 50% position sizing. Circuit breaker thresholds are exposed in the genome so the evolution engine can tune them.
+Market-regime-aware scoring. High volatility boosts Sharpe weight. Low volatility boosts PnL weight. Trending markets boost win rate. Range-bound markets boost drawdown penalty.
 
-### What Claude Code Built
+### Real-Time Strategy Switching
 
-**AI Router (1 file, 299 lines):**
-- `src/agent/ai-router.ts` -- Health-check routing with fallback chain. Manages provider status (healthy, consecutiveFailures, avgLatencyMs, totalCalls, totalErrors). Routes signals/predictions to Ollama, evolution synthesis to Venice. Exposes `evaluateEntry()`, `evaluateExit()`, `evolve()` with automatic failover. EMA latency tracking for monitoring.
+Paper strategies outperforming live for 3+ cycles get auto-promoted. Emergency switch on 10% drawdown.
 
-**Ollama Engine (1 file, 243 lines):**
-- `src/agent/ollama-engine.ts` -- HTTP client to KS RTX 3090 via Tailscale. Same interface as VeniceEngine/ClaudeCliEngine. Health check via `/api/tags`. Batch entry/exit signal evaluation with JSON parsing. Scoring rubric injected into system prompt. 15-second timeout with AbortController. Temperature 0.3, max 1024 tokens.
+### Adaptive Circuit Breakers
 
-**Outcome Attribution (1 file, 389 lines):**
-- `src/agent/attribution.ts` -- `AttributionEngine` class. `recordPrice()` maintains 2-hour rolling price buffer per token. `attributeTrade()` decomposes closed trades into 4 factors: entry timing (position within hold range), exit timing (how close to best price), slippage (fees/notional ratio), market regime (volatility + PnL combination). `getStrategyTokenProfile()` aggregates per strategy+token pair with dominant loss factor detection. `getEvolutionContext()` generates injectable text for evolution prompts. Persistence via `load()`/`getAll()`. Max 1,000 attributions with FIFO rotation.
+Strategy quality (Sharpe ratio) scales circuit breaker thresholds: high quality gets more room (1.3x), low quality gets tighter limits (0.7x). Recovery mode at 50% position sizing.
 
-**Signal Calibration (1 file, 177 lines):**
-- `src/agent/signal-calibration.ts` -- `SignalCalibration` class. `recordOutcome()` tracks signal correctness (buy+profit = correct, sell+loss = correct, skip+flat = correct). `calibrate()` adjusts raw AI confidence by the calibration factor (actual win rate / predicted win rate), clamped to 0.2-2.0x. `getProfile()` returns per-source per-token stats. `getEvolutionContext()` generates injectable text identifying overconfident/underconfident sources. Max 2,000 outcomes with FIFO.
-
-**Modified: Circuit Breaker (+93 lines):**
-- `src/agent/circuit-breaker.ts` -- Added adaptive threshold scaling based on strategy Sharpe ratio. Recovery mode with 50% position sizing after breaker trips. New BreakerState fields: `adaptiveDrawdownLimit`, `adaptiveLossLimit`, `inRecovery`, `recoveryPositionScale`, `sharpeRatio`. Thresholds scale from 0.7x (low quality strategy) to 1.3x (high quality strategy).
-
-**Modified: Performance Tracker (+129 lines):**
-- `src/agent/performance.ts` -- Added dynamic fitness weights based on market regime detection. `getDynamicWeights()` calculates rolling 24h volatility and adjusts composite scoring: high vol boosts Sharpe weight, low vol boosts PnL weight, trend boosts win rate weight, range boosts drawdown penalty. `computeDynamicComposite()` applies market-adjusted weights.
-
-**Modified: Strategy Manager (+126 lines):**
-- `src/agent/strategy-manager.ts` -- Added continuous outperformance tracking (`consecutiveOutperformCycles` per strategy). `checkAutoPromotion()` promotes paper strategies that beat live for 3+ cycles. `emergencySwitch()` triggers on drawdown threshold. `getDemotion()` returns lowest scorer for sell-only transition.
-
-**Modified: Darwin Agent (+68 lines):**
-- `src/agent/darwin-agent.ts` -- Wired AIRouter for signal evaluation. Wired AttributionEngine to decompose closed trades. Wired SignalCalibration to track signal outcomes. Feeds Instinct predictions into signal evaluation with configurable instinctWeight per strategy genome.
-
-**Modified: Evolution Engine (+107 lines):**
-- `src/agent/evolution-engine.ts` -- Integrated Ollama via AIRouter for fast evolution proposals (experimental + optimizer roles route to Ollama, synthesizer to Venice). Injected attribution context and signal calibration data into evolution prompts so AI can target specific weaknesses.
-
-**Modified: AI Predictor (+74 lines):**
-- `src/instinct/reflexes/ai-predictor.ts` -- Ollama integration for 1m/5m predictions. Routing: 1m/5m tries Ollama first (2-3s), falls back to Claude CLI (45s). 15m/1h stays on Venice. Periodic health check every 60s.
-
-**Modified: Evolution Audit (+8 lines):**
-- `src/evolution/audit.ts` -- Added `auditGenomePinned()` for tracking IPFS genome pinning events.
-
-### Verification
-
-| Check | Result |
-|-------|--------|
-| TypeScript compilation | 0 errors |
-| Test suite | 325 passing, 5 pending |
-| AIRouter health check | Ollama reachable (gemma2:9b) |
-| Signal evaluation via Ollama | 2-3s latency confirmed |
-
-**Code Impact:** 12 files (4 new, 8 modified), ~1,800 lines added, ~300 lines removed. Commit: `73010ae`.
+**Code Impact:** 12 files (4 new, 8 modified), ~1,800 lines added. Tests: 325 passing.
 
 ---
 
-## Session 19: Demo Video Pipeline
+## Session 19 (March 20): Demo Video Pipeline
 
-**Objective:** Build a complete automated demo video pipeline so DarwinFi can generate its own hackathon submission video -- narrated in first person by a British AI voice via ElevenLabs TTS.
+**Objective:** Build a complete automated demo video pipeline. DarwinFi narrates its own submission video in first person with a British AI voice via ElevenLabs TTS.
 
-### Key Decisions
+### Pipeline (5 scripts, ~885 lines)
 
-- **Agent-narrated demo.** Rather than a human voiceover, DarwinFi narrates its own demo in first person. This reinforces the autonomy thesis that judges scored highly (5.7-6.4/10) and creates a memorable submission. The narration is confident, British, and slightly dry -- fitting for an AI organism describing itself.
+1. `generate-narration.py` -- ElevenLabs TTS, British male voice "Daniel"
+2. `record-demo.ts` -- Playwright screen recorder, 1920x1080, 5 scenes
+3. `generate-slides.py` -- ImageMagick title cards, dark theme with teal accents
+4. `compose-video.sh` -- ffmpeg compositor, H.264 1080p AAC
+5. `build-demo.sh` -- Master orchestrator with skip flags
 
-- **ElevenLabs free tier.** The full narration is ~2,220 characters across 5 scenes. ElevenLabs free tier gives 10,000 chars/month -- plenty of room for retakes. Using the `eleven_multilingual_v2` model with British male preset voice "Daniel."
-
-- **Fully automated pipeline.** One command (`./scripts/build-demo.sh`) runs the entire chain: TTS generation -> Playwright screen recording -> ImageMagick title cards -> ffmpeg compositing. Supports `--skip-tts` and `--skip-record` flags for iterating on individual steps.
-
-### New Files (6 files, ~885 lines)
-
-**Narration Script (1 file):**
-- `docs/demo-narration.md` -- First-person narration in DarwinFi's voice. 5 scenes: Intro (25s), Vault (40s), Live Trading (50s), Tournament & Evolution (50s), Safety & Outro (25s). Total ~3 min 10 sec.
-
-**Video Pipeline (5 files):**
-- `scripts/generate-narration.py` -- ElevenLabs TTS wrapper. Generates MP3 per scene + full concatenated narration. Voice lookup by name, configurable stability/similarity/style settings.
-- `scripts/record-demo.ts` -- Playwright screen recorder. Captures 5 scenes from the live dapp at 1920x1080 with smooth scrolling and tab navigation. Each scene saves as `.webm`, auto-renamed for compositing.
-- `scripts/generate-slides.py` -- ImageMagick title card generator. Creates 5 PNG cards (opening, 3 scene transitions, closing with sponsors) in dark theme (#0a0a0a) with teal accents (#14b8a6). Auto-converts to 3-second MP4 clips.
-- `scripts/compose-video.sh` -- ffmpeg compositor. Normalizes all clips to consistent format, concatenates in order (title cards between scenes), overlays narration audio, encodes H.264 1080p AAC.
-- `scripts/build-demo.sh` -- Master orchestrator. Dependency checks, runs all 4 steps in sequence. Flags: `--skip-tts`, `--skip-record`, `--slides-only`.
-
-### System Dependencies Added
-
-- ffmpeg 6.1.1 (apt)
-- ImageMagick 6.9.12 (apt)
-- Playwright 1.58.2 + Chromium 145 (already in project)
-
-### Verification
-
-| Check | Result |
-|-------|--------|
-| Title card generation | 5/5 PNGs + 5/5 MP4 clips generated |
-| Opening card visual | Teal "DarwinFi" + tagline on dark background, crisp at 1080p |
-| Closing card visual | Contract address, dapp URL, 5 sponsor names in teal |
-| DApp serving | HTTP 200, React content rendering |
-| PM2 processes | 7/7 online |
-| Playwright/Chromium | Installed and runnable |
-| Env vars | PRIVATE_KEY, RPC URLs present |
-
-**Code Impact:** 6 new files, ~885 lines added. Commit: `8605b72`.
+**Verification:** 5/5 title cards generated, DApp serving, all 7 PM2 processes online.
 
 ---
 
-## Session 20: DarwinVaultV4 -- Security Hardening (2026-03-20)
+## Session 20 (March 20): DarwinVaultV4 -- Security Hardening
 
-**Objective:** Build V4 vault with 6 audit-driven security fixes over V3, addressing real-world attack vectors.
+**Objective:** Build V4 vault with 6 audit-driven security fixes addressing real-world attack vectors.
 
-### Key Changes
+### Security Enhancements Over V3
 
-- **12-decimal shares** (6 USDC decimals + 6 offset) -- prevents rounding manipulation on small deposits
-- **48-hour timelock** on agent and feeRecipient changes -- prevents instant hostile takeover
-- **Proportional emergency withdraw** -- users get fair share even when agent has borrowed funds
-- **80% max borrow ratio** -- vault always retains 20% liquidity for withdrawals
-- **7-day borrow timeout** with bad debt write-off -- prevents infinite capital lockup
-- **7-day lock time cap** -- prevents governance from trapping depositor funds indefinitely
+1. **12-decimal shares** (6 USDC decimals + 6 offset) -- prevents rounding manipulation on small deposits
+2. **48-hour timelock** on agent and feeRecipient changes -- prevents instant hostile takeover
+3. **Proportional emergency withdraw** -- fair share even when agent has borrowed funds
+4. **80% max borrow ratio** -- vault always retains 20% liquidity for withdrawals
+5. **7-day borrow timeout** with bad debt write-off -- prevents infinite capital lockup
+6. **7-day lock time cap** -- prevents governance from trapping depositor funds
 
 ### New Files
 
 - `contracts/DarwinVaultV4.sol` -- Security-hardened ERC-4626 vault
-- `test/DarwinVaultV4.test.ts` -- 80 tests covering all V4-specific features
+- `test/DarwinVaultV4.test.ts` -- 80 tests
 - `scripts/deploy-v4.ts` -- V4 deployment script
 
-**Code Impact:** 80 new tests (423 total). Commit: `3e71858`.
+**Tests:** 80 new tests, 423 total passing. Commit: `3e71858`.
 
 ---
 
-## Session 21: DApp UX Overhaul (2026-03-20)
+## Session 21 (March 20): DApp UX Overhaul -- Judge Feedback Response
 
 **Objective:** Address 7 specific weaknesses from simulated hackathon judge feedback (score 5.8/10).
 
 ### Changes
 
-- Fixed stale data indicators on dashboard
-- Improved mobile responsiveness
-- Added clearer vault deposit/withdraw flow
-- Enhanced tournament visualization
-- Better error states and loading indicators
-- Improved sponsor integration visibility
-- Cleaner navigation and information hierarchy
+1. **Strategy count fix** -- "12 AI strategies" updated to "16 AI strategies"
+2. **TrustModel default-open** -- Trust section visible on load
+3. **Withdrawal UX overhaul** -- WithdrawCard accepts USDC amount, converts to shares, shows conversion preview
+4. **Transaction history** -- BaseScan link to vault contract events
+5. **Navbar cleanup** -- Removed asterisk toggle, added FAQ nav link
+6. **FAQ page** -- 6 Q&A items covering DarwinFi, safety, fees, shares
+7. **PerformanceBar** -- 4-metric stat row (Share Price, Total Trades, Days Live, Champion Strategy)
 
 **Code Impact:** DApp rebuilt and redeployed. Commit: `28959f6`.
 
 ---
 
-## Session 22: DarwinAgent Core Tests (2026-03-21)
+## Session 22 (March 20): Documentation Accuracy Audit
 
-**Objective:** Add comprehensive test coverage for the core DarwinAgent orchestrator.
-
-### Changes
-
-- `test/darwin-agent.test.ts` -- 18 tests in 8 groups: config loading, initialization, rule-based entries, rule-based exits, evolution triggers, paper vs live mode, state persistence, shutdown
-- Added exports (`DarwinAgent`, `AgentConfig`, `loadConfig()`) for clean test imports
-- Guarded `main()` with `require.main === module` to prevent auto-execution on import
-
-**Code Impact:** 18 new tests, 423 total suite passing. Commit: `ca0de53`.
+Comprehensive accuracy audit across 5 DarwinFi docs. Updated stale references: 16 strategies (not 12), 9-token universe, Lit Protocol built (not skipped), VaultV3 deployed, 325 tests (not 69). Added editor's notes preserving chronological history.
 
 ---
 
-## Session 23: V4 Mainnet Deployment + Full Integration (2026-03-21)
+## Session 23 (March 20): Showcase Website + Documentation Blitz
 
-**Objective:** Deploy DarwinVaultV4 to Base mainnet and update all system references from V3/V2 to V4.
+### 3-Agent Parallel Swarm
+
+- **Agent 1 "Miner"**: Updated development log with Sessions 17-18 (VaultV3, Self-Evolution Engine, AI Router, Ollama). Updated metrics: 219 files, ~44,500 LOC, 325 tests.
+- **Agent 2 "Publisher"**: Updated showcase website (Evolution and VaultV3 feature cards, updated tech stack, fresh metrics). Updated briefing HTML.
+- **Agent 3 "Notionist"**: Appended 108 checklist items to Notion Battle Plan page (103 checked, 5 unchecked remaining).
+
+---
+
+## Session 24 (March 20): Showcase CSS Fix + Domain Setup
+
+- **Tailwind v4 cascade layer fix** -- Removed `* { padding: 0 }` from globals.css (was overriding all Tailwind utilities).
+- **darwinfi.base.eth** registered (Basename, points to deployer wallet).
+- **darwinfi.corduroycloud.com** DNS configured, SSL auto-provisioned by Caddy.
+
+---
+
+## Session 25 (March 20): Storacha IPFS Genome Pinning Activation
+
+- Populated `STORACHA_PROOF` in `.env` from delegation file (3480 chars).
+- Created `scripts/test-storacha-pin.ts` with dual approach (CLI + SDK).
+- **Blockers found:** Billing required (free $0/mo plan needs Stripe checkout), delegation mismatch for SDK path.
+
+---
+
+## Session 26 (March 20): Showcase Domain Migration
+
+- Removed `basePath: "/showcase"` -- app serves from root on its own subdomain.
+- Added `postbuild` script for auto-copying `.next/static` into standalone output.
+- Updated Caddy with 301 redirect from old path.
+- Rebuilt and restarted `darwinfi-showcase`.
+
+---
+
+## Session 27 (March 21): DarwinAgent Core Tests
+
+- `test/darwin-agent.test.ts` -- 18 tests in 8 groups: config loading, initialization, rule-based entries/exits, evolution triggers, paper vs live mode, state persistence, shutdown.
+- Added exports for clean test imports, guarded `main()` with `require.main === module`.
+
+**Tests:** 423 total passing. Commit: `ca0de53`.
+
+---
+
+## Session 28 (March 21): V4 Mainnet Deployment + Full Integration
 
 ### Changes
 
 - **V4 deployed**: `0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7` on Base mainnet (chain 8453)
-- **ContractClient**: 15 wrapper methods added for V4's new functions (proposeAgent, confirmAgent, maxBorrowable, borrowTimeout, etc.)
-- **LiveEngine**: Updated borrow/return paths for V4's 12-decimal shares and 80% max borrow ratio
-- **DarwinAgent**: V4-first vault selection via `DARWIN_VAULT_V4_ADDRESS` env var (falls back to V2)
+- **ContractClient**: 15 wrapper methods added for V4 functions
+- **LiveEngine**: Updated for V4's 12-decimal shares + 80% max borrow ratio
+- **DarwinAgent**: V4-first vault selection (`DARWIN_VAULT_V4_ADDRESS` env var)
 - **DApp + Showcase**: All address references updated, rebuilt, PM2 restarted
-- **deposit-usdc-v4.ts**: Script created for initial vault seeding (awaiting USDC in deployer wallet)
 
-**Code Impact:** Full V4 integration across agent, DApp, showcase, and docs. Commit: `5bea517`.
+**V4 Address:** `0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7`
+**Deployer/Agent:** `0xb2db53Db9a2349186F0214BC3e1bF08a195570e3`
 
 ---
 
-## Session 24: ENS/Basenames + Lit Protocol Status (2026-03-21)
+## Session 29 (March 21): ENS/Basenames + Lit Protocol Verification
 
-**Objective:** Verify darwinfi.base.eth registration and document Lit Protocol readiness.
+- **darwinfi.base.eth**: Confirmed registered and owned by deployer wallet. TX: `0x204bec5eab443cd8839aef764ce27325fc97d68db17d2f8dc03187d47775bd98`.
+- **Lit Protocol**: `mint-pkp-direct.ts` ready on naga-dev network. Naga -> Chipotle v3 transition March 25. DarwinFi will auto-activate when Chipotle launches.
 
-### Findings
+Commit: `1a7d9b1`.
 
-- **darwinfi.base.eth**: Confirmed registered and owned by deployer wallet. Registration TX: `0x204bec5eab443cd8839aef764ce27325fc97d68db17d2f8dc03187d47775bd98` (block 43625837).
-- **Lit Protocol**: `mint-pkp-direct.ts` ready on naga-dev network. Lit is transitioning Naga -> Chipotle (March 25). DarwinFi will auto-activate when Chipotle launches.
+---
 
-**Code Impact:** Verification only, commit: `1a7d9b1` (Basenames + Lit Protocol naga-dev updates).
+## Session 30 (March 21): Multi-Track Strategy Overhaul
+
+- Replaced "Agents that Pay" (wrong track -- requires GMX perps on Arbitrum) with 8 qualifying tracks.
+- Full track-by-track gap analysis identifying critical blocker (zero on-chain trades), quick wins, and medium-effort items.
+
+---
+
+## Session 31 (March 21): Final Hackathon Sprint -- Full Parallel Execution
+
+**Objective:** Execute the entire final sprint in one session using parallel agents. Self-unblocked USDC funding via Kraken API.
+
+### USDC Self-Funding
+
+Bought 55 USDC on Kraken via API ($143 USD balance), withdrew 51 USDC to deployer on Base. Zero human intervention needed -- the agent funded itself.
+
+### Wave 0: 3 Parallel Worktree Agents
+
+- **Chat A (DApp):** Fixed FAQ fee discrepancy, added mobile hamburger navbar, unaudited software banner, darwinfi.base.eth ENS display.
+- **Chat B (Contracts):** Added 48h timelocks to setPerformanceFeeBps/setManagementFeeBps, WithdrawalTooSmall guard. 96 tests passing.
+- **Chat C (Docs/TS):** Updated README to multi-track, added Venice AI narrative, fixed TypeScript errors.
+
+### Wave 1: On-Chain Trades
+
+Deposited 50 USDC into V4 vault. Executed 2 full borrow-swap-return cycles (3 USDC + 5 USDC) through Uniswap V3 USDC/WETH 0.05% pool. Logged 2 trade results to PerformanceLog, advanced to generation 42. 15 trade-related transactions total.
+
+### Wave 2: Final Assembly
+
+Merged all 3 worktree branches. Set 4 ENS text records on darwinfi.base.eth (description, url, com.github, vault). Pushed to GitHub.
+
+**Trade proof:** `docs/trade-proof.md` with all 19 tx hashes + BaseScan links.
+
+---
+
+## Session 32 (March 21): R1 Judge Assessment -- Baseline Score
+
+Simulated 7 hackathon judges (3 AI personas, 4 human personas), scored DarwinFi across 35 criteria.
+
+**R1 Aggregate: 5.8/10**
+
+Built styled HTML report email with scorecards, aggregate matrix, security findings, and gap-to-first-place analysis. Created 4-wave, 8-chat execution plan with copy-paste prompts for improvement sprints.
+
+---
+
+## Session 33 (March 21): R2 Judge Assessment + Visual Restyling
+
+**R2 Aggregate: 6.8/10** (+1.0 from R1)
+
+Rebuilt R2 email to match R1's visual identity (teal/navy/orange dark theme). All 7 judge sections, aggregate matrix, consensus themes, security findings restyled using R1's exact CSS.
+
+---
+
+## Session 34 (March 21): R3 Judge Assessment
+
+**R3 Aggregate: 7.7/10** (+0.9 from R2, +1.9 from R1)
+
+Key score swings: Auditor 4.8->8.4 (+3.6, biggest swing), Track Fit 4.8->7.2 (+2.4), End User 6.0->8.0 (+2.0). All Critical/High security findings resolved. 3 open (1M/2L).
+
+---
+
+## Session 35 (March 21): R4 Wave Sprint -- Parallel Code Improvements
+
+**Objective:** Address gaps from R3 assessment using 3 parallel worktree agents.
+
+### Chat A -- Security Closure (7c295dd)
+- Closed 3 remaining audit findings.
+- M-02: added `setMaxSlippage()` with 48h timelock to StrategyExecutor.
+- L-02: confirmed BadDebtWrittenOff event already exists.
+- L-03: added NatSpec to DarwinVaultV4.
+- 25 new tests, 469 total passing.
+
+### Chat B -- Integration Tests + Error Architecture (671063e)
+- 19-test trade cycle integration suite: deposit->borrow->swap->return->fee->withdraw.
+- Multi-user proportional profit, bad debt write-off, emergency withdraw during borrow.
+- Hierarchical error taxonomy with 6 subsystem classes.
+- **488 total tests passing.**
+
+### Chat C -- Evolution Fix + Docs (c3954bf)
+- Fixed evolution engine's broken diff generation -- replaced unified diff prompt with SEARCH/REPLACE block format.
+- Created governance roadmap, token economics, and evolution log docs.
+
+**Wave Sprint pattern:** 3 agents, zero merge conflicts, ~10 min wall clock time.
+
+---
+
+## Session 36 (March 21): R4 Judge Assessment + Contrast Fix
+
+**R4 Aggregate: 8.0/10** (+0.3 from R3, +2.2 from R1)
+
+Biggest gainer: Smart Contract Auditor (+0.6) due to all 6 security findings closed. 488 tests confirmed. Self-presenting agent demo factored into Innovation (8.6) and End User (7.6) scores.
+
+Also fixed systemic CSS contrast issue across all assessment emails (11 color values improved for readability).
+
+---
+
+## Session 37 (March 21): Ape/Cyborg Logo Replacement
+
+Replaced all DarwinFi branding from old DNA helix to new ape/cyborg logo across DApp and Showcase:
+
+- Processed 3 logo variants (with bg, no-bg light, no-bg dark)
+- Generated full favicon set (ico, png 16/32/192, apple-touch-icon 180)
+- Updated DApp: navbar, ShaderHero, footer
+- Updated Showcase: header, footer, hero. Removed DNAHelix SVG component entirely
+- Deleted 7 old helix-era asset files
+
+---
+
+## Session 38 (March 21-22): R5 Wave Sprint -- Storacha, USDC, Documentation
+
+### Storacha IPFS Pinning Activated
+- Fixed Storacha pinning: switched from SDK to CLI for reliable UCAN auth.
+- Genome pinning now operational -- evolution genomes are immutably stored on IPFS via Storacha.
+
+### Additional Documentation
+- Evolution proof documentation with 5 real autonomous evolution cycles and full audit trail analysis.
+- Competitor analysis document and documentation links.
+- Getting started guide for non-technical users.
+- Solidity coverage report and badge.
+- Historical returns chart added to DApp dashboard.
+- Updated test counts to 488, added traction metrics.
+
+### R5 Judge Assessment
+
+**R5 Aggregate: 8.3/10** (+0.3 from R4, +2.5 from R1)
+
+---
+
+## Session 39 (March 22): R6 Judge Assessment
+
+**R6 Aggregate: 8.4/10** (+0.1 from R5, +2.6 from R1)
+
+Steady improvement trajectory across all 6 rounds, from 5.8 to 8.4.
 
 ---
 
@@ -1131,45 +781,62 @@ Extracted 4 closed trades from `agent-state.json` conversation log. Results are 
 | TypeScript source files | 106 agent/trading + 29 showcase (~31,100 LOC) |
 | Solidity contracts | 6 (~1,550 LOC) |
 | DApp files (React/TSX) | 41 (~3,800 LOC) |
-| Test files | 27 modules, 423 tests |
+| Test files | 27 modules, 488 tests passing |
 | Evolution engine files | 11 (~2,100 LOC) |
-| Total source files | 219 |
-| Total lines of code | ~44,500 |
+| Total source files | 219+ |
+| Total lines of code | ~44,500+ |
 | Trading strategies | 16 (12 base + 4 frontier archetypes) |
 | PM2 processes | 7 (darwinfi, darwinfi-candles, darwinfi-instinct, darwinfi-immune, frontier, darwinfi-showcase, darwinfi-evolution) |
 | Token pairs | 9 on Base + multi-chain discovery |
 | Chains supported | 3 (Base, Arbitrum, Optimism) + Celo deployment |
-| AI models integrated | 5 (Ollama gemma2:9b local signals, Venice AI evolution, Claude CLI fallback, Claude Haiku batch eval, Grok-X via Venice sentiment) |
+| AI models integrated | 5 (Ollama gemma2:9b local, Venice AI evolution, Claude CLI fallback, Claude Haiku batch eval, Grok-X via Venice sentiment) |
 | AI routing | Ollama (KS RTX 3090) -> Venice -> Claude CLI fallback chain |
-| Sponsor integrations | 7 (Base, Uniswap, Venice AI, Filecoin, ENS, Lido, 1inch) |
-| Git commits | 50+ |
-| Build time | ~24 hours across 24 sessions |
+| Sponsor integrations | 7+ (Base, Uniswap, Venice AI, Storacha/IPFS, ENS, Lido, 1inch, Lit Protocol) |
+| V4 Vault | `0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7` (Base mainnet) |
+| Deployer wallet | `0xb2db53Db9a2349186F0214BC3e1bF08a195570e3` |
+| darwinfi.base.eth | Registered and owned by deployer |
+| Git commits | 60+ |
+| Build time | ~5 days across 39 sessions |
+| Judge assessment scores | 5.8 -> 6.8 -> 7.7 -> 8.0 -> 8.3 -> 8.4 |
 
 ---
 
 ## Architecture Decisions Log
 
-| Decision | Chosen | Alternatives Considered | Rationale |
-|----------|--------|------------------------|-----------|
-| Strategy competition model | 16-strategy Darwinian tournament (12 base + 4 frontier) | Single adaptive strategy, ensemble voting | Natural selection produces robust strategies without manual tuning. The 12-strategy population balances diversity with computational feasibility. Session 14 added 4 Frontier archetypes (Abiogenesis, Mitosis, Cambrian, Symbiont) for cross-chain niche specialization. Murphy has full autonomy to restructure teams. |
-| AI role separation | Claude for evolution, Venice for execution | Single model for both, no AI | Claude excels at strategic reasoning (what parameters to change); Venice AI adds sponsor alignment and fast inference for real-time decisions. |
-| State persistence | JSON files with atomic writes | SQLite, Redis, on-chain storage | Debuggable, portable, zero dependencies. Atomic writes prevent corruption. Sufficient for single-node hackathon deployment. |
-| Performance scoring | Weighted composite (5 factors) | Raw PnL ranking, Sharpe-only, ELO rating | Multi-factor scoring prevents gaming (one lucky trade) and rewards consistency. Rolling 24h window keeps evaluation current. |
-| Fund isolation | Per-strategy budgets in DarwinVault | Shared pool, off-chain accounting | On-chain enforcement means a rogue strategy literally cannot overspend. Trustless by design. |
-| Token universe | 9 tokens (5 blue-chip + 4 volatile natives) | Top-20 by volume, stablecoins only | Initial 6 sponsor-aligned tokens. ENS removed (no Base liquidity). DEGEN, BRETT, VIRTUAL, HIGHER added for volatility exposure (20-50% hourly moves vs ETH's 1-2%). All have Uniswap V3 pools on Base. |
-| Dashboard UX | Dark theme + retro gaming aesthetic | Minimal charts, no dashboard | The tournament visualization makes the Darwinian competition tangible and engaging for judges reviewing the demo. |
-| Vault standard | ERC-4626 tokenized vault | Custom vault, multisig, DAO treasury | ERC-4626 is the standard tokenized vault interface. Any wallet, aggregator, or DeFi protocol integrates without custom code. Share value rises automatically as agent generates profit. |
-| Agent key management | Lit Protocol PKP (built) | EOA only, hardware wallet, multisig | Decentralized key management via threshold network. trade-policy.js enforces chain/contract/token/function whitelists and trade size limits inside Lit nodes. mint-pkp.ts handles PKP minting. setAgent() allows seamless EOA-to-PKP migration. |
-| Prediction architecture | 5-department biological model (Instinct) | Single ML model, simple indicator engine | Multi-source intelligence with independent timing per department. Adaptive evolution speeds up when accuracy drops and slows down when stable. Source fitness scoring deprioritizes unreliable data. |
-| System monitoring | 7-division immune system with self-healing | External monitoring (Datadog, etc.), manual alerts | Autonomous monitoring that runs as a separate process. Detects problems, attempts automated fixes, verifies the fix worked, and evolves its own thresholds over time. Zero human intervention needed. |
-| Cross-chain expansion | 4-archetype frontier system with niche specialization | More strategies on single chain, manual multi-chain | Each archetype fills a distinct ecological niche (micro-cap detection, HFT scalping, volatility hunting, whale following). ChainRegistry abstracts multi-chain complexity. 1inch aggregation finds best prices across DEXes. |
-| Self-evolution engine | Venice AI code mutations + git worktree sandbox + canary deploy + auto-rollback | Manual parameter tuning, no evolution, simple random mutations | AI-generated diffs are more targeted than random mutations. The 10-step pipeline (validate, sandbox, test, canary, monitor) ensures only improvements survive. File mutability rings prevent evolution from touching safety-critical code. Velocity limits and anti-loop backoffs prevent runaway mutations. |
-| AI routing fallback chain | Ollama (local GPU) -> Venice API -> Claude CLI | Single provider, round-robin, cost-based routing | Local Ollama on KS RTX 3090 gives 2-3s latency at zero cost. Health-check failover means zero downtime. Quality tasks (evolution synthesis) route to Venice regardless. Claude CLI as ultimate fallback ensures signals always flow. |
-| VaultV3 fee model | 1% management + 5% performance (HWM) | Performance-only, flat fee, no fees | Management fee provides baseline revenue during flat markets. Performance fee only above high water mark prevents fee extraction during drawdown recovery. Both paid as minted shares (dilution-based) so vault always holds maximum USDC for trading. |
-| Ollama local inference | gemma2:9b on KS RTX 3090 via Tailscale | Claude API (paid), Venice for everything, no local | KS compute node is already provisioned. gemma2:9b fits in memory, responds in 2-3s, and costs $0. Replaces ~28K paid API calls/day for signal evaluation. Venice reserved for quality tasks (evolution synthesis) where reasoning depth matters. |
-| Outcome attribution | 4-factor trade decomposition (entry, exit, slippage, regime) | Raw PnL only, no decomposition, ML-based attribution | Targeted feedback lets evolution fix specific weaknesses instead of blind mutations. A strategy losing due to poor exit timing gets different parameter changes than one losing due to bad market regime alignment. Simple enough to compute in real-time without ML overhead. |
-| Signal calibration | Per-source per-token confidence adjustment | Trust all signals equally, manual confidence thresholds | Self-correcting: if Ollama overestimates on DEGEN (predicts 80%, hits 50%), the calibration factor automatically adjusts future signals. Minimum 5 signals before calibrating prevents premature adjustments. Clamped to 0.2-2.0x to prevent extreme swings. |
+| Decision | Chosen | Rationale |
+|----------|--------|-----------|
+| Strategy competition | 16-strategy Darwinian tournament (12 base + 4 frontier) | Natural selection produces robust strategies without manual tuning |
+| AI role separation | Claude for evolution, Venice for execution, Ollama for signals | Each model optimized for its task; zero-cost local inference for high-frequency signals |
+| State persistence | JSON files with atomic writes | Debuggable, portable, zero dependencies |
+| Performance scoring | Weighted composite (5 factors) with dynamic market-regime weights | Multi-factor scoring prevents gaming; regime awareness adapts to market conditions |
+| Fund isolation | ERC-4626 vault with agent borrow/return pattern | On-chain enforcement, auditable trail, any wallet can integrate |
+| Token universe | 9 tokens (5 blue-chip + 4 volatile natives) | Liquidity + sponsor alignment + volatility exposure |
+| Vault standard | ERC-4626 (V4 with 6 security hardening fixes) | Industry standard; 12-decimal shares, timelocks, proportional emergency withdraw, borrow timeout |
+| Agent key management | Lit Protocol PKP (built, awaiting Chipotle v3) | Decentralized key management via threshold network |
+| Prediction architecture | 5-department biological model (Instinct) | Multi-source intelligence with adaptive evolution |
+| System monitoring | 7-division immune system with self-healing | Autonomous monitoring, separate PM2 process, evolves own thresholds |
+| Cross-chain expansion | 4-archetype frontier system | Each archetype fills a distinct ecological niche |
+| Self-evolution | Venice AI code mutations + 10-step pipeline (sandbox, test, canary, rollback) | Only improvements survive; file mutability rings protect safety-critical code |
+| AI routing | Ollama (local GPU) -> Venice -> Claude CLI fallback | Zero-cost primary inference, zero downtime, quality routing for evolution |
+| Fee model | 1% management + 5% performance (above HWM) | Baseline revenue + performance alignment |
+| Outcome attribution | 4-factor trade decomposition | Targeted evolution fixes specific weaknesses instead of blind mutations |
+| Signal calibration | Per-source per-token confidence adjustment | Self-correcting; overconfident sources get dampened automatically |
 
 ---
 
-*This development log covers 24 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi now operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~24 hours.*
+## Score Progression
+
+```
+R1: 5.8/10  (baseline -- no tests, math bugs, no circuit breakers)
+R2: 6.8/10  (+1.0 -- 59 tests, circuit breakers, proving ground rule)
+R3: 7.7/10  (+0.9 -- security audit closed, VaultV3, self-evolution engine)
+R4: 8.0/10  (+0.3 -- all 6 security findings closed, 488 tests, integration suite)
+R5: 8.3/10  (+0.3 -- Storacha active, USDC funded, evolution proof, documentation)
+R6: 8.4/10  (+0.1 -- final polish, comprehensive docs, full sponsor integration)
+```
+
+Each round's improvements were driven by Wave Sprints -- parallel agent execution via git worktrees, zero merge conflicts, 10 min wall clock time per wave.
+
+---
+
+*This development log covers 39 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~5 days.*

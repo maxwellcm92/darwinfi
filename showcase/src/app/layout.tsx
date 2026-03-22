@@ -8,7 +8,7 @@ import { ChatProvider } from "@/components/chat/ChatProvider";
 export const metadata: Metadata = {
   title: "DarwinFi -- Autonomous Self-Evolving DeFi Vault",
   description:
-    "12 strategies compete. AI mutates the winners. Natural selection picks your yield. Built on Base L2 with ERC-4626, Lit Protocol guardrails, and multi-AI evolution.",
+    "AI strategies compete. The best survive. Natural selection picks your yield. Built on Base L2 with ERC-4626, Lit Protocol integration, and multi-AI evolution.",
   openGraph: {
     title: "DarwinFi -- Your Capital. Evolving.",
     description:

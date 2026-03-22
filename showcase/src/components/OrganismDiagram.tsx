@@ -36,7 +36,7 @@ const ORGANS: Organ[] = [
     label: "Strategies",
     role: "Species",
     description:
-      "12 competing trading strategies. Only the fittest survive each evolution cycle. Losers are eliminated, winners reproduce.",
+      "Competing trading strategies. Only the fittest survive each evolution cycle. Losers are eliminated, winners reproduce.",
     cx: 120,
     cy: 250,
     r: 42,
@@ -92,7 +92,7 @@ const ORGANS: Organ[] = [
     label: "Breakers",
     role: "Pain Receptors",
     description:
-      "Circuit breakers halt trading when drawdown or volatility exceed thresholds. Lit Protocol enforces limits on-chain -- no one can override.",
+      "Circuit breakers halt trading when drawdown or volatility exceed thresholds. Lit Protocol integration built for Chipotle v3 on-chain enforcement.",
     cx: 440,
     cy: 410,
     r: 38,

@@ -194,3 +194,27 @@ export function incrementDailyCount(memory: AntiLoopMemory): void {
   memory.lastProposalTime = Date.now();
   saveMemory(memory);
 }
+
+/**
+ * Reset backoff for a specific zone.
+ */
+export function resetZoneBackoff(memory: AntiLoopMemory, zone: string): void {
+  if (memory.zoneBackoff[zone]) {
+    memory.zoneBackoff[zone].consecutiveFailures = 0;
+    memory.zoneBackoff[zone].backoffUntil = 0;
+    memory.zoneBackoff[zone].lastFailure = 0;
+  }
+  saveMemory(memory);
+}
+
+/**
+ * Reset all zone backoffs (used for manual recovery).
+ */
+export function resetAllBackoffs(memory: AntiLoopMemory): void {
+  for (const zone of Object.keys(memory.zoneBackoff)) {
+    memory.zoneBackoff[zone].consecutiveFailures = 0;
+    memory.zoneBackoff[zone].backoffUntil = 0;
+    memory.zoneBackoff[zone].lastFailure = 0;
+  }
+  saveMemory(memory);
+}

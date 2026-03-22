@@ -37,6 +37,65 @@ function parseSearchReplaceBlocks(diff: string): SearchReplaceBlock[] {
   return blocks;
 }
 
+/**
+ * Convert a unified diff (from Venice AI) into SEARCH/REPLACE block format.
+ * Venice outputs standard `--- a/file` / `+++ b/file` / `@@ ... @@` diffs,
+ * but the sandbox expects `<<<<<<< SEARCH` / `=======` / `>>>>>>> REPLACE` blocks.
+ */
+export function convertUnifiedToSearchReplace(
+  diff: string,
+  fileContents: Record<string, string>,
+): string | null {
+  const lines = diff.split('\n');
+  const blocks: string[] = [];
+
+  let i = 0;
+  while (i < lines.length) {
+    // Skip to next hunk header
+    if (lines[i].startsWith('@@')) {
+      const searchLines: string[] = [];
+      const replaceLines: string[] = [];
+      i++; // skip the @@ line
+
+      // Process hunk lines
+      while (i < lines.length && !lines[i].startsWith('@@') && !lines[i].startsWith('diff ') && !lines[i].startsWith('--- ')) {
+        const line = lines[i];
+        if (line.startsWith('-')) {
+          // Removed line: goes in SEARCH only
+          searchLines.push(line.substring(1));
+        } else if (line.startsWith('+')) {
+          // Added line: goes in REPLACE only
+          replaceLines.push(line.substring(1));
+        } else if (line.startsWith(' ') || line === '') {
+          // Context line: goes in both
+          const contextLine = line.startsWith(' ') ? line.substring(1) : line;
+          searchLines.push(contextLine);
+          replaceLines.push(contextLine);
+        }
+        i++;
+      }
+
+      if (searchLines.length > 0 || replaceLines.length > 0) {
+        blocks.push(
+          '<<<<<<< SEARCH\n' +
+          searchLines.join('\n') +
+          '\n=======\n' +
+          replaceLines.join('\n') +
+          '\n>>>>>>> REPLACE',
+        );
+      }
+    } else {
+      i++;
+    }
+  }
+
+  if (blocks.length === 0) {
+    return null;
+  }
+
+  return blocks.join('\n\n');
+}
+
 function applySearchReplace(fileContent: string, blocks: SearchReplaceBlock[]): string {
   let result = fileContent;
   for (const block of blocks) {

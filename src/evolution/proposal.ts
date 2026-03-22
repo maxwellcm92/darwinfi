@@ -10,6 +10,7 @@ import * as crypto from 'crypto';
 import { EvolutionProposal, AntiLoopEntry } from './types';
 import { PROJECT_ROOT, loadEvolutionConfig } from './config';
 import { getFailedProposals, loadMemory } from './memory';
+import { convertUnifiedToSearchReplace } from './sandbox';
 
 export interface ProposalContext {
   currentPnl: number;
@@ -47,6 +48,29 @@ exact text to find in the file
 =======
 replacement text
 >>>>>>> REPLACE
+
+EXAMPLES:
+
+Example 1 - Adjusting a numeric threshold:
+{
+  "rationale": "Increase minimum confidence threshold to reduce false-positive trade entries",
+  "targetFiles": ["src/instinct/signals.ts"],
+  "diff": "<<<<<<< SEARCH\\nconst MIN_CONFIDENCE = 0.55;\\n=======\\nconst MIN_CONFIDENCE = 0.65;\\n>>>>>>> REPLACE"
+}
+
+Example 2 - Replacing a function body:
+{
+  "rationale": "Add exponential decay to position sizing so older signals carry less weight",
+  "targetFiles": ["src/instinct/position-sizer.ts"],
+  "diff": "<<<<<<< SEARCH\\nfunction calcWeight(age: number): number {\\n  return 1.0;\\n}\\n=======\\nfunction calcWeight(age: number): number {\\n  const HALF_LIFE = 12; // hours\\n  return Math.pow(0.5, age / HALF_LIFE);\\n}\\n>>>>>>> REPLACE"
+}
+
+Example 3 - Multiple blocks for multiple changes in the same file:
+{
+  "rationale": "Tighten stop-loss from 5% to 3% and increase take-profit from 8% to 10%",
+  "targetFiles": ["src/instinct/risk-manager.ts"],
+  "diff": "<<<<<<< SEARCH\\nconst STOP_LOSS_PCT = 0.05;\\n=======\\nconst STOP_LOSS_PCT = 0.03;\\n>>>>>>> REPLACE\\n\\n<<<<<<< SEARCH\\nconst TAKE_PROFIT_PCT = 0.08;\\n=======\\nconst TAKE_PROFIT_PCT = 0.10;\\n>>>>>>> REPLACE"
+}
 
 OUTPUT FORMAT (strict JSON, no markdown):
 {
@@ -210,6 +234,18 @@ export async function generateProposal(
     if (!parsed.rationale || !parsed.diff || !parsed.targetFiles) {
       console.error('[Evolution] AI response missing required fields');
       return null;
+    }
+
+    // Auto-convert unified diffs from Venice AI to SEARCH/REPLACE format
+    if (parsed.diff.includes('--- a/') || parsed.diff.includes('+++ b/')) {
+      console.log('[Evolution] Detected unified diff format, converting to SEARCH/REPLACE...');
+      const converted = convertUnifiedToSearchReplace(parsed.diff, context.fileContents);
+      if (converted) {
+        parsed.diff = converted;
+      } else {
+        console.error('[Evolution] Failed to convert unified diff to SEARCH/REPLACE format');
+        return null;
+      }
     }
 
     const diffHash = crypto.createHash('sha256').update(parsed.diff).digest('hex');

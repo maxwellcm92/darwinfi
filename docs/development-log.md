@@ -3,6 +3,7 @@
 > Built with [Claude Code](https://claude.com/claude-code) (`claude-opus-4-6`) as the agent harness.
 > Sessions: March 18-22, 2026. Total: 219+ source files, ~44,500+ lines of code, 488 tests passing.
 > Judge assessment scores: R1 5.8 -> R2 6.8 -> R3 7.7 -> R4 8.0 -> R5 8.3 -> R6 8.4
+> Final session: Wave Swarm -- 7 parallel agents for deadline-day polish.
 
 ---
 
@@ -774,6 +775,40 @@ Steady improvement trajectory across all 6 rounds, from 5.8 to 8.4.
 
 ---
 
+## Session 40 (March 22): Final Wave Swarm -- 7-Agent Parallel Polish
+
+**Objective:** Deadline-day polish sprint. 7 Claude Code agents running in parallel via git worktrees, each targeting a specific gap from the R6 assessment.
+
+### Wave Swarm Execution
+
+7 agents launched simultaneously, each in an isolated worktree:
+
+| Agent | Focus | Key Deliverables |
+|-------|-------|-----------------|
+| dev-log-builder | Development log | Expanded log from 24 to 39 sessions |
+| notion-updater | Notion battle plan | Rebuilt with 268 blocks, 181 checked items across 5 phases |
+| showcase-fixer | Showcase accuracy | Removed hardcoded strategy counts, dynamic language, V4 vault refs |
+| chatbot-builder | Darwin chatbot persona | First-person "I am Darwin" persona in DARWINFI-CLAUDE.md |
+| evolution-fixer | Evolution engine | Replaced broken unified diff with SEARCH/REPLACE block format |
+| briefing-updater | Briefing page | Updated with V4 vault, R1-R6 trajectory, all sponsor integrations |
+| lit-researcher | Lit Protocol Chipotle v3 | Created REST API implementation + trade policy action |
+
+### Key Changes
+
+- **Showcase accuracy:** Removed all hardcoded strategy counts (12/16) in favor of dynamic language. Reframed Lit Protocol to "built + Chipotle v3 ready". Product page updated to V4, 488+ tests.
+- **Evolution engine:** Replaced broken unified diff generation with SEARCH/REPLACE block format in `proposal.ts` and `sandbox.ts`. Added fallback to `git apply --3way`.
+- **Darwin chatbot:** Updated DARWINFI-CLAUDE.md persona to first-person "I am Darwin". Honest about Lit Protocol status (built, awaiting Chipotle mainnet).
+- **Lit Protocol Chipotle v3:** Created `src/chain/lit-wallet-v3.ts` (REST API implementation), `lit-actions/trade-policy-v3.js`, `docs/lit-chipotle-notes.md`. Ready for Chipotle mainnet (March 25).
+- **Briefing page:** Updated with V4 vault address, R1-R6 score trajectory (5.8->8.4), on-chain proof links, all sponsor integrations listed.
+- **Notion battle plan:** Rebuilt from scratch with 268 blocks, 181 checked items across 5 phases of the hackathon.
+- **Dev log:** Expanded from 24 to 39 detailed sessions covering every major decision.
+
+### Results
+
+All 488 tests passing. Showcase rebuilt and live. Both repos (darwinfi + murphy) pushed. All 7 PM2 processes running. Score trajectory: 5.8 -> 6.8 -> 7.7 -> 8.0 -> 8.3 -> 8.4 across 6 rounds of judge assessments, each driven by Wave Sprint parallel execution.
+
+---
+
 ## Technical Summary
 
 | Metric | Value |
@@ -796,7 +831,7 @@ Steady improvement trajectory across all 6 rounds, from 5.8 to 8.4.
 | Deployer wallet | `0xb2db53Db9a2349186F0214BC3e1bF08a195570e3` |
 | darwinfi.base.eth | Registered and owned by deployer |
 | Git commits | 60+ |
-| Build time | ~5 days across 39 sessions |
+| Build time | ~5 days across 40 sessions |
 | Judge assessment scores | 5.8 -> 6.8 -> 7.7 -> 8.0 -> 8.3 -> 8.4 |
 
 ---
@@ -839,4 +874,4 @@ Each round's improvements were driven by Wave Sprints -- parallel agent executio
 
 ---
 
-*This development log covers 39 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~5 days.*
+*This development log covers 40 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~5 days.*

@@ -49,6 +49,9 @@ export function Navbar() {
             <NavLink to="/" end className={navPillClass}>
               Dashboard
             </NavLink>
+            <NavLink to="/results" className={navPillClass}>
+              Results
+            </NavLink>
             <NavLink to="/faq" className={navPillClass}>
               FAQ
             </NavLink>
@@ -96,6 +99,9 @@ export function Navbar() {
         <div className="md:hidden border-t border-darwin-border/50 bg-darwin-card/90 backdrop-blur-xl">
           <NavLink to="/" end className={mobileNavClass} onClick={() => setMobileOpen(false)}>
             Dashboard
+          </NavLink>
+          <NavLink to="/results" className={mobileNavClass} onClick={() => setMobileOpen(false)}>
+            Results
           </NavLink>
           <NavLink to="/faq" className={mobileNavClass} onClick={() => setMobileOpen(false)}>
             FAQ

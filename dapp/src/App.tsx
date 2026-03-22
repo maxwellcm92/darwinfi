@@ -4,6 +4,7 @@ import { Home } from "./pages/Home";
 import { Portfolio } from "./pages/Portfolio";
 import { Advanced } from "./pages/Advanced";
 import { FAQ } from "./pages/FAQ";
+import { Results } from "./pages/Results";
 
 export function App() {
   return (
@@ -15,6 +16,7 @@ export function App() {
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/advanced" element={<Advanced />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/results" element={<Results />} />
           {/* Legacy redirects */}
           <Route path="/tournament" element={<Navigate to="/advanced?tab=tournament" replace />} />
           <Route path="/instinct" element={<Navigate to="/advanced?tab=instinct" replace />} />

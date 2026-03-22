@@ -11,6 +11,7 @@ import { EvolutionProposal, AntiLoopEntry } from './types';
 import { PROJECT_ROOT, loadEvolutionConfig } from './config';
 import { getFailedProposals, loadMemory } from './memory';
 import { convertUnifiedToSearchReplace } from './sandbox';
+import { GradingDepartment } from '../agent/grading-department';
 
 export interface ProposalContext {
   currentPnl: number;
@@ -112,7 +113,16 @@ ${zoneDescription}
     }
   }
 
-  prompt += '\nGenerate a single improvement proposal as JSON.';
+  // Inject system-wide grading context so AI targets weakest areas
+  try {
+    const grader = new GradingDepartment();
+    const gradingContext = grader.getEvolutionContext();
+    prompt += `\n${gradingContext}\n`;
+  } catch {
+    // Grading data may not be available yet
+  }
+
+  prompt += '\nGenerate a single improvement proposal as JSON. Prioritize improvements to the lowest-graded departments.';
   return prompt;
 }
 

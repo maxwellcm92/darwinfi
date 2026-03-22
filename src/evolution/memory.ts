@@ -106,8 +106,8 @@ export function updateZoneBackoff(
     if (backoff.consecutiveFailures >= 3) {
       const exponent = backoff.consecutiveFailures - 3;
       const backoffMs = Math.min(
-        24 * 60 * 60_000 * Math.pow(2, exponent), // 24h * 2^n
-        7 * 24 * 60 * 60_000, // cap at 7 days
+        6 * 60 * 60_000 * Math.pow(2, exponent), // 6h * 2^n
+        2 * 24 * 60 * 60_000, // cap at 48h
       );
       backoff.backoffUntil = Date.now() + backoffMs;
     }

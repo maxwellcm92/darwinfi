@@ -582,6 +582,54 @@ export class DarwinAgent {
   }
 
   // -------------------------------------------------------------------------
+  // Instinct Scoring
+  // -------------------------------------------------------------------------
+
+  /**
+   * Compute numerical instinct impact for a token.
+   * Returns a direction score (-1 to +1) and confidence boost (-20 to +20).
+   */
+  private computeInstinctScore(
+    token: string,
+    instinctState: InstinctState,
+    strategy: StrategyGenome,
+  ): { directionScore: number; confidenceBoost: number } {
+    const tokenInstinct = instinctState.tokens[token];
+    if (!tokenInstinct) return { directionScore: 0, confidenceBoost: 0 };
+
+    const instinctWeight = strategy.parameters.instinctWeight ?? 0.2;
+
+    // Aggregate direction from available predictions (prefer 5m for trading)
+    let directionScore = 0;
+    let predCount = 0;
+    for (const res of ['5m', '15m', '1h'] as const) {
+      const pred = tokenInstinct.predictions[res];
+      if (!pred) continue;
+      const dirMultiplier = pred.direction === 'up' ? 1 : pred.direction === 'down' ? -1 : 0;
+      const confFactor = pred.confidence / 100; // 0-1
+      // Weight shorter timeframes more for entry decisions
+      const timeWeight = res === '5m' ? 0.5 : res === '15m' ? 0.3 : 0.2;
+      directionScore += dirMultiplier * confFactor * timeWeight;
+      predCount++;
+    }
+
+    if (predCount === 0) return { directionScore: 0, confidenceBoost: 0 };
+
+    // Incorporate sentiment (-1 to +1)
+    const sentimentFactor = tokenInstinct.sentiment.score * 0.2;
+    directionScore = Math.max(-1, Math.min(1, directionScore + sentimentFactor));
+
+    // Compute confidence boost: max +-20 points, scaled by instinctWeight
+    const rawBoost = directionScore * 40; // -40 to +40 raw
+    const confidenceBoost = Math.max(-20, Math.min(20, rawBoost * instinctWeight));
+
+    return {
+      directionScore: Math.round(directionScore * 100) / 100,
+      confidenceBoost: Math.round(confidenceBoost),
+    };
+  }
+
+  // -------------------------------------------------------------------------
   // Entry Evaluation
   // -------------------------------------------------------------------------
 
@@ -603,6 +651,14 @@ export class DarwinAgent {
           snapshot.instinctPrediction = `${pred5m.direction} (conf: ${pred5m.confidence}%, close: $${pred5m.predictedClose.toFixed(4)})`;
           snapshot.instinctSentiment = `${sentiment.score.toFixed(2)} (${sentiment.topEvents.slice(0, 2).join('; ')})`;
         }
+      }
+      // Compute numerical instinct scores for trading impact
+      for (const snapshot of snapshots) {
+        const { directionScore, confidenceBoost } = this.computeInstinctScore(
+          snapshot.token, instinctState, liveStrategy,
+        );
+        snapshot.instinctDirectionScore = directionScore;
+        snapshot.instinctConfidenceBoost = confidenceBoost;
       }
       this.conversationLog.system('instinct', `Instinct predictions injected for ${Object.keys(instinctState.tokens).length} tokens (weight: ${liveStrategy.parameters.instinctWeight})`);
     }
@@ -679,6 +735,18 @@ export class DarwinAgent {
       );
 
       for (const signal of signals) {
+        // Apply instinct confidence boost before threshold check
+        const snapshot = snapshots.find(s => s.token === signal.token);
+        if (snapshot?.instinctConfidenceBoost) {
+          const originalConf = signal.confidence;
+          signal.confidence = Math.max(0, Math.min(100, signal.confidence + snapshot.instinctConfidenceBoost));
+          if (originalConf !== signal.confidence) {
+            this.conversationLog.system(
+              'instinct',
+              `Instinct adjusted confidence for ${signal.token}: ${originalConf} -> ${signal.confidence} (boost: ${snapshot.instinctConfidenceBoost > 0 ? '+' : ''}${snapshot.instinctConfidenceBoost})`,
+            );
+          }
+        }
         if (signal.action === 'buy' && signal.confidence >= 60) {
           if (openPositions.length >= liveStrategy.parameters.maxPositions) break;
 

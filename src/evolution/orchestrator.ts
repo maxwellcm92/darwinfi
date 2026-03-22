@@ -22,7 +22,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { loadEvolutionConfig, EVOLUTION_ZONES, PROJECT_ROOT } from './config';
 import { EvolutionProposal, EvolutionConfig } from './types';
-import { loadMemory, saveMemory, canSubmitProposal, isZoneInBackoff, isDuplicate, canTargetFile, recordOutcome, incrementDailyCount } from './memory';
+import { loadMemory, saveMemory, canSubmitProposal, isZoneInBackoff, isDuplicate, canTargetFile, recordOutcome, incrementDailyCount, resetAllBackoffs } from './memory';
 import { generateProposal, ProposalContext } from './proposal';
 import { validateProposal } from './static-validator';
 import { createSandbox, cleanupSandbox } from './sandbox';
@@ -392,6 +392,16 @@ function scheduleCycle(config: EvolutionConfig): void {
 async function main(): Promise<void> {
   const config = loadEvolutionConfig();
 
+  // Handle --reset-backoffs CLI flag
+  if (process.argv.includes('--reset-backoffs')) {
+    const mem = loadMemory();
+    resetAllBackoffs(mem);
+    console.log(`${LOG_PREFIX} All zone backoffs have been reset`);
+    if (process.argv.includes('--exit-after-reset')) {
+      process.exit(0);
+    }
+  }
+
   console.log(`${LOG_PREFIX} ======================================`);
   console.log(`${LOG_PREFIX}  DarwinFi Evolution Engine starting`);
   console.log(`${LOG_PREFIX}  Enabled: ${config.enabled}`);
@@ -400,6 +410,20 @@ async function main(): Promise<void> {
   console.log(`${LOG_PREFIX}  AI Model: ${config.aiModel}`);
   console.log(`${LOG_PREFIX}  Max proposals/day: ${config.velocityLimits.maxProposalsPerDay}`);
   console.log(`${LOG_PREFIX} ======================================`);
+
+  // Diagnostic: log zone backoff state on startup
+  const startupMemory = loadMemory();
+  const zones = Object.entries(startupMemory.zoneBackoff);
+  if (zones.length > 0) {
+    console.log(`${LOG_PREFIX} Zone backoff state:`);
+    for (const [zone, backoff] of zones) {
+      const inBackoff = Date.now() < backoff.backoffUntil;
+      const remaining = inBackoff ? Math.ceil((backoff.backoffUntil - Date.now()) / 3_600_000) : 0;
+      console.log(`${LOG_PREFIX}   ${zone}: failures=${backoff.consecutiveFailures}, ${inBackoff ? `LOCKED (${remaining}h remaining)` : 'available'}`);
+    }
+  } else {
+    console.log(`${LOG_PREFIX} No zone backoff history`);
+  }
 
   // Check for active canary on startup (resume monitoring)
   const existingCanary = loadCanaryState();

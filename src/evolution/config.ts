@@ -57,6 +57,7 @@ export const FILE_RINGS: FileRingMapping[] = [
   { pattern: 'src/immune/patrol/**/*', ring: 'evolvable', description: 'Health checks' },
   { pattern: 'src/immune/genome/**/*', ring: 'evolvable', description: 'Immune evolution' },
   { pattern: 'src/agent/circuit-breaker.ts', ring: 'evolvable', description: 'Threshold tuning' },
+  { pattern: 'src/agent/strategy-manager.ts', ring: 'evolvable', description: 'Strategy parameters' },
   { pattern: 'src/dashboard/server.ts', ring: 'evolvable', description: 'API endpoints' },
 
   // Ring 2 -- ADDITIVE ONLY
@@ -111,8 +112,8 @@ export function loadEvolutionConfig(): EvolutionConfig {
     rollbackThresholds: ROLLBACK_THRESHOLDS,
     antiLoop: {
       maxConsecutiveFailuresBeforeBackoff: 3,
-      initialBackoffMs: 24 * 60 * 60_000, // 24h
-      maxBackoffMs: 7 * 24 * 60 * 60_000, // 7 days
+      initialBackoffMs: 6 * 60 * 60_000, // 6h
+      maxBackoffMs: 2 * 24 * 60 * 60_000, // 48h
       backoffMultiplier: 2,
       maxSameFileConsecutive: 3,
       failedPromptsToInject: 5,
@@ -166,6 +167,11 @@ export const EVOLUTION_ZONES: Record<string, { files: string[]; description: str
   'agent/circuit-breaker': {
     files: ['src/agent/circuit-breaker.ts'],
     description: 'Circuit breaker threshold tuning',
+    priority: 4,
+  },
+  'strategy-params': {
+    files: ['src/agent/strategy-manager.ts'],
+    description: 'Strategy genome parameters (thresholds, weights, token preferences)',
     priority: 4,
   },
 };

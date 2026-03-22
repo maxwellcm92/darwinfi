@@ -106,8 +106,8 @@ export function updateZoneBackoff(
     if (backoff.consecutiveFailures >= 3) {
       const exponent = backoff.consecutiveFailures - 3;
       const backoffMs = Math.min(
-        24 * 60 * 60_000 * Math.pow(2, exponent), // 24h * 2^n
-        7 * 24 * 60 * 60_000, // cap at 7 days
+        6 * 60 * 60_000 * Math.pow(2, exponent), // 6h * 2^n
+        2 * 24 * 60 * 60_000, // cap at 48h
       );
       backoff.backoffUntil = Date.now() + backoffMs;
     }
@@ -192,5 +192,29 @@ export function incrementDailyCount(memory: AntiLoopMemory): void {
   }
   memory.proposalsToday += 1;
   memory.lastProposalTime = Date.now();
+  saveMemory(memory);
+}
+
+/**
+ * Reset backoff for a specific zone.
+ */
+export function resetZoneBackoff(memory: AntiLoopMemory, zone: string): void {
+  if (memory.zoneBackoff[zone]) {
+    memory.zoneBackoff[zone].consecutiveFailures = 0;
+    memory.zoneBackoff[zone].backoffUntil = 0;
+    memory.zoneBackoff[zone].lastFailure = 0;
+  }
+  saveMemory(memory);
+}
+
+/**
+ * Reset all zone backoffs (used for manual recovery).
+ */
+export function resetAllBackoffs(memory: AntiLoopMemory): void {
+  for (const zone of Object.keys(memory.zoneBackoff)) {
+    memory.zoneBackoff[zone].consecutiveFailures = 0;
+    memory.zoneBackoff[zone].backoffUntil = 0;
+    memory.zoneBackoff[zone].lastFailure = 0;
+  }
   saveMemory(memory);
 }

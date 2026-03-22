@@ -92,10 +92,18 @@ function saveSession(sessionId: string, history: ConversationEntry[]): void {
 
 function loadSystemPrompt(): string {
   try {
-    return fs.readFileSync(
+    // Try multiple locations -- standalone Next.js builds may not have the expected cwd
+    const locations = [
       path.join(process.cwd(), "DARWINFI-CLAUDE.md"),
-      "utf-8"
-    );
+      path.join(__dirname, "../../../../DARWINFI-CLAUDE.md"),
+      "/opt/murphy/darwinfi/showcase/DARWINFI-CLAUDE.md",
+    ];
+    for (const loc of locations) {
+      if (fs.existsSync(loc)) {
+        return fs.readFileSync(loc, "utf-8");
+      }
+    }
+    return "You are Darwin, the AI guide for DarwinFi, an autonomous self-evolving DeFi vault on Base L2. Be helpful, concise, and use evolution metaphors.";
   } catch {
     return "You are Darwin, the AI guide for DarwinFi, an autonomous self-evolving DeFi vault on Base L2. Be helpful, concise, and use evolution metaphors.";
   }
@@ -200,9 +208,10 @@ export async function POST(request: NextRequest) {
 
   const stream = new ReadableStream({
     start(controller) {
+      const claudePath = "/usr/bin/claude";
       const proc = spawn(
         "bash",
-        ["-c", `printf '%s' "$PROMPT_B64" | base64 -d | claude -p --model claude-haiku-4-5-20251001 2>/dev/null`],
+        ["-c", `printf '%s' "$PROMPT_B64" | base64 -d | ${claudePath} -p --model claude-haiku-4-5-20251001 2>/dev/null`],
         { stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, PROMPT_B64: base64Prompt } }
       );
 

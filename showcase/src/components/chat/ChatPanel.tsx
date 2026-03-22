@@ -5,6 +5,40 @@ import { useChatContext } from "./ChatProvider";
 import { ChatMessageBubble } from "./ChatMessage";
 import { QuickReply } from "./QuickReply";
 
+function ThinkingIndicator() {
+  const words = [
+    "Mutating...",
+    "Evolving...",
+    "Adapting...",
+    "Selecting...",
+    "Crossing over...",
+    "Surviving...",
+    "Optimizing genomes...",
+    "Running natural selection...",
+  ];
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % words.length);
+    }, 1500);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-2">
+      <div className="flex gap-1">
+        <span className="w-1.5 h-1.5 rounded-full bg-darwin-accent animate-bounce" style={{ animationDelay: "0ms" }} />
+        <span className="w-1.5 h-1.5 rounded-full bg-darwin-accent animate-bounce" style={{ animationDelay: "150ms" }} />
+        <span className="w-1.5 h-1.5 rounded-full bg-darwin-accent animate-bounce" style={{ animationDelay: "300ms" }} />
+      </div>
+      <span className="text-sm font-mono text-darwin-accent/70 transition-opacity duration-300">
+        {words[index]}
+      </span>
+    </div>
+  );
+}
+
 export function ChatPanel() {
   const {
     messages,
@@ -76,21 +110,7 @@ export function ChatPanel() {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-darwin-border/50 bg-darwin-card/50 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-darwin-accent to-darwin-purple flex items-center justify-center">
-              <svg
-                className="w-3.5 h-3.5 text-darwin-bg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 00.659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M19 14.5l-2.47 2.47a2.25 2.25 0 00-.659 1.59v.27a2.25 2.25 0 01-2.25 2.25h-3.24a2.25 2.25 0 01-2.25-2.25v-.27a2.25 2.25 0 00-.659-1.59L5 14.5m14 0V17a2 2 0 01-2 2H7a2 2 0 01-2-2v-2.5"
-                />
-              </svg>
-            </div>
+            <img src="/darwinfi-logo-bg-chat.webp" alt="Darwin" className="w-7 h-7 rounded-lg object-cover" />
             <div>
               <span className="text-base font-semibold text-darwin-text-bright">
                 Darwin
@@ -134,6 +154,11 @@ export function ChatPanel() {
               }
             />
           ))}
+
+          {/* Evolution thinking indicator */}
+          {isStreaming && messages.length > 0 && messages[messages.length - 1].role === "assistant" && messages[messages.length - 1].content === "" && (
+            <ThinkingIndicator />
+          )}
 
           {/* Flow options */}
           {flowOptions.length > 0 && !isStreaming && (
@@ -179,7 +204,7 @@ export function ChatPanel() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isStreaming ? "Darwin is typing..." : "Ask Darwin anything..."}
+              placeholder={isStreaming ? "Darwin is evolving a response..." : "Ask Darwin anything..."}
               disabled={isStreaming}
               className="flex-1 px-3 py-2 text-base bg-darwin-bg border border-darwin-border/50 rounded-lg text-darwin-text-bright placeholder:text-darwin-text-dim/50 focus:outline-none focus:border-darwin-accent/50 disabled:opacity-50 transition-colors"
             />

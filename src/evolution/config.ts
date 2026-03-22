@@ -174,4 +174,9 @@ export const EVOLUTION_ZONES: Record<string, { files: string[]; description: str
     description: 'Strategy genome parameters (thresholds, weights, token preferences)',
     priority: 4,
   },
+  'chain-expansion': {
+    files: ['src/chain/chain-registry.ts'],
+    description: 'Multi-chain expansion configuration and routing',
+    priority: 1,
+  },
 };

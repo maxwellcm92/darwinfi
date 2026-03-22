@@ -277,4 +277,23 @@ export class ChainRegistry {
     );
     return best;
   }
+
+  /**
+   * Get candidate chains for expansion (chains not yet registered).
+   * Used by the evolution engine to propose chain expansion.
+   */
+  getExpansionCandidates(): Array<{ chainId: number; name: string; registered: boolean }> {
+    const knownCandidates = [
+      { chainId: 10, name: 'Optimism' },
+      { chainId: 137, name: 'Polygon' },
+      { chainId: 43114, name: 'Avalanche' },
+      { chainId: 324, name: 'zkSync Era' },
+      { chainId: 59144, name: 'Linea' },
+    ];
+
+    return knownCandidates.map(c => ({
+      ...c,
+      registered: this.clients.has(c.chainId),
+    }));
+  }
 }

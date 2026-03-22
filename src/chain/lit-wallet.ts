@@ -1,5 +1,13 @@
 /**
- * lit-wallet.ts - Lit Protocol PKP wallet wrapper
+ * lit-wallet.ts - Lit Protocol PKP wallet wrapper (Naga / v2)
+ *
+ * MIGRATION NOTE: This module targets Lit's Naga network (datil-dev/datil-test)
+ * which sunsets March 25, 2026. For the Chipotle v3 REST API implementation,
+ * see lit-wallet-v3.ts. The v3 version is a drop-in replacement with the
+ * same interface (LitWalletV3 / LitPKPSignerV3) but uses HTTP instead of
+ * the @lit-protocol/lit-node-client SDK.
+ *
+ * See docs/lit-chipotle-notes.md for full migration details.
  *
  * Provides an ethers.js v6 compatible AbstractSigner backed by a
  * Lit Protocol Programmable Key Pair (PKP). Every transaction is

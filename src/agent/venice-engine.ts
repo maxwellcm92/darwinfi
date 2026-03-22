@@ -33,6 +33,8 @@ export interface MarketSnapshot {
   adx?: number;
   instinctPrediction?: string;
   instinctSentiment?: string;
+  instinctDirectionScore?: number;    // -1 (strong down) to +1 (strong up)
+  instinctConfidenceBoost?: number;   // -20 to +20 point adjustment
 }
 
 export interface EntrySignal {

@@ -191,7 +191,7 @@ Judges: every transaction below is independently verifiable on BaseScan. Click a
 ## Testing
 
 - **V4 vault tests:** 96 passing (covers all security features + full vault math + timelock + rounding guard + WithdrawalTooSmall)
-- **Total test suite:** 515+ passing across 30+ modules
+- **Total test suite:** 515 passing across 30+ modules
 - **Contracts + agent + evolution + immune + instinct + frontier** all covered
 
 | Module | Tests |
@@ -242,7 +242,7 @@ DarwinFi's self-evolution engine has completed 5 real evolution cycles, document
 
 DarwinFi competes in the autonomous DeFi trading space alongside Yearn (static vault strategies), dHEDGE (manager-dependent funds), Enzyme (fund manager platforms), TokenSets (rebalancing), and Gauntlet (risk modeling). See [competitor-analysis.md](competitor-analysis.md) for the full comparison.
 
-DarwinFi's moat: it is the only protocol where trading logic evolves autonomously through Darwinian selection. Others optimize parameters or require human managers. DarwinFi evolves the strategies themselves -- AI-proposed code mutations, sandboxed in git worktrees, tested against 515+ tests, deployed via canary with auto-rollback. Every mutation is audited and stored on IPFS via Storacha.
+DarwinFi's moat: it is the only protocol where trading logic evolves autonomously through Darwinian selection. Others optimize parameters or require human managers. DarwinFi evolves the strategies themselves -- AI-proposed code mutations, sandboxed in git worktrees, tested against 515 tests, deployed via canary with auto-rollback. Every mutation is audited and stored on IPFS via Storacha.
 
 ## Current Status (March 23, 2026 -- Post-Deadline Polish)
 
@@ -252,7 +252,7 @@ DarwinFi's moat: it is the only protocol where trading logic evolves autonomousl
 - PerformanceLog deployed at `0x7d7433A4aD04D6AD85E82Ce43CC4535ADb2fc9c9`
 - darwinfi.base.eth registered on Base with 4 text records set
 - DApp live at corduroycloud.com/darwinfi/ with V4 integration, mobile responsive, unaudited banner
-- 515+ tests passing across all modules (96 V4 vault tests, 21 new integration tests)
+- 515 tests passing across all modules (96 V4 vault tests, 21 new integration tests)
 - Demo video pipeline built (TTS + Playwright + ffmpeg)
 - Showcase site live at darwinfi.corduroycloud.com
 - **NEW: Evolution engine diff parser fixed** -- unified-to-SEARCH/REPLACE auto-converter, better few-shot prompting
@@ -286,7 +286,7 @@ DarwinFi's moat: it is the only protocol where trading logic evolves autonomousl
 
 | Metric | Value |
 |--------|-------|
-| Tests passing | 515+ across 30+ modules |
+| Tests passing | 515 across 30+ modules |
 | Solidity coverage | 70% statements (V4 vault: 91%) |
 | On-chain transactions | 19 on Base mainnet |
 | Autonomous evolution cycles | 5+ (safety-gated, documented in [evolution-proof.md](evolution-proof.md)) |

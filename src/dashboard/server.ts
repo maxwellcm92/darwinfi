@@ -136,6 +136,8 @@ export function startDashboard(port: number = 3500): void {
     next();
   });
 
+  app.use(express.json());
+
   // Serve the React DApp from dapp/dist/ (Caddy strips /darwinfi prefix via handle_path)
   const dappDistPath = path.resolve(__dirname, '../../../dapp/dist');
   app.use(express.static(dappDistPath));
@@ -177,6 +179,48 @@ export function startDashboard(port: number = 3500): void {
       return res.status(404).json({ error: 'Strategy not found' });
     }
     res.json(strategy);
+  });
+
+  // Strategy pause/resume
+  app.post("/api/strategy/:id/pause", (req, res) => {
+    const strategy = state.strategies.find(s => s.id === req.params.id);
+    if (!strategy) return res.status(404).json({ error: 'Strategy not found' });
+    strategy.status = 'sell_only';
+    pushEvent('circuit_breaker', `Strategy ${strategy.name} paused via API`);
+    res.json({ paused: true, strategyId: req.params.id });
+  });
+
+  app.post("/api/strategy/:id/resume", (req, res) => {
+    const strategy = state.strategies.find(s => s.id === req.params.id);
+    if (!strategy) return res.status(404).json({ error: 'Strategy not found' });
+    strategy.status = 'active';
+    pushEvent('circuit_breaker', `Strategy ${strategy.name} resumed via API`);
+    res.json({ paused: false, strategyId: req.params.id });
+  });
+
+  // Immune system summary
+  app.get("/api/immune/summary", (_req, res) => {
+    try {
+      const immuneStatePath = path.resolve(__dirname, '../../../data/immune/immune-state.json');
+      const fixHistoryPath = path.resolve(__dirname, '../../../data/immune/fix-history.json');
+      let immuneState = null;
+      let fixSummary = { total: 0, succeeded: 0, rate: 0 };
+
+      if (fs.existsSync(immuneStatePath)) {
+        immuneState = JSON.parse(fs.readFileSync(immuneStatePath, 'utf-8'));
+      }
+      if (fs.existsSync(fixHistoryPath)) {
+        const fixes = JSON.parse(fs.readFileSync(fixHistoryPath, 'utf-8'));
+        const entries = Array.isArray(fixes) ? fixes : fixes.entries || [];
+        fixSummary.total = entries.length;
+        fixSummary.succeeded = entries.filter((f: any) => f.success).length;
+        fixSummary.rate = fixSummary.total > 0 ? fixSummary.succeeded / fixSummary.total : 0;
+      }
+
+      res.json({ state: immuneState, fixSummary });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
   });
 
   app.get("/api/health", (_req, res) => {

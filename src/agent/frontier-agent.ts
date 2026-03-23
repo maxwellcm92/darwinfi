@@ -37,7 +37,7 @@ import { WhaleTracker, WhaleActivity } from '../frontier/whale/whale-tracker';
 // Constants
 // ---------------------------------------------------------------------------
 
-const FAST_TICK_MS = parseInt(process.env.FRONTIER_FAST_TICK_MS ?? '8000', 10);
+const FAST_TICK_MS = parseInt(process.env.FRONTIER_FAST_TICK_MS ?? '30000', 10);
 const SIGNAL_TICK_MS = parseInt(process.env.FRONTIER_SIGNAL_TICK_MS ?? '30000', 10);
 const EVOLUTION_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours
 const EVOLUTION_TRADE_TRIGGER = 20; // Also evolve after N trades
@@ -88,6 +88,8 @@ export class FrontierAgent {
   private loopCount: number = 0;
   private tradeIdCounter: number = 0;
   private startTime: Date;
+  private consecutiveRpcErrors: number = 0;
+  private readonly MAX_BACKOFF_MULTIPLIER = 8;
 
   constructor() {
     this.startTime = new Date();
@@ -271,44 +273,90 @@ export class FrontierAgent {
   private async fastTick(): Promise<void> {
     this.loopCount++;
 
-    // Mitosis: check for profitable spreads
-    const mitosisBot = this.frontierManager.getBotByArchetype('mitosis');
-    if (mitosisBot && mitosisBot.status !== 'sell_only') {
-      const canTrade = this.circuitBreaker.canTrade(mitosisBot.id);
-      if (canTrade.allowed) {
-        const spreads = this.spreadScanner.filterProfitable(
-          mitosisBot.parameters.mitosis?.minSpreadBps,
-        );
-        if (spreads.length > 0) {
-          const best = spreads[0];
-          this.conversationLog.decision('Mitosis', `Spread opportunity: ${best.spreadBps}bps on chain ${best.chainId}`, {
-            poolAddress: best.poolAddress,
-            netProfitBps: best.netProfitBps,
-          });
-          // Trade execution would go here in live mode
-        }
-      }
+    // Backoff if RPC errors are accumulating
+    if (this.consecutiveRpcErrors > 3) {
+      const skipCount = Math.min(this.consecutiveRpcErrors, this.MAX_BACKOFF_MULTIPLIER);
+      if (this.loopCount % skipCount !== 0) return;
     }
 
-    // Cambrian: check volatility events
-    const cambrianBot = this.frontierManager.getBotByArchetype('cambrian');
-    if (cambrianBot && cambrianBot.status !== 'sell_only') {
-      const canTrade = this.circuitBreaker.canTrade(cambrianBot.id);
-      if (canTrade.allowed) {
-        const volEvents = this.volScanner.getVolatilityEvents(
-          cambrianBot.parameters.cambrian?.volThresholdMultiplier,
-        );
-        if (volEvents.length > 0) {
-          this.conversationLog.decision('Cambrian', `${volEvents.length} volatility events detected`, {
-            events: volEvents.slice(0, 3).map(e => ({
-              token: e.tokenSymbol,
-              chain: e.chainId,
-              volRatio: e.volRatio.toFixed(2),
-              catalyst: e.catalyst,
-            })),
-          });
+    try {
+      // Mitosis: check for profitable spreads
+      const mitosisBot = this.frontierManager.getBotByArchetype('mitosis');
+      if (mitosisBot && mitosisBot.status !== 'sell_only') {
+        const canTrade = this.circuitBreaker.canTrade(mitosisBot.id);
+        if (canTrade.allowed) {
+          const spreads = this.spreadScanner.filterProfitable(
+            mitosisBot.parameters.mitosis?.minSpreadBps,
+          );
+          if (spreads.length > 0) {
+            const best = spreads[0];
+            this.conversationLog.decision('Mitosis', `Spread opportunity: ${best.spreadBps}bps on chain ${best.chainId}`, {
+              poolAddress: best.poolAddress,
+              netProfitBps: best.netProfitBps,
+            });
+
+            // Execute trade if profitable enough and not in dry-run
+            if (!DRY_RUN && best.netProfitBps >= (mitosisBot.parameters.mitosis?.minSpreadBps ?? 5)) {
+              try {
+                const positionSize = mitosisBot.parameters.mitosis?.maxPositionSizeUsd ?? 10;
+                const tradeResult = await this.crossChainEngine.executeTrade({
+                  chainId: best.chainId,
+                  strategyId: mitosisBot.id,
+                  action: 'buy',
+                  tokenSymbol: best.token1,
+                  amount: positionSize,
+                  slippageTolerance: 0.005,
+                });
+                this.conversationLog.trade('Mitosis', `Trade executed: ${tradeResult.success ? 'SUCCESS' : 'FAILED'}`, {
+                  txHash: tradeResult.txHash,
+                  amountOut: tradeResult.amountOut,
+                });
+                if (tradeResult.success) {
+                  this.performanceTracker.recordTrade({
+                    id: `frontier-${++this.tradeIdCounter}`,
+                    strategyId: mitosisBot.id,
+                    side: 'buy',
+                    token: best.token1,
+                    entryPrice: tradeResult.executionPriceUsd,
+                    entryTime: new Date(),
+                    quantity: parseFloat(tradeResult.amountOut),
+                    status: 'open',
+                    fees: parseFloat(tradeResult.gasCostEth),
+                  });
+                }
+              } catch (tradeErr) {
+                this.conversationLog.error('Mitosis', `Trade execution failed: ${tradeErr instanceof Error ? tradeErr.message : String(tradeErr)}`);
+              }
+            }
+          }
         }
       }
+
+      // Cambrian: check volatility events
+      const cambrianBot = this.frontierManager.getBotByArchetype('cambrian');
+      if (cambrianBot && cambrianBot.status !== 'sell_only') {
+        const canTrade = this.circuitBreaker.canTrade(cambrianBot.id);
+        if (canTrade.allowed) {
+          const volEvents = this.volScanner.getVolatilityEvents(
+            cambrianBot.parameters.cambrian?.volThresholdMultiplier,
+          );
+          if (volEvents.length > 0) {
+            this.conversationLog.decision('Cambrian', `${volEvents.length} volatility events detected`, {
+              events: volEvents.slice(0, 3).map(e => ({
+                token: e.tokenSymbol,
+                chain: e.chainId,
+                volRatio: e.volRatio.toFixed(2),
+                catalyst: e.catalyst,
+              })),
+            });
+          }
+        }
+      }
+
+      this.consecutiveRpcErrors = 0; // Reset on success
+    } catch (err) {
+      this.consecutiveRpcErrors++;
+      throw err; // Still propagate for logging in setInterval handler
     }
   }
 

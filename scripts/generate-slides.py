@@ -24,10 +24,12 @@ GREEN = "#22c55e"
 
 # Slide durations in seconds (infographics get longer than old 3s title cards)
 DURATIONS = {
+    "how_it_works": 8,
+    "live_stats": 8,
     "tournament": 19,
     "evolution": 21,
     "instinct": 19,
-    "closing": 3,
+    "closing": 5,
 }
 
 # Font (try Liberation Sans Bold, fallback to DejaVu Sans Bold)
@@ -211,8 +213,99 @@ def generate_instinct_slide(output_path: str) -> bool:
     return _run_convert(cmd, output_path)
 
 
+def generate_how_it_works_slide(output_path: str) -> bool:
+    """HOW IT WORKS - 3 step deposit flow."""
+    cmd = [
+        "convert",
+        "-size", "1920x1080",
+        f"xc:{BG_COLOR}",
+        "-font", FONT,
+        # Header
+        "-pointsize", "72", "-fill", TEAL,
+        "-gravity", "North", "-annotate", "+0+80", "HOW IT WORKS",
+        # Step 1 box (teal)
+        "-fill", TEAL, "-draw", "roundrectangle 160,260 560,520 20,20",
+        "-fill", BG_COLOR, "-pointsize", "96",
+        "-gravity", "NorthWest", "-annotate", "+320+310", "1",
+        "-fill", BG_COLOR, "-pointsize", "32",
+        "-annotate", "+260+430", "Connect &",
+        "-annotate", "+270+470", "Deposit",
+        # Arrow 1
+        "-fill", GRAY, "-pointsize", "48",
+        "-gravity", "NorthWest", "-annotate", "+600+370", "->",
+        # Step 2 box (purple)
+        "-fill", PURPLE, "-draw", "roundrectangle 700,260 1100,520 20,20",
+        "-fill", WHITE, "-pointsize", "96",
+        "-gravity", "NorthWest", "-annotate", "+860+310", "2",
+        "-fill", WHITE, "-pointsize", "32",
+        "-annotate", "+780+430", "AI Trades",
+        "-annotate", "+800+470", "for You",
+        # Arrow 2
+        "-fill", GRAY, "-pointsize", "48",
+        "-gravity", "NorthWest", "-annotate", "+1140+370", "->",
+        # Step 3 box (orange)
+        "-fill", ORANGE, "-draw", "roundrectangle 1240,260 1640,520 20,20",
+        "-fill", BG_COLOR, "-pointsize", "96",
+        "-gravity", "NorthWest", "-annotate", "+1400+310", "3",
+        "-fill", BG_COLOR, "-pointsize", "32",
+        "-annotate", "+1340+430", "Withdraw",
+        "-annotate", "+1350+470", "Anytime",
+        # Subtitle
+        "-gravity", "North",
+        "-fill", WHITE, "-pointsize", "30",
+        "-annotate", "+0+620", "dvUSDC shares track your proportional vault value.",
+        "-fill", GRAY, "-pointsize", "26",
+        "-annotate", "+0+680", "One vault. Sixteen strategies. Your capital evolves.",
+        output_path,
+    ]
+    return _run_convert(cmd, output_path)
+
+
+def generate_live_stats_slide(output_path: str) -> bool:
+    """VAULT PERFORMANCE - live stats grid."""
+    cmd = [
+        "convert",
+        "-size", "1920x1080",
+        f"xc:{BG_COLOR}",
+        "-font", FONT,
+        # Header
+        "-pointsize", "72", "-fill", TEAL,
+        "-gravity", "North", "-annotate", "+0+60", "VAULT PERFORMANCE",
+        # Subtitle
+        "-pointsize", "36", "-fill", WHITE,
+        "-annotate", "+0+160", "Day 5. Live on Base Mainnet.",
+        # Stats grid - 2x2
+        # Top-left: Trades
+        "-fill", TEAL, "-pointsize", "96",
+        "-gravity", "NorthWest", "-annotate", "+280+320", "70+",
+        "-fill", WHITE, "-pointsize", "32",
+        "-annotate", "+260+430", "Real Trades",
+        # Top-right: Strategies
+        "-fill", PURPLE, "-pointsize", "96",
+        "-gravity", "NorthWest", "-annotate", "+1120+320", "16",
+        "-fill", WHITE, "-pointsize", "32",
+        "-annotate", "+1020+430", "Competing Strategies",
+        # Bottom-left: Agent loops
+        "-fill", ORANGE, "-pointsize", "96",
+        "-gravity", "NorthWest", "-annotate", "+200+560", "8,000+",
+        "-fill", WHITE, "-pointsize", "32",
+        "-annotate", "+260+680", "Agent Loops",
+        # Bottom-right: Tests
+        "-fill", GOLD, "-pointsize", "96",
+        "-gravity", "NorthWest", "-annotate", "+1080+560", "423",
+        "-fill", WHITE, "-pointsize", "32",
+        "-annotate", "+1000+680", "Tests / Every Mutation",
+        # Footnote
+        "-gravity", "North",
+        "-fill", GRAY, "-pointsize", "26",
+        "-annotate", "+0+840", "ERC-4626 vault. Fully autonomous. Zero human trades.",
+        output_path,
+    ]
+    return _run_convert(cmd, output_path)
+
+
 def generate_closing_slide(output_path: str) -> bool:
-    """End card with logo, vault address, URLs, sponsors."""
+    """End card with logo, vault address, URLs, sponsors -- PROMINENT URL."""
     cmd = [
         "convert",
         "-size", "1920x1080",
@@ -220,18 +313,21 @@ def generate_closing_slide(output_path: str) -> bool:
         "-font", FONT,
         # Logo
         "-pointsize", "96", "-fill", TEAL,
-        "-gravity", "North", "-annotate", "+0+260", "DarwinFi",
-        # Showcase URL
-        "-pointsize", "36", "-fill", WHITE,
-        "-annotate", "+0+400", "darwinfi.corduroycloud.com",
+        "-gravity", "North", "-annotate", "+0+180", "DarwinFi",
+        # Showcase URL (PROMINENT - larger, brighter)
+        "-pointsize", "48", "-fill", WHITE,
+        "-annotate", "+0+330", "darwinfi.corduroycloud.com",
+        # Live on Base badge
+        "-pointsize", "28", "-fill", TEAL,
+        "-annotate", "+0+410", "Live on Base L2",
         # Vault address
-        "-pointsize", "28", "-fill", GRAY,
+        "-pointsize", "24", "-fill", GRAY,
         "-annotate", "+0+480", "Vault: 0x4a55DEEC24C6b5c1aa6301b43b4D9680c10491d7",
         # Built with
         "-pointsize", "28", "-fill", GRAY,
-        "-annotate", "+0+600", "Built with",
+        "-annotate", "+0+580", "Built with",
         "-pointsize", "32", "-fill", TEAL,
-        "-annotate", "+0+660", "Base  |  Uniswap V3  |  Lit Protocol  |  Venice AI  |  Storacha  |  ENS  |  Claude Code",
+        "-annotate", "+0+640", "Base  |  Uniswap V3  |  Lit Protocol  |  Venice AI  |  Storacha  |  ENS  |  Claude Code",
         output_path,
     ]
     return _run_convert(cmd, output_path)
@@ -270,6 +366,8 @@ def main():
     print("Generating infographic slides (1920x1080)...\n")
 
     generators = {
+        "how_it_works": generate_how_it_works_slide,
+        "live_stats": generate_live_stats_slide,
         "tournament": generate_tournament_slide,
         "evolution": generate_evolution_slide,
         "instinct": generate_instinct_slide,

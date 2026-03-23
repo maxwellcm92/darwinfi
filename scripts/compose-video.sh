@@ -1,21 +1,20 @@
 #!/usr/bin/env bash
 #
-# DarwinFi Demo Video Compositor (v3)
-# Per-scene audio sync: each video clip is paired with its individual scene audio.
-# No more single full-narration overlay -- each scene's narration starts and ends
-# within its visual clip.
+# DarwinFi Demo Video Compositor (v4)
+# Per-scene audio sync with composite scene 04 (slide + DApp recordings).
 #
 # Scene order:
 #   0 - Maxwell intro (webcam, own audio)
 #   1 - showcase_hero recording + showcase_hero.mp3
 #   2 - organism recording + organism.mp3
-#   3 - quick_scroll_chat recording + quick_scroll_chat.mp3
-#   4 - maxwell-dapp recording + dashboard_pitch.mp3
+#   3 - quick_scroll recording + quick_scroll_chat.mp3
+#   4 - COMPOSITE: how_it_works slide (8s) + dapp_landing + dapp_results + dashboard_pitch.mp3
+#       Fallback: how_it_works (8s) + live_stats (8s) + maxwell-dapp.mp4 (rest)
 #   5 - tournament slide + tournament.mp3
 #   6 - evolution slide + evolution.mp3
 #   7 - instinct slide + instinct.mp3
 #   8 - closing recording + closing.mp3
-#   9 - closing card (silence, 3s)
+#   9 - closing card (silence, 5s)
 #
 # Requires: ffmpeg, ffprobe
 #
@@ -34,7 +33,7 @@ CONCAT_LIST="$BASE_DIR/concat-list.txt"
 MAXWELL_INTRO="$BASE_DIR/maxwell-intro.mp4"
 MAXWELL_DAPP="$BASE_DIR/maxwell-dapp.mp4"
 
-echo "=== DarwinFi Demo Video Compositor (v3 - Per-Scene Sync) ==="
+echo "=== DarwinFi Demo Video Compositor (v4 - Composite Scenes) ==="
 echo "Base dir: $BASE_DIR"
 echo ""
 
@@ -86,7 +85,7 @@ merge_scene() {
     echo "  $scene_name: video=${vid_dur}s audio=${audio_dur}s"
 
     # Compare durations (integer comparison for padding)
-    local vid_int audio_int pad_needed
+    local vid_int audio_int
     vid_int=$(printf "%.0f" "$vid_dur")
     audio_int=$(printf "%.0f" "$audio_dur")
 
@@ -144,10 +143,35 @@ if [ -f "$MAXWELL_DAPP" ]; then
     HAS_MAXWELL_DAPP=true
     echo "  Maxwell DApp: found ($(get_duration "$MAXWELL_DAPP")s)"
 else
-    echo "  Maxwell DApp: NOT FOUND (skipping)"
+    echo "  Maxwell DApp: NOT FOUND"
 fi
 
+# Check for DApp recordings (new in v4)
+HAS_DAPP_LANDING=false
+HAS_DAPP_RESULTS=false
+for scene in dapp_landing dapp_results; do
+    src="$RECORDINGS_DIR/$scene.webm"
+    dst="$RECORDINGS_DIR/$scene.mp4"
+    if [ -f "$src" ]; then
+        if [ ! -f "$dst" ]; then
+            echo "  Converting $scene.webm -> mp4..."
+            ffmpeg -y -i "$src" \
+                -c:v libx264 -preset fast -crf 20 \
+                -pix_fmt yuv420p -r 30 \
+                -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black" \
+                "$dst" 2>/dev/null
+        fi
+        if [ "$scene" = "dapp_landing" ]; then HAS_DAPP_LANDING=true; fi
+        if [ "$scene" = "dapp_results" ]; then HAS_DAPP_RESULTS=true; fi
+        echo "  $scene: found ($(get_duration "$dst")s)"
+    else
+        echo "  $scene: NOT FOUND"
+    fi
+done
+
 # Slide clips
+check_file "$SLIDES_DIR/how_it_works.mp4"
+check_file "$SLIDES_DIR/live_stats.mp4"
 check_file "$SLIDES_DIR/tournament.mp4"
 check_file "$SLIDES_DIR/evolution.mp4"
 check_file "$SLIDES_DIR/instinct.mp4"
@@ -199,11 +223,24 @@ echo "  organism.mp4"
 normalize_video "$RECORDINGS_DIR/quick_scroll_chat.mp4" "$NORM_DIR/quick_scroll_chat.mp4"
 echo "  quick_scroll_chat.mp4"
 
+# DApp recordings
+if [ "$HAS_DAPP_LANDING" = true ]; then
+    normalize_video "$RECORDINGS_DIR/dapp_landing.mp4" "$NORM_DIR/dapp_landing.mp4"
+    echo "  dapp_landing.mp4"
+fi
+if [ "$HAS_DAPP_RESULTS" = true ]; then
+    normalize_video "$RECORDINGS_DIR/dapp_results.mp4" "$NORM_DIR/dapp_results.mp4"
+    echo "  dapp_results.mp4"
+fi
 if [ "$HAS_MAXWELL_DAPP" = true ]; then
     normalize_video "$MAXWELL_DAPP" "$NORM_DIR/maxwell-dapp.mp4"
     echo "  maxwell-dapp.mp4"
 fi
 
+normalize_video "$SLIDES_DIR/how_it_works.mp4" "$NORM_DIR/how_it_works.mp4"
+echo "  how_it_works.mp4"
+normalize_video "$SLIDES_DIR/live_stats.mp4" "$NORM_DIR/live_stats.mp4"
+echo "  live_stats.mp4"
 normalize_video "$SLIDES_DIR/tournament.mp4" "$NORM_DIR/tournament.mp4"
 echo "  tournament.mp4"
 normalize_video "$SLIDES_DIR/evolution.mp4" "$NORM_DIR/evolution.mp4"
@@ -217,8 +254,69 @@ echo "  closing-card.mp4"
 
 echo ""
 
-# --- Step 3: Merge each scene (video + audio) ---
+# --- Step 3: Build composite scene 04 ---
+# dashboard_pitch.mp3 is ~49s. We fill it with:
+#   0-8s:   HOW IT WORKS slide
+#   8-25s:  DApp landing page (stats, 3 steps)
+#   25-49s: DApp Results page (leaderboard, trades, evolution)
+# Fallback if no DApp recordings:
+#   0-8s:   HOW IT WORKS slide
+#   8-16s:  LIVE STATS slide
+#   16-49s: maxwell-dapp.mp4
+
+echo "Building composite scene 04 (dashboard_pitch)..."
+COMPOSITE_DIR="$BASE_DIR/composite"
+mkdir -p "$COMPOSITE_DIR"
+DASHBOARD_AUDIO_DUR=$(get_duration "$AUDIO_DIR/dashboard_pitch.mp3")
+DASHBOARD_AUDIO_INT=$(printf "%.0f" "$DASHBOARD_AUDIO_DUR")
+echo "  dashboard_pitch.mp3: ${DASHBOARD_AUDIO_DUR}s"
+
+if [ "$HAS_DAPP_LANDING" = true ] && [ "$HAS_DAPP_RESULTS" = true ]; then
+    echo "  Using: how_it_works (8s) + dapp_landing + dapp_results"
+    # Trim how_it_works to 8s (already 8s from slide gen, but ensure)
+    ffmpeg -y -i "$NORM_DIR/how_it_works.mp4" -t 8 -c:v libx264 -preset fast -crf 20 -an "$COMPOSITE_DIR/part1.mp4" 2>/dev/null
+    # Trim dapp_landing to 17s
+    ffmpeg -y -i "$NORM_DIR/dapp_landing.mp4" -t 17 -c:v libx264 -preset fast -crf 20 -an "$COMPOSITE_DIR/part2.mp4" 2>/dev/null
+    # dapp_results takes the rest (~24s)
+    REMAINING=$((DASHBOARD_AUDIO_INT - 25))
+    ffmpeg -y -i "$NORM_DIR/dapp_results.mp4" -t "$REMAINING" -c:v libx264 -preset fast -crf 20 -an "$COMPOSITE_DIR/part3.mp4" 2>/dev/null
+else
+    echo "  Fallback: how_it_works (8s) + live_stats (8s) + maxwell-dapp (rest)"
+    ffmpeg -y -i "$NORM_DIR/how_it_works.mp4" -t 8 -c:v libx264 -preset fast -crf 20 -an "$COMPOSITE_DIR/part1.mp4" 2>/dev/null
+    ffmpeg -y -i "$NORM_DIR/live_stats.mp4" -t 8 -c:v libx264 -preset fast -crf 20 -an "$COMPOSITE_DIR/part2.mp4" 2>/dev/null
+    if [ "$HAS_MAXWELL_DAPP" = true ]; then
+        REMAINING=$((DASHBOARD_AUDIO_INT - 16))
+        ffmpeg -y -i "$NORM_DIR/maxwell-dapp.mp4" -t "$REMAINING" -c:v libx264 -preset fast -crf 20 -an "$COMPOSITE_DIR/part3.mp4" 2>/dev/null
+    else
+        # No DApp recording at all -- extend live_stats to fill
+        REMAINING=$((DASHBOARD_AUDIO_INT - 8))
+        ffmpeg -y -i "$NORM_DIR/live_stats.mp4" -t "$REMAINING" \
+            -filter_complex "[0:v]tpad=stop_mode=clone:stop_duration=$((REMAINING - 8))[vpad]" \
+            -map "[vpad]" -c:v libx264 -preset fast -crf 20 -an "$COMPOSITE_DIR/part3.mp4" 2>/dev/null
+    fi
+fi
+
+# Concatenate composite parts
+COMP_LIST="$COMPOSITE_DIR/concat.txt"
+> "$COMP_LIST"
+for part in "$COMPOSITE_DIR"/part*.mp4; do
+    echo "file '$(realpath "$part")'" >> "$COMP_LIST"
+done
+
+ffmpeg -y -f concat -safe 0 -i "$COMP_LIST" \
+    -c:v libx264 -preset fast -crf 20 \
+    -pix_fmt yuv420p -r 30 \
+    -an \
+    "$NORM_DIR/dashboard_composite.mp4" 2>/dev/null
+
+echo "  Composite: $(get_duration "$NORM_DIR/dashboard_composite.mp4")s"
+echo ""
+
+# --- Step 4: Merge each scene (video + audio) ---
 echo "Merging scenes with per-scene audio..."
+# Clear old scene files
+rm -f "$SCENE_DIR"/*.mp4
+
 SCENE_INDEX=0
 
 # Scene 0: Maxwell intro (own audio, no TTS)
@@ -240,11 +338,9 @@ SCENE_INDEX=$((SCENE_INDEX + 1))
 merge_scene "$(printf '%02d' $SCENE_INDEX)-quick-scroll-chat" "$NORM_DIR/quick_scroll_chat.mp4" "$AUDIO_DIR/quick_scroll_chat.mp3"
 SCENE_INDEX=$((SCENE_INDEX + 1))
 
-# Scene 4: maxwell-dapp + dashboard_pitch.mp3
-if [ "$HAS_MAXWELL_DAPP" = true ]; then
-    merge_scene "$(printf '%02d' $SCENE_INDEX)-maxwell-dapp" "$NORM_DIR/maxwell-dapp.mp4" "$AUDIO_DIR/dashboard_pitch.mp3"
-    SCENE_INDEX=$((SCENE_INDEX + 1))
-fi
+# Scene 4: dashboard composite + dashboard_pitch.mp3
+merge_scene "$(printf '%02d' $SCENE_INDEX)-dashboard" "$NORM_DIR/dashboard_composite.mp4" "$AUDIO_DIR/dashboard_pitch.mp3"
+SCENE_INDEX=$((SCENE_INDEX + 1))
 
 # Scene 5: tournament slide + tournament.mp3
 merge_scene "$(printf '%02d' $SCENE_INDEX)-tournament" "$NORM_DIR/tournament.mp4" "$AUDIO_DIR/tournament.mp3"
@@ -262,19 +358,26 @@ SCENE_INDEX=$((SCENE_INDEX + 1))
 merge_scene "$(printf '%02d' $SCENE_INDEX)-closing" "$NORM_DIR/closing.mp4" "$AUDIO_DIR/closing.mp3"
 SCENE_INDEX=$((SCENE_INDEX + 1))
 
-# Scene 9: closing card (3s silence)
-cp "$NORM_DIR/closing-card.mp4" "$SCENE_DIR/$(printf '%02d' $SCENE_INDEX)-closing-card.mp4"
-echo "  $(printf '%02d' $SCENE_INDEX)-closing-card: 3s (silence)"
+# Scene 9: closing card (5s silence)
+# Add silent audio track so concat doesn't fail on audio stream mismatch
+ffmpeg -y -i "$NORM_DIR/closing-card.mp4" \
+    -f lavfi -i anullsrc=r=44100:cl=stereo \
+    -map 0:v:0 -map 1:a:0 \
+    -c:v copy -c:a aac -b:a 192k \
+    -shortest \
+    "$SCENE_DIR/$(printf '%02d' $SCENE_INDEX)-closing-card.mp4" 2>/dev/null
+echo "  $(printf '%02d' $SCENE_INDEX)-closing-card: 5s (silence)"
 
 echo ""
 
-# --- Step 4: Concatenate all scenes ---
+# --- Step 5: Concatenate all scenes ---
 echo "Building concat list..."
 > "$CONCAT_LIST"
 for clip in "$SCENE_DIR"/*.mp4; do
     echo "file '$(realpath "$clip")'" >> "$CONCAT_LIST"
 done
 echo "  $(wc -l < "$CONCAT_LIST") scenes in sequence"
+cat "$CONCAT_LIST"
 echo ""
 
 echo "Concatenating final video..."

@@ -101,7 +101,7 @@ fi
 if [ "$SKIP_RECORD" = false ] && [ "$SLIDES_ONLY" = false ]; then
     echo "============================================"
     echo "  Step 2/4: Recording Screen Demos"
-    echo "  (showcase hero, organism, quick scroll+chat, closing)"
+    echo "  (showcase hero, organism, quick scroll, dapp landing/results, closing)"
     echo "============================================"
     cd "$PROJECT_DIR"
     npx ts-node "$SCRIPT_DIR/record-demo.ts"
@@ -115,7 +115,7 @@ fi
 # --- Step 4: Generate infographic slides (3 infographics + closing card) ---
 echo "============================================"
 echo "  Step 3/4: Generating Infographic Slides"
-echo "  (tournament, evolution, instinct, closing card)"
+echo "  (how it works, live stats, tournament, evolution, instinct, closing card)"
 echo "============================================"
 python3 "$SCRIPT_DIR/generate-slides.py"
 echo ""

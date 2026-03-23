@@ -4,7 +4,7 @@
 
 **A self-evolving financial organism that increases profits and win rate, autonomously, forever.**
 
-DarwinFi is an autonomous DeFi trading agent that applies Darwinian natural selection to trading strategies. 16 strategies compete in real-time -- 12 classic bots on Base L2 plus 4 Frontier archetypes hunting cross-chain -- the strongest trades live with real capital, the rest paper trade and evolve to dethrone it. Users deposit USDC into an ERC-4626 vault and earn proportional returns.
+DarwinFi is an autonomous DeFi trading agent that applies Darwinian natural selection to trading strategies. A dynamic population of strategies competes in real-time on Base L2 -- the strongest trades live with real capital, the rest paper trade and evolve to dethrone it. The population grows and shrinks as the engine mutates winners and eliminates the weak. Users deposit USDC into an ERC-4626 vault and earn proportional returns.
 
 The Golden Rule: every module, every parameter, every decision exists to serve one objective -- **increase profits and win rate**. If DarwinFi were left running with no human input, it should continuously get better at turning money into more money.
 
@@ -20,7 +20,7 @@ DarwinFi is not just a trading bot. It is a closed-loop optimization system wher
 
 ### What Makes DarwinFi Different
 
-1. **Darwinian Tournament**: 16 strategies compete (12 base + 4 frontier). Winners trade live. Losers evolve or die. No manual parameter tuning -- the population self-optimizes.
+1. **Darwinian Tournament**: A dynamic population of strategies competes. Winners trade live. Losers evolve or die. No manual parameter tuning -- the population self-optimizes.
 2. **Outcome Attribution**: After every trade, DarwinFi decomposes the result into entry timing, exit timing, slippage, and market regime. This feedback loop tells the evolution engine *why* a strategy fails, not just *that* it failed.
 3. **Self-Calibrating Signals**: AI confidence scores are continuously validated against actual outcomes. If Ollama says 80% confidence on DEGEN but only wins 50% of the time, DarwinFi automatically treats it as 50%.
 4. **Adaptive Safety**: Circuit breaker thresholds scale with strategy quality (Sharpe ratio) and market volatility. A proven strategy gets more leeway. An unproven one gets less.

@@ -42,6 +42,7 @@ export interface AbiogenesisParams {
   maxMarketCapUsd: number;         // Maximum market cap to consider
   pumpExitMultiplier: number;      // Exit at Nx entry price
   maxHoldTimeMs: number;           // Auto-exit timer
+  maxPositionSizeUsd: number;      // Per-trade size cap
 }
 
 export interface MitosisParams {
@@ -56,6 +57,7 @@ export interface CambrianParams {
   volWindowMinutes: number;        // Rolling window for vol calc
   catalystWeight: number;          // 0-1: weight given to catalyst signals
   maxExposurePerEvent: number;     // Max USD per volatility event
+  maxPositionSizeUsd: number;      // Per-trade size cap
 }
 
 export interface SymbiontParams {
@@ -63,6 +65,7 @@ export interface SymbiontParams {
   minWhaleScore: number;           // 0-100: minimum whale quality score
   stopLossPct: number;             // Tighter stop than whales
   maxCopyPositions: number;        // Max concurrent copy positions
+  maxPositionSizeUsd: number;      // Per-trade size cap
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +120,7 @@ export function createSeedFrontierGenomes(): FrontierGenome[] {
         maxMarketCapUsd: 1_000_000,
         pumpExitMultiplier: 5,
         maxHoldTimeMs: 3_600_000,
+        maxPositionSizeUsd: 5,
       },
     },
     status: 'paper',
@@ -167,6 +171,7 @@ export function createSeedFrontierGenomes(): FrontierGenome[] {
         volWindowMinutes: 60,
         catalystWeight: 0.5,
         maxExposurePerEvent: 200,
+        maxPositionSizeUsd: 10,
       },
     },
     status: 'paper',
@@ -192,6 +197,7 @@ export function createSeedFrontierGenomes(): FrontierGenome[] {
         minWhaleScore: 70,
         stopLossPct: 5,
         maxCopyPositions: 4,
+        maxPositionSizeUsd: 10,
       },
     },
     status: 'paper',

@@ -20,49 +20,44 @@ function GradientWalletButton() {
   return (
     <ConnectButton.Custom>
       {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
-        const ready = mounted;
-        const connected = ready && account && chain;
+        if (!mounted) {
+          return null;
+        }
+
+        const connected = account && chain;
+
+        if (!connected) {
+          return (
+            <button
+              onClick={openConnectModal}
+              type="button"
+              className="px-5 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-darwin-accent to-darwin-accent-dim text-darwin-bg hover:opacity-90 transition-opacity"
+            >
+              Connect Wallet
+            </button>
+          );
+        }
+
+        if (chain.unsupported) {
+          return (
+            <button
+              onClick={openChainModal}
+              type="button"
+              className="px-5 py-2 rounded-full text-sm font-semibold bg-darwin-danger text-white hover:opacity-90 transition-opacity"
+            >
+              Wrong Network
+            </button>
+          );
+        }
 
         return (
-          <div
-            {...(!ready && {
-              "aria-hidden": true,
-              style: { opacity: 0, pointerEvents: "none" as const, userSelect: "none" as const },
-            })}
+          <button
+            onClick={openAccountModal}
+            type="button"
+            className="px-5 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-darwin-accent to-darwin-accent-dim text-darwin-bg hover:opacity-90 transition-opacity"
           >
-            {(() => {
-              if (!connected) {
-                return (
-                  <button
-                    onClick={openConnectModal}
-                    className="px-5 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-darwin-accent to-darwin-accent-dim text-darwin-bg hover:opacity-90 transition-opacity"
-                  >
-                    Connect Wallet
-                  </button>
-                );
-              }
-
-              if (chain.unsupported) {
-                return (
-                  <button
-                    onClick={openChainModal}
-                    className="px-5 py-2 rounded-full text-sm font-semibold bg-darwin-danger text-white hover:opacity-90 transition-opacity"
-                  >
-                    Wrong Network
-                  </button>
-                );
-              }
-
-              return (
-                <button
-                  onClick={openAccountModal}
-                  className="px-5 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-darwin-accent to-darwin-accent-dim text-darwin-bg hover:opacity-90 transition-opacity"
-                >
-                  {account.displayName}
-                </button>
-              );
-            })()}
-          </div>
+            {account.displayName}
+          </button>
         );
       }}
     </ConnectButton.Custom>

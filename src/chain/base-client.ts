@@ -5,7 +5,7 @@
  * Reads configuration from environment variables.
  */
 
-import { ethers, AbstractSigner, JsonRpcProvider, Wallet, TransactionRequest, TransactionResponse } from 'ethers';
+import { ethers, AbstractSigner, JsonRpcProvider, FetchRequest, Wallet, TransactionRequest, TransactionResponse } from 'ethers';
 import * as dotenv from 'dotenv';
 import type { LitPKPSigner } from './lit-wallet';
 
@@ -90,9 +90,7 @@ export class BaseClient {
       this.rpcEndpoints = envRpc ? [envRpc, ...MAINNET_RPC_ENDPOINTS] : [...MAINNET_RPC_ENDPOINTS];
     }
 
-    this.provider = new JsonRpcProvider(this.rpcEndpoints[0], this.expectedChainId, {
-      staticNetwork: true,
-    });
+    this.provider = this.createProvider(this.rpcEndpoints[0]);
 
     // Use Lit PKP signer if provided, otherwise fall back to standard Wallet
     if (this._litSigner) {
@@ -105,6 +103,17 @@ export class BaseClient {
   }
 
   /**
+   * Create a JsonRpcProvider with timeout configured.
+   */
+  private createProvider(rpcUrl: string): JsonRpcProvider {
+    const fetchReq = new FetchRequest(rpcUrl);
+    fetchReq.timeout = 10_000; // 10s timeout
+    return new JsonRpcProvider(fetchReq, this.expectedChainId, {
+      staticNetwork: true,
+    });
+  }
+
+  /**
    * Rotate to the next RPC endpoint. Returns true if rotated, false if exhausted all options.
    */
   rotateRpc(): boolean {
@@ -113,9 +122,7 @@ export class BaseClient {
     this.currentRpcIndex = (this.currentRpcIndex + 1) % this.rpcEndpoints.length;
     const newRpc = this.rpcEndpoints[this.currentRpcIndex];
 
-    this.provider = new JsonRpcProvider(newRpc, this.expectedChainId, {
-      staticNetwork: true,
-    });
+    this.provider = this.createProvider(newRpc);
     if (this._litSigner) {
       this.signer = this._litSigner.connect(this.provider) as LitPKPSigner;
     } else {

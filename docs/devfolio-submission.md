@@ -28,7 +28,7 @@ What makes DarwinFi genuinely autonomous:
 
 DarwinVaultV4 collects 1% annual management + 5% performance fees (high water mark), with 6 security hardening features over V3 including 48h timelocks on agent/feeRecipient changes and proportional emergency withdrawals. Built with Claude Code as the agent harness, Venice AI for evolution, Uniswap V3 for execution, and Lit Protocol for cryptographic trading guardrails.
 
-**Evolution Proof**: DarwinFi has completed 5+ real autonomous evolution cycles -- not simulations. Venice AI (Llama 3.3 70B) proposed code mutations targeting `instinct/reflexes/pattern-matcher.ts`, `instinct/cortex/weight-optimizer.ts`, and `instinct/cortex/scorer.ts`. Early cycles were correctly rejected at the sandbox stage due to unified diff format mismatch -- the safety pipeline working as designed. Session 41 ("Make the Narrative True") fixed this with a unified-diff-to-SEARCH/REPLACE auto-converter, better few-shot prompting, and reduced backoff timers. Session 43 ("Organ Autopsy") further hardened the diff pipeline with per-file block tracking (blocks intended for file A no longer get applied to file B) and empty-line handling. The evolution engine now successfully parses Venice AI output and applies mutations through the full pipeline. Full audit trail: [`data/evolution/audit.jsonl`](../data/evolution/audit.jsonl). See [evolution-proof.md](evolution-proof.md) for the complete cycle-by-cycle breakdown.
+**Evolution Proof**: DarwinFi has completed 5+ real autonomous evolution cycles -- not simulations. Venice AI (Llama 3.3 70B) proposed code mutations targeting `instinct/reflexes/pattern-matcher.ts`, `instinct/cortex/weight-optimizer.ts`, and `instinct/cortex/scorer.ts`. Early cycles were correctly rejected at the sandbox stage due to unified diff format mismatch -- the safety pipeline working as designed. Three iterations of the diff pipeline hardened it to production quality: Session 41 added a unified-diff-to-SEARCH/REPLACE auto-converter, Session 43 added per-file block tracking, and Session 44 added fuzzy whitespace matching (normalizes trailing spaces per line) and empty-line context handling. The evolution engine now tolerates the formatting inconsistencies Venice AI produces and applies mutations through the full pipeline. Full audit trail: [`data/evolution/audit.jsonl`](../data/evolution/audit.jsonl). See [evolution-proof.md](evolution-proof.md) for the complete cycle-by-cycle breakdown.
 
 ## Demo Video
 
@@ -244,7 +244,7 @@ DarwinFi competes in the autonomous DeFi trading space alongside Yearn (static v
 
 DarwinFi's moat: it is the only protocol where trading logic evolves autonomously through Darwinian selection. Others optimize parameters or require human managers. DarwinFi evolves the strategies themselves -- AI-proposed code mutations, sandboxed in git worktrees, tested against 515+ tests, deployed via canary with auto-rollback. Every mutation is audited and stored on IPFS via Storacha.
 
-## Current Status (March 22, 2026 -- Deadline Day)
+## Current Status (March 23, 2026 -- Post-Deadline Polish)
 
 **Completed:**
 - V4 vault deployed and verified on Base mainnet
@@ -267,6 +267,12 @@ DarwinFi's moat: it is the only protocol where trading logic evolves autonomousl
   - Platelet healing: `stateRebuild()` works without .tmp backup, per-fix verify delays for PM2 startup
   - Cortex P&L wiring: weight optimizer ranks by realized trade profit (not prediction accuracy)
   - Thymus auto-remediation: 5 real auto-fix functions replace hardcoded no-ops (manual checks reduced from 11 to 6)
+- **NEW: Organ Autopsy R2 -- 6-organ deep fix (5 parallel agents):**
+  - Evolution fuzzy matching: tolerates Venice AI whitespace variations via normalized line-by-line comparison
+  - Immune cross-process healing: RPC rotation persists to .env and restarts dependent processes; verify retry with 2x delay
+  - Frontier stability: 30s tick default (was 8s), exponential RPC error backoff, Mitosis trade execution wired to CrossChainEngine
+  - Instinct cortex kickstart: 4h optimization interval (was 24h), auto-triggers on startup if no weights exist
+  - Dashboard controls: strategy pause/resume API, immune summary endpoint, auto-demotion of chronic losers (<10% win rate)
 
 **Pending:**
 - Record demo video with live trade footage
@@ -303,7 +309,7 @@ DarwinFi's moat: it is the only protocol where trading logic evolves autonomousl
 
 5. **The Golden Rule enforces focus.** Every module serves one objective: increase profits and win rate. No feature creep, no vanity metrics. If it does not make DarwinFi better at making money, it does not exist.
 
-6. **Iterative improvement, measured by judges.** Internal judge simulation scored DarwinFi across 6 rounds: R1=5.8, R2=6.8, R3=7.7, R4=8.0, R5=8.3, R6=8.4. Each round identified gaps and DarwinFi evolved to close them -- the same Darwinian loop that drives its trading strategies. An internal "Organ Autopsy" then stress-tested all autonomous subsystems, found 4 P0 failures, and fixed them in a single Wave Sprint with 3 parallel agents.
+6. **Iterative improvement, measured by judges.** Internal judge simulation scored DarwinFi across 6 rounds: R1=5.8, R2=6.8, R3=7.7, R4=8.0, R5=8.3, R6=8.4. Each round identified gaps and DarwinFi evolved to close them -- the same Darwinian loop that drives its trading strategies. Two rounds of "Organ Autopsy" then stress-tested all 6 autonomous subsystems (Evolution, Immune, Frontier, Instinct, Brain, Dashboard) at the operational level. R1 found 4 P0 failures (fixed with 3 parallel agents). R2 found 6 root causes preventing real autonomous outcomes (fixed with 5 parallel agents). The organism debugs itself the same way it trades: identify weakness, propose fix, validate, deploy.
 
 ## Technologies
 

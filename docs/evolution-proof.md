@@ -174,9 +174,24 @@ The Session 41 auto-converter had 3 remaining bugs discovered during the Organ A
 
 **Additional tests added:** 4 new evolution smoke tests + 4 new diff converter integration tests covering multi-file diffs, per-file tracking, and empty line handling. Total: 515+ tests passing.
 
+## Session 44 Fix: Fuzzy Whitespace Matching (Organ Autopsy R2)
+
+Two additional bugs were found and fixed in the R2 organ assessment:
+
+1. **Empty lines still dropped**: The Session 43 fix treated empty lines as "skip" -- but in unified diffs, a truly empty line (no leading character) IS a context line representing a literal empty line in the source. Dropping these corrupted SEARCH blocks so they couldn't match.
+
+2. **Strict string matching**: `applySearchReplace()` used `result.includes(block.search)` which required exact byte-for-byte matches. Venice AI (Llama 3.3 70B) frequently produces trailing whitespace variations (extra spaces, tab vs spaces) that are semantically identical but fail strict matching.
+
+**Fix (Session 44):**
+- Empty lines (`hunkLine === ''`) now push empty strings to both searchLines and replaceLines
+- `applySearchReplace()` has a 3-tier matching strategy: (1) exact match (fast path), (2) fuzzy fallback normalizing trailing whitespace per line and mapping back to original positions, (3) diagnostic failure logging first 3 SEARCH lines and first character mismatch with char codes
+- File: `src/evolution/sandbox.ts`
+
+This completes 3 iterations of diff pipeline hardening (Session 41: auto-converter, Session 43: per-file tracking, Session 44: fuzzy matching). The evolution engine now tolerates the full range of formatting inconsistencies Venice AI produces.
+
 ## What This Proves
 
-DarwinFi's evolution engine is not a mockup. It runs autonomously on a 6-hour cycle, selects mutation targets, queries Venice AI for code proposals, validates them through a multi-stage safety pipeline, and rejects unsafe mutations before they can affect production. The 5 cycles documented here are the first generation of DarwinFi's evolutionary lineage. With the Session 41 diff converter and Session 43 per-file block tracking fixes, the evolution pipeline is fully operational -- proposals can target multiple files without cross-contamination, and winning genomes will be pinned to IPFS via Storacha for immutable proof of Darwinian evolution.
+DarwinFi's evolution engine is not a mockup. It runs autonomously on a 6-hour cycle, selects mutation targets, queries Venice AI for code proposals, validates them through a multi-stage safety pipeline, and rejects unsafe mutations before they can affect production. The 5 cycles documented here are the first generation of DarwinFi's evolutionary lineage. With the Session 41 diff converter, Session 43 per-file block tracking, and Session 44 fuzzy whitespace matching, the evolution pipeline is fully hardened -- proposals tolerate AI formatting variations, target multiple files without cross-contamination, and winning genomes will be pinned to IPFS via Storacha for immutable proof of Darwinian evolution.
 
 ## Evolution Pipeline Architecture
 

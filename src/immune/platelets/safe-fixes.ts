@@ -68,7 +68,7 @@ export async function pm2Restart(processName: string): Promise<boolean> {
 
 /**
  * Rotate BASE_RPC_URL to the next endpoint in the RPC_ENDPOINTS list.
- * Updates process.env in memory only (writing .env is risky).
+ * Persists to .env file and restarts chain-dependent processes.
  */
 export async function rpcRotation(): Promise<boolean> {
   try {
@@ -78,8 +78,26 @@ export async function rpcRotation(): Promise<boolean> {
     const nextIndex = (currentIndex + 1) % endpoints.length;
     const next = endpoints[nextIndex];
 
+    // Update in-memory for this process
     process.env.BASE_RPC_URL = next;
-    console.log(`${PREFIX} RPC rotated: ${current || '(unset)'} -> ${next}`);
+
+    // Write to .env file so other processes pick it up on restart
+    const envPath = path.join(PROJECT_ROOT, '.env');
+    if (fs.existsSync(envPath)) {
+      let envContent = fs.readFileSync(envPath, 'utf-8');
+      if (envContent.includes('BASE_RPC_URL=')) {
+        envContent = envContent.replace(/BASE_RPC_URL=.*/, `BASE_RPC_URL=${next}`);
+      } else {
+        envContent += `\nBASE_RPC_URL=${next}`;
+      }
+      fs.writeFileSync(envPath, envContent, 'utf-8');
+    }
+
+    // Restart chain-dependent processes to pick up new RPC
+    await pm2Restart('darwinfi');
+    await pm2Restart('darwinfi-instinct');
+
+    console.log(`${PREFIX} RPC rotated: ${current || '(unset)'} -> ${next} (persisted + processes restarted)`);
     return true;
   } catch (err) {
     console.error(`${PREFIX} RPC rotation failed: ${err instanceof Error ? err.message : err}`);

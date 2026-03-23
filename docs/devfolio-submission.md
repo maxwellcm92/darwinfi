@@ -32,7 +32,8 @@ DarwinVaultV4 collects 1% annual management + 5% performance fees (high water ma
 
 ## Demo Video
 
-**Status:** Pipeline built and ready. ElevenLabs API key available for TTS generation.
+**YouTube:** https://www.youtube.com/watch?v=dFMv5qGPGuM
+**Direct MP4:** https://corduroycloud.com/murphy-static/darwinfi-demo-v3.mp4
 
 DarwinFi generates its own demo video -- narrated in first person by a British AI voice (ElevenLabs TTS). The video is fully automated: one command runs TTS generation, Playwright screen recording of the live dapp, ImageMagick title cards, and ffmpeg compositing into a final 1080p MP4.
 
@@ -42,8 +43,6 @@ DarwinFi generates its own demo video -- narrated in first person by a British A
 3. **Live Trading** (~50s) -- Real on-chain Uniswap V3 swaps on Base mainnet
 4. **Tournament & Evolution** (~50s) -- 16 strategies competing, code self-mutation, IPFS genome pinning
 5. **Safety & Outro** (~25s) -- Lit Protocol guardrails, closing statement
-
-Upload: YouTube (unlisted), embed in Devfolio submission.
 
 ## Links
 
@@ -326,8 +325,7 @@ DarwinFi's moat: it is the only protocol where trading logic evolves autonomousl
   - Dashboard controls: strategy pause/resume API, immune summary endpoint, auto-demotion of chronic losers (<10% win rate)
 
 **Pending:**
-- Record demo video with live trade footage
-- Devfolio submission form + YouTube upload
+- Devfolio submission form
 
 **Known Limitations (Honest Disclosure):**
 - Lit Protocol Chipotle launches March 25 (after hackathon deadline) -- integration staged and waiting

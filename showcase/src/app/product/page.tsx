@@ -65,7 +65,7 @@ const features = [
     title: "Frontier",
     subtitle: "Cross-Chain Expansion",
     description:
-      "Team 4 sends four new bot archetypes hunting across Base, Arbitrum, and Optimism. Each fills a distinct ecological niche.",
+      "Team 4 sends four new bot archetypes hunting across Base, with Arbitrum expansion in development. Each fills a distinct ecological niche.",
     capabilities: [
       "Abiogenesis: micro-cap moonshot detection",
       "Mitosis: ultra-HFT micro-scalping",
@@ -94,9 +94,10 @@ const features = [
 const techStack = [
   { category: "Smart Contracts", items: ["Solidity", "Hardhat", "OpenZeppelin ERC-4626", "VaultV4 (security hardened)", "Base Mainnet"] },
   { category: "Agent Core", items: ["TypeScript", "ethers.js v6", "Uniswap V3 SDK", "1inch Aggregator"] },
-  { category: "AI Models", items: ["Claude Haiku (signals)", "Venice AI / Llama 3.3 70B (evolution)", "Ollama/Gemma2 (local fallback)", "Grok/X (sentiment)"] },
+  { category: "AI Models", items: ["Claude Haiku (signals)", "Venice AI / Llama 3.3 70B (evolution)", "Ollama/Gemma2 (local fallback)"] },
+  { category: "Intelligence Sources", items: ["Venice Grok (X/Twitter sentiment)", "RSS aggregation", "On-chain analytics"] },
   { category: "DApp", items: ["React", "Vite", "Wagmi", "RainbowKit", "Tailwind CSS"] },
-  { category: "Infrastructure", items: ["PM2", "Express", "Caddy", "IPFS/Filecoin", "Base / Arbitrum / Optimism"] },
+  { category: "Infrastructure", items: ["PM2", "Express", "Caddy", "IPFS/Filecoin", "Base Mainnet (Arbitrum in development)"] },
 ];
 
 function truncateAddress(addr: string) {

@@ -62,7 +62,7 @@ function loadConfig(): InstinctAgentConfig {
     veniceApiKey,
     tokens: ALL_TOKENS,
     evolution: { ...DEFAULT_ADAPTIVE_CONFIG },
-    cortexIntervalMs: 24 * 60 * 60 * 1000, // 24h
+    cortexIntervalMs: 4 * 60 * 60 * 1000, // 4h
   };
 }
 
@@ -187,6 +187,17 @@ class InstinctAgent {
     this.cortexTimer = setInterval(() => {
       this.runCortexOptimization();
     }, this.config.cortexIntervalMs);
+
+    // Kickstart cortex if no weights exist yet
+    const cortexDir = path.join(process.cwd(), 'data', 'instinct', 'cortex');
+    const weightsExist = fs.existsSync(path.join(cortexDir, 'source-weights.json')) ||
+                         fs.existsSync(path.join(cortexDir, 'prediction-weights.json'));
+    if (!weightsExist) {
+      console.log('[Instinct] No cortex weights found, triggering initial optimization...');
+      setTimeout(() => {
+        this.runCortexOptimization();
+      }, 30_000); // 30s after startup to let data accumulate
+    }
 
     console.log('[Instinct] All departments online');
   }

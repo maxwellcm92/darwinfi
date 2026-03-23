@@ -19,6 +19,13 @@ interface FixAttemptRecord {
   lastFixName: string;
 }
 
+interface FixTypeStats {
+  attempts: number;
+  successes: number;
+  lastAttempt: number;
+  backoffMs: number;
+}
+
 export class FixEngine {
   private logger: LogAggregator;
   private alertManager: AlertManager;
@@ -27,6 +34,13 @@ export class FixEngine {
   // Rate limiting: track attempts per checkId
   private attemptTracker: Map<string, FixAttemptRecord> = new Map();
 
+  // Per-fix-type success tracking with exponential backoff
+  private fixTypeTracker: Map<string, FixTypeStats> = new Map();
+  private static readonly MIN_FIX_TYPE_ATTEMPTS = 10;
+  private static readonly MIN_FIX_SUCCESS_RATE = 0.10; // 10%
+  private static readonly INITIAL_BACKOFF_MS = 60 * 60_000; // 1 hour
+  private static readonly MAX_BACKOFF_MS = 12 * 60 * 60_000; // 12 hours
+
   // Global hourly counter tracked separately for speed
   private hourlyFixTimestamps: number[] = [];
 
@@ -34,6 +48,70 @@ export class FixEngine {
     this.logger = logger;
     this.alertManager = alertManager;
     this.history = new FixHistory();
+  }
+
+  /**
+   * Check if a fix type is backed off due to low success rate.
+   * Returns { allowed: true } or { allowed: false, reason: string }.
+   */
+  private checkFixTypeBackoff(fixName: string): { allowed: boolean; reason?: string } {
+    const stats = this.fixTypeTracker.get(fixName);
+    if (!stats) return { allowed: true };
+
+    // Not enough data yet to judge
+    if (stats.attempts < FixEngine.MIN_FIX_TYPE_ATTEMPTS) return { allowed: true };
+
+    const successRate = stats.successes / stats.attempts;
+    if (successRate >= FixEngine.MIN_FIX_SUCCESS_RATE) return { allowed: true };
+
+    // Check if we're still in backoff period
+    const elapsed = Date.now() - stats.lastAttempt;
+    if (elapsed < stats.backoffMs) {
+      const remainingH = ((stats.backoffMs - elapsed) / 3_600_000).toFixed(1);
+      return {
+        allowed: false,
+        reason: `Fix type '${fixName}' backed off (${(successRate * 100).toFixed(1)}% success rate after ${stats.attempts} attempts, ${remainingH}h remaining)`,
+      };
+    }
+
+    // Backoff expired, allow one more attempt but keep tracking
+    return { allowed: true };
+  }
+
+  /**
+   * Record a fix type attempt result and update backoff.
+   */
+  private recordFixTypeAttempt(fixName: string, success: boolean): void {
+    let stats = this.fixTypeTracker.get(fixName);
+    if (!stats) {
+      stats = { attempts: 0, successes: 0, lastAttempt: 0, backoffMs: 0 };
+      this.fixTypeTracker.set(fixName, stats);
+    }
+
+    stats.attempts++;
+    if (success) stats.successes++;
+    stats.lastAttempt = Date.now();
+
+    // Update backoff if success rate is too low
+    if (stats.attempts >= FixEngine.MIN_FIX_TYPE_ATTEMPTS) {
+      const successRate = stats.successes / stats.attempts;
+      if (successRate < FixEngine.MIN_FIX_SUCCESS_RATE) {
+        // Exponential backoff: double each time, cap at max
+        if (stats.backoffMs === 0) {
+          stats.backoffMs = FixEngine.INITIAL_BACKOFF_MS;
+        } else {
+          stats.backoffMs = Math.min(stats.backoffMs * 2, FixEngine.MAX_BACKOFF_MS);
+        }
+        this.logger.warn(
+          DIVISION,
+          `Fix type '${fixName}' backoff set to ${(stats.backoffMs / 3_600_000).toFixed(1)}h (${(successRate * 100).toFixed(1)}% success after ${stats.attempts} attempts)`,
+          fixName,
+        );
+      } else {
+        // Success rate recovered, reset backoff
+        stats.backoffMs = 0;
+      }
+    }
   }
 
   /**
@@ -55,6 +133,13 @@ export class FixEngine {
     const entry = getFixForCheck(result.checkId);
     if (!entry) {
       this.logger.warn(DIVISION, `No fix registered for check: ${result.checkId}`, result.checkId);
+      return;
+    }
+
+    // Check fix type backoff (cross-check exponential backoff)
+    const typeBackoff = this.checkFixTypeBackoff(entry.fixName);
+    if (!typeBackoff.allowed) {
+      this.logger.info(DIVISION, typeBackoff.reason!, result.checkId);
       return;
     }
 
@@ -135,6 +220,7 @@ export class FixEngine {
         result.checkId,
       );
 
+      this.recordFixTypeAttempt(entry.fixName, false);
       this.recordFixHistory(result.checkId, entry.fixName, entry.safety, appliedAt, false, recentAttempts + 1, error);
       this.alertManager.markFixAttempted(result.checkId, false);
       return;
@@ -195,6 +281,7 @@ export class FixEngine {
       this.alertManager.markFixAttempted(result.checkId, false);
     }
 
+    this.recordFixTypeAttempt(entry.fixName, verified);
     this.recordFixHistory(
       result.checkId,
       entry.fixName,

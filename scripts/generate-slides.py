@@ -24,9 +24,9 @@ GREEN = "#22c55e"
 
 # Slide durations in seconds (infographics get longer than old 3s title cards)
 DURATIONS = {
-    "tournament": 20,
-    "evolution": 20,
-    "instinct": 15,
+    "tournament": 19,
+    "evolution": 21,
+    "instinct": 19,
     "closing": 3,
 }
 
@@ -37,6 +37,10 @@ FONT_FALLBACK = "DejaVu-Sans-Bold"
 
 def generate_tournament_slide(output_path: str) -> bool:
     """Darwinian Tournament infographic with fitness formula bars."""
+    # Layout: labels left-aligned at x=100, bars start x=420, max bar width 700px (35%)
+    # Proportional widths: 35%->700, 25%->500, 20%->400, 15%->300, 5%->100
+    # Percentage labels RIGHT of each bar (+15px margin)
+    # Vertical: bars at y=300,400,500,600,700 (100px spacing, 50px tall)
     cmd = [
         "convert",
         "-size", "1920x1080",
@@ -52,41 +56,40 @@ def generate_tournament_slide(output_path: str) -> bool:
         "-annotate", "+0+240", "FITNESS FORMULA",
         # PnL bar (35%) - teal
         "-fill", TEAL,
-        "-draw", f"rectangle 460,310 1110,360",
+        "-draw", "rectangle 420,300 1120,350",
         "-fill", WHITE, "-pointsize", "26",
-        "-gravity", "NorthWest", "-annotate", "+310+318", "PnL",
-        "-gravity", "NorthEast", "-annotate", "+680+318", "35%",
+        "-gravity", "NorthWest", "-annotate", "+100+308", "PnL",
+        "-annotate", "+1135+308", "35%",
         # Sharpe bar (25%) - purple
         "-fill", PURPLE,
-        "-draw", f"rectangle 460,390 995,440",
+        "-draw", "rectangle 420,400 920,450",
         "-fill", WHITE, "-pointsize", "26",
-        "-gravity", "NorthWest", "-annotate", "+310+398", "Sharpe Ratio",
-        "-gravity", "NorthEast", "-annotate", "+795+398", "25%",
+        "-gravity", "NorthWest", "-annotate", "+100+408", "Sharpe Ratio",
+        "-annotate", "+935+408", "25%",
         # Consistency bar (20%) - gold
         "-fill", GOLD,
-        "-draw", f"rectangle 460,470 925,520",
+        "-draw", "rectangle 420,500 820,550",
         "-fill", WHITE, "-pointsize", "26",
-        "-gravity", "NorthWest", "-annotate", "+310+478", "Consistency",
-        "-gravity", "NorthEast", "-annotate", "+865+478", "20%",
+        "-gravity", "NorthWest", "-annotate", "+100+508", "Consistency",
+        "-annotate", "+835+508", "20%",
         # Win Rate bar (15%) - white
         "-fill", WHITE,
-        "-draw", f"rectangle 460,550 850,600",
-        "-fill", BG_COLOR, "-pointsize", "26",
-        "-gravity", "NorthWest", "-annotate", "+310+558", "Win Rate",
-        "-fill", WHITE,
-        "-gravity", "NorthEast", "-annotate", "+940+558", "15%",
+        "-draw", "rectangle 420,600 720,650",
+        "-fill", WHITE, "-pointsize", "26",
+        "-gravity", "NorthWest", "-annotate", "+100+608", "Win Rate",
+        "-annotate", "+735+608", "15%",
         # Drawdown bar (-5%) - red
         "-fill", RED,
-        "-draw", f"rectangle 460,630 780,680",
+        "-draw", "rectangle 420,700 520,750",
         "-fill", WHITE, "-pointsize", "26",
-        "-gravity", "NorthWest", "-annotate", "+310+638", "Drawdown Penalty",
-        "-gravity", "NorthEast", "-annotate", "+1010+638", "-5%",
+        "-gravity", "NorthWest", "-annotate", "+100+708", "Drawdown Penalty",
+        "-annotate", "+535+708", "-5%",
         # Footnotes
         "-gravity", "North",
         "-fill", GRAY, "-pointsize", "24",
-        "-annotate", "+0+780", "Drawdown is penalized exponentially.",
+        "-annotate", "+0+840", "Drawdown is penalized exponentially.",
         "-fill", GRAY,
-        "-annotate", "+0+820", "A 20% drawdown costs 4x more than 10%.",
+        "-annotate", "+0+880", "A 20% drawdown costs 4x more than 10%.",
         output_path,
     ]
     return _run_convert(cmd, output_path)

@@ -17,7 +17,7 @@ import urllib.error
 # --- Config ---
 API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "demo-output", "audio")
-VOICE_NAME = "Daniel"  # British male preset
+VOICE_NAME = "George"  # Warm, captivating storyteller
 MODEL_ID = "eleven_multilingual_v2"  # Best quality multilingual model
 API_BASE = "https://api.elevenlabs.io/v1"
 
@@ -124,9 +124,9 @@ def generate_audio(api_key: str, voice_id: str, text: str, output_path: str) -> 
         "text": text,
         "model_id": MODEL_ID,
         "voice_settings": {
-            "stability": 0.6,
-            "similarity_boost": 0.8,
-            "style": 0.4,
+            "stability": 0.45,
+            "similarity_boost": 0.65,
+            "style": 0.65,
             "use_speaker_boost": True,
         },
     }).encode("utf-8")

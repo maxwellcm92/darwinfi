@@ -24,10 +24,10 @@ const VIEWPORT = { width: 1920, height: 1080 };
 
 // Scene timing
 const SCENE_CONFIG = {
-  showcase_hero: { duration: 15_000, description: "Showcase hero + scroll reveal" },
-  organism: { duration: 50_000, description: "Organism diagram with organ hovers" },
-  quick_scroll_chat: { duration: 20_000, description: "Feature scroll + chatbot open/close" },
-  closing: { duration: 12_000, description: "BaseScan V4 vault + dapp hero" },
+  showcase_hero: { duration: 17_000, description: "Showcase hero + scroll reveal" },
+  organism: { duration: 63_000, description: "Organism diagram with organ hovers" },
+  quick_scroll_chat: { duration: 16_000, description: "Feature scroll + chatbot open/close" },
+  closing: { duration: 13_000, description: "BaseScan V4 vault + dapp hero" },
 };
 
 // Organ positions in SVG viewBox space (600x500)
@@ -104,10 +104,15 @@ async function recordOrganismDiagram(browser: Browser): Promise<void> {
   await page.goto(SHOWCASE_URL, { waitUntil: "load", timeout: 30_000 });
   await sleep(3000);
 
-  // Scroll to the "A Living Financial Organism" section
-  const organismSection = await page.$('text=A Living Financial Organism');
-  if (organismSection) {
-    await organismSection.scrollIntoViewIfNeeded();
+  // Scroll to center the organism SVG in viewport
+  const svgEl = await page.$('svg[viewBox="0 0 600 500"]');
+  if (svgEl) {
+    const rect = await svgEl.boundingBox();
+    if (rect) {
+      await page.evaluate(({ top, height }) => {
+        window.scrollTo(0, top + window.scrollY + height / 2 - window.innerHeight / 2);
+      }, rect);
+    }
   } else {
     // Fallback: scroll to approximate position
     await page.evaluate(() => {
@@ -130,7 +135,7 @@ async function recordOrganismDiagram(browser: Browser): Promise<void> {
 
       console.log(`  Hovering: ${organ} (${screenX.toFixed(0)}, ${screenY.toFixed(0)})`);
       await page.mouse.move(screenX, screenY, { steps: 20 }); // Smooth move
-      await sleep(5500); // Hold for narration
+      await sleep(9000); // Hold for narration (fills 63s organism scene)
     }
   } else {
     console.log("  WARNING: SVG bounding box not found, using fallback scroll");

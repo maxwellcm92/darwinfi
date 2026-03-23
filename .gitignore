@@ -10,3 +10,4 @@ coverage/
 /data/
 !src/instinct/data/
 demo-output/
+.claude/worktrees/

@@ -55,9 +55,9 @@ function useAgentStats() {
 
 function LiveStats({ items }: { items: { label: string; value: string; accent?: boolean; color?: string }[] }) {
   return (
-    <div className={`grid gap-4 ${items.length === 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-1 md:grid-cols-3"}`}>
+    <div className={`grid gap-6 ${items.length === 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-1 md:grid-cols-3"}`}>
       {items.map((item) => (
-        <div key={item.label} className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-4 text-center">
+        <div key={item.label} className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 text-center">
           <p className="text-sm font-mono text-darwin-text-dim uppercase tracking-wider mb-1">{item.label}</p>
           <p className={`text-lg font-mono font-bold ${
             item.color ? item.color : item.accent ? "text-darwin-accent text-glow-accent" : "text-darwin-text-bright"
@@ -78,9 +78,9 @@ function StepExplainer() {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {steps.map((step) => (
-        <div key={step.num} className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-5 text-center">
+        <div key={step.num} className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 text-center">
           <div className="w-8 h-8 rounded-full bg-darwin-accent/20 border border-darwin-accent/30 flex items-center justify-center mx-auto mb-3">
             <span className="text-base font-mono font-bold text-darwin-accent">{step.num}</span>
           </div>
@@ -94,7 +94,7 @@ function StepExplainer() {
 
 function HeroSection({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full relative -mx-4 sm:-mx-6 lg:-mx-8 -mt-12">
+    <div className="w-full relative">
       <ShaderHero>{children}</ShaderHero>
     </div>
   );
@@ -119,7 +119,7 @@ export function Home() {
   // STATE 1: Not connected (Landing Page)
   if (!isConnected) {
     return (
-      <div className="space-y-8">
+      <div>
         <HeroSection>
           <div className="text-center px-6 max-w-4xl">
             <div className="mb-6">
@@ -159,14 +159,16 @@ export function Home() {
           </div>
         </HeroSection>
 
-        <LiveStats items={[
-          { label: "TVL", value: `$${formatUSD(tvl)}`, accent: true },
-          { label: "Share Price", value: sharePrice ? `$${parseFloat(sharePrice).toFixed(6)}` : "--" },
-          { label: "Agent PnL", value: pnlFormatted, color: pnlColor },
-        ]} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 py-16">
+          <LiveStats items={[
+            { label: "TVL", value: `$${formatUSD(tvl)}`, accent: true },
+            { label: "Share Price", value: sharePrice ? `$${parseFloat(sharePrice).toFixed(6)}` : "--" },
+            { label: "Agent PnL", value: pnlFormatted, color: pnlColor },
+          ]} />
 
-        <AnimatedSection><StepExplainer /></AnimatedSection>
-        <AnimatedSection delay={100}><TrustModel /></AnimatedSection>
+          <AnimatedSection><StepExplainer /></AnimatedSection>
+          <AnimatedSection delay={100}><TrustModel /></AnimatedSection>
+        </div>
       </div>
     );
   }
@@ -179,9 +181,9 @@ export function Home() {
     const isPositive = pnlPct >= 0;
 
     return (
-      <div className="space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
         {/* YOUR POSITION - hero prominence */}
-        <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-accent/30 rounded-xl p-8 glow-accent text-center">
+        <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-accent/30 rounded-xl p-10 md:p-12 glow-accent text-center">
           <p className="text-sm font-mono text-darwin-text-dim uppercase tracking-wider mb-3">Your Position</p>
           <p className="text-4xl sm:text-5xl font-mono font-bold text-darwin-text-bright mb-2">
             ${formatUSD(userShareValue)}
@@ -197,13 +199,13 @@ export function Home() {
         </div>
 
         {/* Charts side by side */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <SharePriceChart />
           <ReturnsChart />
         </div>
 
         {/* Deposit & Withdraw side by side */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <DepositCard />
           <WithdrawCard />
         </div>
@@ -233,7 +235,7 @@ export function Home() {
 
   // STATE 3: Connected, no position (First Deposit)
   return (
-    <div className="space-y-8">
+    <div>
       <HeroSection>
         <div className="text-center px-6 max-w-4xl">
           <div className="mb-6">
@@ -255,19 +257,21 @@ export function Home() {
         </div>
       </HeroSection>
 
-      {/* Deposit card overlapping hero */}
-      <div className="max-w-md mx-auto -mt-8 relative z-20">
-        <DepositCard />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 py-16">
+        {/* Deposit card */}
+        <div className="max-w-md mx-auto -mt-8 relative z-20">
+          <DepositCard />
+        </div>
+
+        <LiveStats items={[
+          { label: "TVL", value: `$${formatUSD(tvl)}`, accent: true },
+          { label: "Share Price", value: sharePrice ? `$${parseFloat(sharePrice).toFixed(6)}` : "--" },
+          { label: "Agent PnL", value: pnlFormatted, color: pnlColor },
+        ]} />
+
+        <AnimatedSection delay={100}><StepExplainer /></AnimatedSection>
+        <AnimatedSection delay={200}><TrustModel /></AnimatedSection>
       </div>
-
-      <LiveStats items={[
-        { label: "TVL", value: `$${formatUSD(tvl)}`, accent: true },
-        { label: "Share Price", value: sharePrice ? `$${parseFloat(sharePrice).toFixed(6)}` : "--" },
-        { label: "Agent PnL", value: pnlFormatted, color: pnlColor },
-      ]} />
-
-      <AnimatedSection delay={100}><StepExplainer /></AnimatedSection>
-      <AnimatedSection delay={200}><TrustModel /></AnimatedSection>
     </div>
   );
 }

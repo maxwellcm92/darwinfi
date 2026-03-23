@@ -33,6 +33,7 @@ html {
   background-color: var(--color-darwin-bg);
   color: var(--color-darwin-text);
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -196,14 +197,7 @@ input[type="number"] {
   transition: all 200ms ease;
 }
 
-.nav-pill-active {
-  box-shadow: 0 0 12px rgba(0, 240, 192, 0.2), 0 0 4px rgba(0, 240, 192, 0.1);
-}
 
-/* Nav pill hover glow */
-nav a:hover {
-  box-shadow: 0 0 20px rgba(255, 176, 32, 0.3);
-}
 
 /* Button shine hover effect */
 .btn-shine {
@@ -234,33 +228,25 @@ nav a:hover {
   animation: fade-in 0.2s ease-out;
 }
 
-/* Hero Connect Wallet button -- matches RainbowKit navbar button size */
+/* Hero Connect Wallet button -- gradient pill matching showcase CTA */
 .hero-connect-btn {
-  padding: 10px 14px !important;
-  border-radius: 12px;
-  font-family: var(--font-mono);
+  padding: 12px 28px !important;
+  border-radius: 9999px;
+  font-family: var(--font-sans);
   font-size: 16px;
-  font-weight: 700;
-  background: var(--color-darwin-accent);
+  font-weight: 600;
+  background: linear-gradient(to right, var(--color-darwin-accent), var(--color-darwin-accent-dim));
   color: var(--color-darwin-bg);
   box-shadow: 0 0 20px rgba(0, 240, 192, 0.15), 0 0 60px rgba(0, 240, 192, 0.05);
-  transition: transform 200ms ease, box-shadow 200ms ease;
+  transition: transform 200ms ease, opacity 200ms ease;
   cursor: pointer;
   border: none;
 }
 .hero-connect-btn:hover {
   transform: scale(1.03);
-  box-shadow: 0 0 32px rgba(255, 176, 32, 0.5);
+  opacity: 0.9;
 }
 .hero-connect-btn:active {
   transform: scale(0.97);
 }
 
-/* RainbowKit Connect button hover polish */
-button[data-testid="rk-connect-button"] {
-  transition: transform 200ms ease, box-shadow 200ms ease;
-}
-button[data-testid="rk-connect-button"]:hover {
-  transform: scale(1.03);
-  box-shadow: 0 0 32px rgba(255, 176, 32, 0.5);
-}

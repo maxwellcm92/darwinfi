@@ -3,18 +3,71 @@ import { NavLink } from "react-router-dom";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const navPillClass = ({ isActive }: { isActive: boolean }) =>
-  `px-4 py-2 rounded-full text-sm font-mono transition-all duration-200 border ${
+  `px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
     isActive
-      ? "text-darwin-accent bg-darwin-accent/10 border-darwin-accent/30 nav-pill-active"
-      : "text-darwin-text border-transparent hover:text-darwin-text-bright hover:bg-darwin-card-hover"
+      ? "text-darwin-accent bg-darwin-accent/10 glow-accent"
+      : "text-darwin-text-dim hover:text-darwin-text-bright hover:bg-darwin-card/50"
   }`;
 
 const mobileNavClass = ({ isActive }: { isActive: boolean }) =>
-  `block w-full px-4 py-3 text-sm font-mono transition-all duration-200 border-b border-darwin-border/30 ${
+  `block w-full px-4 py-3 text-sm font-medium transition-all duration-200 border-b border-darwin-border/30 ${
     isActive
       ? "text-darwin-accent bg-darwin-accent/10"
-      : "text-darwin-text hover:text-darwin-text-bright hover:bg-darwin-card-hover"
+      : "text-darwin-text-dim hover:text-darwin-text-bright hover:bg-darwin-card/50"
   }`;
+
+function GradientWalletButton() {
+  return (
+    <ConnectButton.Custom>
+      {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
+        const ready = mounted;
+        const connected = ready && account && chain;
+
+        return (
+          <div
+            {...(!ready && {
+              "aria-hidden": true,
+              style: { opacity: 0, pointerEvents: "none" as const, userSelect: "none" as const },
+            })}
+          >
+            {(() => {
+              if (!connected) {
+                return (
+                  <button
+                    onClick={openConnectModal}
+                    className="px-5 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-darwin-accent to-darwin-accent-dim text-darwin-bg hover:opacity-90 transition-opacity"
+                  >
+                    Connect Wallet
+                  </button>
+                );
+              }
+
+              if (chain.unsupported) {
+                return (
+                  <button
+                    onClick={openChainModal}
+                    className="px-5 py-2 rounded-full text-sm font-semibold bg-darwin-danger text-white hover:opacity-90 transition-opacity"
+                  >
+                    Wrong Network
+                  </button>
+                );
+              }
+
+              return (
+                <button
+                  onClick={openAccountModal}
+                  className="px-5 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-darwin-accent to-darwin-accent-dim text-darwin-bg hover:opacity-90 transition-opacity"
+                >
+                  {account.displayName}
+                </button>
+              );
+            })()}
+          </div>
+        );
+      }}
+    </ConnectButton.Custom>
+  );
+}
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -45,7 +98,7 @@ export function Navbar() {
           </NavLink>
 
           {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-2">
             <NavLink to="/" end className={navPillClass}>
               Dashboard
             </NavLink>
@@ -62,11 +115,7 @@ export function Navbar() {
 
           {/* Desktop Connect Button */}
           <div className="hidden md:flex items-center">
-            <ConnectButton
-              showBalance={false}
-              chainStatus="icon"
-              accountStatus="address"
-            />
+            <GradientWalletButton />
           </div>
 
           {/* Mobile hamburger button */}
@@ -110,11 +159,7 @@ export function Navbar() {
             Advanced
           </NavLink>
           <div className="px-4 py-3">
-            <ConnectButton
-              showBalance={false}
-              chainStatus="icon"
-              accountStatus="address"
-            />
+            <GradientWalletButton />
           </div>
         </div>
       )}

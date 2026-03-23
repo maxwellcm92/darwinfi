@@ -167,8 +167,11 @@ export function convertUnifiedToSearchReplace(
           // Context line (starts with space): goes in both
           searchLines.push(hunkLine.substring(1));
           replaceLines.push(hunkLine.substring(1));
+        } else if (hunkLine === '') {
+          // Empty line in unified diff = empty context line in source
+          searchLines.push('');
+          replaceLines.push('');
         }
-        // Empty lines (no leading space/+/-) are skipped -- not treated as context
         i++;
       }
 
@@ -219,10 +222,45 @@ export function fileBlockMapToString(fileBlocks: Map<string, SearchReplaceBlock[
 function applySearchReplace(fileContent: string, blocks: SearchReplaceBlock[]): string {
   let result = fileContent;
   for (const block of blocks) {
-    if (!result.includes(block.search)) {
-      throw new Error(`SEARCH block not found in file: ${block.search.substring(0, 80)}...`);
+    if (result.includes(block.search)) {
+      result = result.replace(block.search, block.replace);
+      continue;
     }
-    result = result.replace(block.search, block.replace);
+    // Fuzzy fallback: normalize trailing whitespace per line
+    const normalizeWs = (s: string) => s.split('\n').map(l => l.trimEnd()).join('\n');
+    const normalizedResult = normalizeWs(result);
+    const normalizedSearch = normalizeWs(block.search);
+    if (normalizedResult.includes(normalizedSearch)) {
+      const idx = normalizedResult.indexOf(normalizedSearch);
+      const lines = result.split('\n');
+      const normalizedLines = normalizedResult.split('\n');
+      let charCount = 0;
+      let startLine = 0;
+      for (let i = 0; i < normalizedLines.length; i++) {
+        if (charCount + normalizedLines[i].length >= idx) {
+          startLine = i;
+          break;
+        }
+        charCount += normalizedLines[i].length + 1;
+      }
+      const searchLineCount = block.search.split('\n').length;
+      const originalChunk = lines.slice(startLine, startLine + searchLineCount).join('\n');
+      result = result.replace(originalChunk, block.replace);
+      console.log(`[Evolution] Fuzzy match applied (whitespace-normalized) for block: ${block.search.substring(0, 60)}...`);
+      continue;
+    }
+    // Diagnostic logging before throwing
+    const searchLines = block.search.split('\n');
+    console.error(`[Evolution] SEARCH block match failed. First 3 lines of SEARCH:`);
+    searchLines.slice(0, 3).forEach((l, i) => console.error(`  ${i}: "${l}"`));
+    // Find first mismatch character
+    for (let ci = 0; ci < Math.min(result.length, block.search.length); ci++) {
+      if (result[ci] !== block.search[ci]) {
+        console.error(`[Evolution] First char mismatch at index ${ci}: expected '${block.search[ci]}' (${block.search.charCodeAt(ci)}), got '${result[ci]}' (${result.charCodeAt(ci)})`);
+        break;
+      }
+    }
+    throw new Error(`SEARCH block not found in file (exact and fuzzy failed): ${block.search.substring(0, 80)}...`);
   }
   return result;
 }

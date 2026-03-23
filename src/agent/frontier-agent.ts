@@ -327,6 +327,8 @@ export class FrontierAgent {
               } catch (tradeErr) {
                 this.conversationLog.error('Mitosis', `Trade execution failed: ${tradeErr instanceof Error ? tradeErr.message : String(tradeErr)}`);
               }
+            } else if (best.netProfitBps > 0) {
+              this.conversationLog.decision('Mitosis', `Spread below threshold: ${best.netProfitBps}bps < ${mitosisBot.parameters.mitosis?.minSpreadBps ?? 5}bps (pool: ${best.poolAddress?.slice(0, 10) ?? 'unknown'})`);
             }
           }
         }
@@ -349,6 +351,44 @@ export class FrontierAgent {
                 catalyst: e.catalyst,
               })),
             });
+
+            // Execute trade on highest-volatility token
+            if (!DRY_RUN) {
+              const bestEvent = volEvents[0]; // Already sorted by volRatio
+              try {
+                const positionSize = cambrianBot.parameters.cambrian?.maxPositionSizeUsd ?? 10;
+                const tradeResult = await this.crossChainEngine.executeTrade({
+                  chainId: bestEvent.chainId,
+                  strategyId: cambrianBot.id,
+                  action: 'buy',
+                  tokenSymbol: bestEvent.tokenSymbol,
+                  amount: positionSize,
+                  slippageTolerance: 0.008,
+                });
+                this.conversationLog.trade('Cambrian', `Trade executed: ${tradeResult.success ? 'SUCCESS' : 'FAILED'}`, {
+                  txHash: tradeResult.txHash,
+                  amountOut: tradeResult.amountOut,
+                  volRatio: bestEvent.volRatio,
+                });
+                if (tradeResult.success) {
+                  this.performanceTracker.recordTrade({
+                    id: `frontier-${++this.tradeIdCounter}`,
+                    strategyId: cambrianBot.id,
+                    side: 'buy',
+                    token: bestEvent.tokenSymbol,
+                    entryPrice: tradeResult.executionPriceUsd,
+                    entryTime: new Date(),
+                    quantity: parseFloat(tradeResult.amountOut),
+                    status: 'open',
+                    fees: parseFloat(tradeResult.gasCostEth),
+                  });
+                }
+              } catch (tradeErr) {
+                this.conversationLog.error('Cambrian', `Trade execution failed: ${tradeErr instanceof Error ? tradeErr.message : String(tradeErr)}`);
+              }
+            } else {
+              this.conversationLog.decision('Cambrian', `DRY RUN: Would trade ${volEvents[0].tokenSymbol} (vol: ${volEvents[0].volRatio.toFixed(2)}x)`);
+            }
           }
         }
       }
@@ -437,7 +477,7 @@ export class FrontierAgent {
       // Run rug detection
       try {
         const rugResult = await this.rugDetector.analyze(event.token0, event.chainId);
-        const minScore = abiBot.parameters.abiogenesis?.minSafetyScore ?? 60;
+        const minScore = abiBot.parameters.abiogenesis?.minSafetyScore ?? 40;
 
         this.conversationLog.decision('Abiogenesis', `New token detected: ${event.token0} (safety: ${rugResult.safetyScore})`, {
           chainId: event.chainId,
@@ -448,7 +488,42 @@ export class FrontierAgent {
 
         if (rugResult.safetyScore >= minScore) {
           this.conversationLog.decision('Abiogenesis', `Token PASSED rug detection (${rugResult.safetyScore}/${minScore}), evaluating entry`);
-          // Entry logic would go here
+
+          if (!DRY_RUN) {
+            try {
+              const positionSize = abiBot.parameters.abiogenesis?.maxPositionSizeUsd ?? 5;
+              const tradeResult = await this.crossChainEngine.executeTrade({
+                chainId: event.chainId,
+                strategyId: abiBot.id,
+                action: 'buy',
+                tokenSymbol: event.token0,
+                amount: positionSize,
+                slippageTolerance: 0.01, // Higher slippage for new tokens
+              });
+              this.conversationLog.trade('Abiogenesis', `Trade executed: ${tradeResult.success ? 'SUCCESS' : 'FAILED'}`, {
+                txHash: tradeResult.txHash,
+                amountOut: tradeResult.amountOut,
+                safetyScore: rugResult.safetyScore,
+              });
+              if (tradeResult.success) {
+                this.performanceTracker.recordTrade({
+                  id: `frontier-${++this.tradeIdCounter}`,
+                  strategyId: abiBot.id,
+                  side: 'buy',
+                  token: event.token0,
+                  entryPrice: tradeResult.executionPriceUsd,
+                  entryTime: new Date(),
+                  quantity: parseFloat(tradeResult.amountOut),
+                  status: 'open',
+                  fees: parseFloat(tradeResult.gasCostEth),
+                });
+              }
+            } catch (tradeErr) {
+              this.conversationLog.error('Abiogenesis', `Trade execution failed: ${tradeErr instanceof Error ? tradeErr.message : String(tradeErr)}`);
+            }
+          } else {
+            this.conversationLog.decision('Abiogenesis', `DRY RUN: Would buy ${event.token0} (safety: ${rugResult.safetyScore})`);
+          }
         }
       } catch (err) {
         this.conversationLog.error('Abiogenesis', `Rug detection failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -464,7 +539,7 @@ export class FrontierAgent {
       if (!canTrade.allowed) return;
 
       const wallet = this.whaleTracker.getTopWhales(100).find(w => w.address === activity.whaleAddress);
-      const minScore = symBot.parameters.symbiont?.minWhaleScore ?? 70;
+      const minScore = symBot.parameters.symbiont?.minWhaleScore ?? 50;
 
       if (wallet && wallet.score >= minScore) {
         this.conversationLog.decision('Symbiont', `Whale buy detected (score: ${wallet.score})`, {
@@ -473,7 +548,42 @@ export class FrontierAgent {
           amountUsd: activity.amountUsd,
           chainId: activity.chainId,
         });
-        // Mirror logic would go here
+
+        if (!DRY_RUN) {
+          try {
+            const positionSize = symBot.parameters.symbiont?.maxPositionSizeUsd ?? 10;
+            const tradeResult = await this.crossChainEngine.executeTrade({
+              chainId: activity.chainId,
+              strategyId: symBot.id,
+              action: 'buy',
+              tokenSymbol: activity.tokenAddress,
+              amount: positionSize,
+              slippageTolerance: 0.008,
+            });
+            this.conversationLog.trade('Symbiont', `Mirror trade executed: ${tradeResult.success ? 'SUCCESS' : 'FAILED'}`, {
+              txHash: tradeResult.txHash,
+              amountOut: tradeResult.amountOut,
+              whaleScore: wallet.score,
+            });
+            if (tradeResult.success) {
+              this.performanceTracker.recordTrade({
+                id: `frontier-${++this.tradeIdCounter}`,
+                strategyId: symBot.id,
+                side: 'buy',
+                token: activity.tokenAddress,
+                entryPrice: tradeResult.executionPriceUsd,
+                entryTime: new Date(),
+                quantity: parseFloat(tradeResult.amountOut),
+                status: 'open',
+                fees: parseFloat(tradeResult.gasCostEth),
+              });
+            }
+          } catch (tradeErr) {
+            this.conversationLog.error('Symbiont', `Mirror trade failed: ${tradeErr instanceof Error ? tradeErr.message : String(tradeErr)}`);
+          }
+        } else {
+          this.conversationLog.decision('Symbiont', `DRY RUN: Would mirror whale on ${activity.tokenAddress}`);
+        }
       }
     });
 

@@ -27,7 +27,7 @@ function exec(cmd: string, cwd: string, timeoutMs: number = 60_000): string {
   });
 }
 
-function parseSearchReplaceBlocks(diff: string): SearchReplaceBlock[] {
+export function parseSearchReplaceBlocks(diff: string): SearchReplaceBlock[] {
   const blocks: SearchReplaceBlock[] = [];
   const regex = /<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE/g;
   let match;
@@ -41,7 +41,7 @@ function parseSearchReplaceBlocks(diff: string): SearchReplaceBlock[] {
  * Parse a SEARCH/REPLACE diff string that includes `// File: path` comments.
  * Returns a Map of file path -> blocks, or null if no file comments found.
  */
-function parsePerFileBlocks(diff: string): Map<string, SearchReplaceBlock[]> | null {
+export function parsePerFileBlocks(diff: string): Map<string, SearchReplaceBlock[]> | null {
   if (!diff.includes('// File: ')) return null;
 
   const fileBlocks = new Map<string, SearchReplaceBlock[]>();
@@ -340,6 +340,7 @@ export async function createSandbox(proposal: EvolutionProposal): Promise<Sandbo
         return result;
       }
     } else {
+      console.error(`[Evolution] Diff format unrecognized. Total length: ${proposal.diff.length}, first 500 chars: ${proposal.diff.substring(0, 500)}`);
       // Check if the diff contains SEARCH/REPLACE markers that the regex missed
       // (e.g., due to whitespace differences or malformed markers)
       const hasSearchReplaceMarkers = proposal.diff.includes('<<<<<<< SEARCH') || proposal.diff.includes('>>>>>>> REPLACE');

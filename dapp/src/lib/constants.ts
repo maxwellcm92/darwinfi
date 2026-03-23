@@ -13,6 +13,7 @@ export const BASENAME = "darwinfi.base.eth" as const;
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
+export const SHARE_DECIMALS = 12; // shares use 6 USDC decimals + 6 offset = 12 total
 export const SHARE_PRICE_DECIMALS = 6; // sharePrice returns value with 1e6 = 1.000000
 
 export const COLORS = {

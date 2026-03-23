@@ -1,7 +1,7 @@
 import { useReadContract, useAccount } from "wagmi";
 import { formatUnits } from "viem";
 import { VAULT_ABI, USDC_ABI, VAULT_ADDRESS, USDC_ADDRESS } from "../lib/contracts";
-import { USDC_DECIMALS, SHARE_PRICE_DECIMALS } from "../lib/constants";
+import { USDC_DECIMALS, SHARE_DECIMALS, SHARE_PRICE_DECIMALS } from "../lib/constants";
 
 export function useVaultStats() {
   const { address } = useAccount();
@@ -113,21 +113,23 @@ export function useVaultStats() {
   // Format values
   const tvl = totalAssets != null ? formatUnits(totalAssets, USDC_DECIMALS) : null;
   const sharePrice = sharePriceRaw != null ? formatUnits(sharePriceRaw, SHARE_PRICE_DECIMALS) : null;
-  const totalSharesFormatted = totalSupply != null ? formatUnits(totalSupply, USDC_DECIMALS) : null;
+  const totalSharesFormatted = totalSupply != null ? formatUnits(totalSupply, SHARE_DECIMALS) : null;
   const maxCapacity = maxTotalAssets != null ? formatUnits(maxTotalAssets, USDC_DECIMALS) : null;
   const borrowed = totalBorrowed != null ? formatUnits(totalBorrowed, USDC_DECIMALS) : null;
   const available = availableAssets != null ? formatUnits(availableAssets, USDC_DECIMALS) : null;
-  const userShares = userShareBalance != null ? formatUnits(userShareBalance, USDC_DECIMALS) : null;
+  const userShares = userShareBalance != null ? formatUnits(userShareBalance, SHARE_DECIMALS) : null;
   const userUsdc = userUsdcBalance != null ? formatUnits(userUsdcBalance, USDC_DECIMALS) : null;
   const feeBps = performanceFeeBps != null ? Number(performanceFeeBps) : null;
   const mgmtFeeBps = managementFeeBps != null ? Number(managementFeeBps) : null;
   const lockSeconds = minLockTime != null ? Number(minLockTime) : null;
 
   // Compute user's share value in USDC
+  // shares have 12 decimals, sharePrice has 6 decimals
+  // (shares * sharePrice) / 10^12 gives raw USDC with 6 decimals
   const userShareValue =
     userShareBalance != null && sharePriceRaw != null
       ? formatUnits(
-          (userShareBalance * sharePriceRaw) / BigInt(10 ** SHARE_PRICE_DECIMALS),
+          (userShareBalance * sharePriceRaw) / BigInt(10 ** SHARE_DECIMALS),
           USDC_DECIMALS
         )
       : null;

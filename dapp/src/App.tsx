@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Navbar } from "./components/Navbar";
 import { Home } from "./pages/Home";
-import { Portfolio } from "./pages/Portfolio";
 import { Advanced } from "./pages/Advanced";
 import { FAQ } from "./pages/FAQ";
 import { Results } from "./pages/Results";
@@ -13,7 +12,6 @@ export function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1 w-full">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/advanced" element={<Advanced />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/results" element={<Results />} />

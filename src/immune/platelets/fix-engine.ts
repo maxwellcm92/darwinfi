@@ -140,7 +140,7 @@ export class FixEngine {
       return;
     }
 
-    const verifyDelay = entry.verifyDelayMs ?? THRESHOLDS.fixVerifyDelayMs;
+    const verifyDelay = entry.verifyDelayMs ?? Math.max(THRESHOLDS.fixVerifyDelayMs, 15_000);
     this.logger.info(
       DIVISION,
       `Fix '${entry.fixName}' applied for ${result.checkId}. Waiting ${verifyDelay / 1000}s to verify...`,
@@ -165,7 +165,18 @@ export class FixEngine {
       return;
     }
 
-    const verified = verifyResult.severity === 'ok' || verifyResult.severity === 'warning';
+    let verified = verifyResult.severity === 'ok' || verifyResult.severity === 'warning';
+
+    // Retry once with doubled delay if first verification fails
+    if (!verified) {
+      const retryDelay = verifyDelay * 2;
+      this.logger.info(DIVISION, `First verify failed for ${result.checkId}, retrying in ${retryDelay / 1000}s...`, result.checkId);
+      await this.delay(retryDelay);
+      try {
+        verifyResult = await recheckFn();
+        verified = verifyResult.severity === 'ok' || verifyResult.severity === 'warning';
+      } catch { /* keep verified = false */ }
+    }
 
     if (verified) {
       this.logger.info(

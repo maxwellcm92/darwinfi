@@ -1,8 +1,21 @@
 #!/usr/bin/env bash
 #
-# DarwinFi Demo Video Compositor
-# Combines Maxwell's intro, title cards, screen recordings, and narration
-# into final demo video.
+# DarwinFi Demo Video Compositor (v2)
+# Combines Maxwell's intro + webcam DApp recording, Playwright screen recordings,
+# infographic slides, and narration into final demo video.
+#
+# Clip order:
+#   00 - Maxwell intro (webcam, ~20s)
+#   01 - showcase_hero recording (Playwright)
+#   02 - organism recording (Playwright)
+#   03 - quick_scroll_chat recording (Playwright)
+#   04 - maxwell-dapp recording (Maxwell screen-records with wallet connected)
+#   05 - tournament infographic slide (20s)
+#   06 - evolution infographic slide (20s)
+#   07 - instinct infographic slide (15s)
+#   08 - closing recording (Playwright)
+#   09 - closing title card (3s)
+#
 # Requires: ffmpeg
 #
 set -euo pipefail
@@ -15,10 +28,11 @@ AUDIO_DIR="$BASE_DIR/audio"
 OUTPUT="$BASE_DIR/darwinfi-demo.mp4"
 CONCAT_LIST="$BASE_DIR/concat-list.txt"
 
-# Maxwell's intro clip (recorded separately by Maxwell)
+# Maxwell's manually recorded clips
 MAXWELL_INTRO="$BASE_DIR/maxwell-intro.mp4"
+MAXWELL_DAPP="$BASE_DIR/maxwell-dapp.mp4"
 
-echo "=== DarwinFi Demo Video Compositor ==="
+echo "=== DarwinFi Demo Video Compositor (v2) ==="
 echo "Base dir: $BASE_DIR"
 echo ""
 
@@ -43,15 +57,23 @@ else
     echo "  Maxwell's intro: NOT FOUND (will skip -- add maxwell-intro.mp4 to demo-output/)"
 fi
 
-# Title card clips
-check_file "$SLIDES_DIR/opening.mp4"
-check_file "$SLIDES_DIR/scene-vault.mp4"
-check_file "$SLIDES_DIR/scene-trading.mp4"
-check_file "$SLIDES_DIR/scene-evolution.mp4"
+# Maxwell's DApp recording (optional -- compositor works without it)
+HAS_MAXWELL_DAPP=false
+if [ -f "$MAXWELL_DAPP" ]; then
+    HAS_MAXWELL_DAPP=true
+    echo "  Maxwell's DApp recording: found"
+else
+    echo "  Maxwell's DApp recording: NOT FOUND (will skip -- add maxwell-dapp.mp4 to demo-output/)"
+fi
+
+# Infographic slide clips
+check_file "$SLIDES_DIR/tournament.mp4"
+check_file "$SLIDES_DIR/evolution.mp4"
+check_file "$SLIDES_DIR/instinct.mp4"
 check_file "$SLIDES_DIR/closing.mp4"
 
 # Screen recordings (convert webm to mp4 if needed)
-for scene in dashboard vault instinct tournament closing; do
+for scene in showcase_hero organism quick_scroll_chat closing; do
     src="$RECORDINGS_DIR/$scene.webm"
     dst="$RECORDINGS_DIR/$scene.mp4"
     if [ -f "$src" ] && [ ! -f "$dst" ]; then
@@ -88,55 +110,50 @@ normalize_clip() {
     echo "  $(basename "$output")"
 }
 
-# Normalize all clips in scene order
-# Sequence:
-#   00 - Maxwell intro (optional)
-#   01 - Opening title card ("DarwinFi")
-#   02 - Dashboard recording
-#   03 - Vault title card ("The Vault")
-#   04 - Vault recording
-#   05 - Trading title card ("Live Trading")
-#   06 - Instinct recording
-#   07 - Evolution title card ("Tournament & Evolution")
-#   08 - Tournament recording
-#   09 - Closing recording
-#   10 - Closing title card
-
 CLIP_INDEX=0
 
+# 00 - Maxwell intro (optional)
 if [ "$HAS_MAXWELL_INTRO" = true ]; then
     normalize_clip "$MAXWELL_INTRO" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-maxwell-intro.mp4"
     CLIP_INDEX=$((CLIP_INDEX + 1))
 fi
 
-normalize_clip "$SLIDES_DIR/opening.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-opening.mp4"
+# 01 - Showcase hero (Playwright)
+normalize_clip "$RECORDINGS_DIR/showcase_hero.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-showcase-hero.mp4"
 CLIP_INDEX=$((CLIP_INDEX + 1))
 
-normalize_clip "$RECORDINGS_DIR/dashboard.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-dashboard.mp4"
+# 02 - Organism diagram (Playwright)
+normalize_clip "$RECORDINGS_DIR/organism.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-organism.mp4"
 CLIP_INDEX=$((CLIP_INDEX + 1))
 
-normalize_clip "$SLIDES_DIR/scene-vault.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-vault-title.mp4"
+# 03 - Quick scroll + chatbot (Playwright)
+normalize_clip "$RECORDINGS_DIR/quick_scroll_chat.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-quick-scroll-chat.mp4"
 CLIP_INDEX=$((CLIP_INDEX + 1))
 
-normalize_clip "$RECORDINGS_DIR/vault.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-vault.mp4"
+# 04 - Maxwell DApp recording (optional)
+if [ "$HAS_MAXWELL_DAPP" = true ]; then
+    normalize_clip "$MAXWELL_DAPP" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-maxwell-dapp.mp4"
+    CLIP_INDEX=$((CLIP_INDEX + 1))
+fi
+
+# 05 - Tournament infographic (20s)
+normalize_clip "$SLIDES_DIR/tournament.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-tournament.mp4"
 CLIP_INDEX=$((CLIP_INDEX + 1))
 
-normalize_clip "$SLIDES_DIR/scene-trading.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-trading-title.mp4"
+# 06 - Evolution infographic (20s)
+normalize_clip "$SLIDES_DIR/evolution.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-evolution.mp4"
 CLIP_INDEX=$((CLIP_INDEX + 1))
 
-normalize_clip "$RECORDINGS_DIR/instinct.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-instinct.mp4"
+# 07 - Instinct infographic (15s)
+normalize_clip "$SLIDES_DIR/instinct.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-instinct.mp4"
 CLIP_INDEX=$((CLIP_INDEX + 1))
 
-normalize_clip "$SLIDES_DIR/scene-evolution.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-evolution-title.mp4"
-CLIP_INDEX=$((CLIP_INDEX + 1))
-
-normalize_clip "$RECORDINGS_DIR/tournament.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-tournament.mp4"
-CLIP_INDEX=$((CLIP_INDEX + 1))
-
+# 08 - Closing (Playwright)
 normalize_clip "$RECORDINGS_DIR/closing.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-closing.mp4"
 CLIP_INDEX=$((CLIP_INDEX + 1))
 
-normalize_clip "$SLIDES_DIR/closing.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-closing-title.mp4"
+# 09 - Closing title card (3s)
+normalize_clip "$SLIDES_DIR/closing.mp4" "$NORM_DIR/$(printf '%02d' $CLIP_INDEX)-closing-card.mp4"
 
 echo ""
 
@@ -167,8 +184,7 @@ echo "Overlaying narration audio..."
 if [ "$HAS_MAXWELL_INTRO" = true ]; then
     # Get Maxwell intro duration to offset Darwin's narration
     INTRO_DURATION=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$MAXWELL_INTRO" 2>/dev/null)
-    # Add 3 seconds for the opening title card
-    NARRATION_DELAY=$(echo "$INTRO_DURATION + 3" | bc)
+    NARRATION_DELAY="$INTRO_DURATION"
     echo "  Maxwell intro: ${INTRO_DURATION}s -> narration delay: ${NARRATION_DELAY}s"
 
     ffmpeg -y \
@@ -181,12 +197,11 @@ if [ "$HAS_MAXWELL_INTRO" = true ]; then
         -shortest \
         "$OUTPUT" 2>/dev/null
 else
-    # No Maxwell intro -- narration starts after the opening title card (3s)
+    # No Maxwell intro -- narration starts immediately with showcase hero
     ffmpeg -y \
         -i "$CONCAT_VIDEO" \
         -i "$AUDIO_DIR/full-narration.mp3" \
-        -filter_complex "[1:a]adelay=3s|3s[delayed_audio]" \
-        -map 0:v:0 -map "[delayed_audio]" \
+        -map 0:v:0 -map 1:a:0 \
         -c:v copy \
         -c:a aac -b:a 192k \
         -shortest \

@@ -10,6 +10,7 @@ export function PortfolioCard() {
     sharePrice,
     userDepositTimestamp,
     lockSeconds,
+    userNetDeposited,
   } = useVaultStats();
 
   if (!isConnected) {
@@ -29,7 +30,8 @@ export function PortfolioCard() {
   const valueNum = userShareValue ? parseFloat(userShareValue) : 0;
   const sharePriceNum = sharePrice ? parseFloat(sharePrice) : 1;
 
-  const costBasis = sharesNum * 1.0;
+  const netDeposited = userNetDeposited ? parseFloat(userNetDeposited) : null;
+  const costBasis = netDeposited ?? sharesNum * 1.0;
   const estimatedPnl = valueNum - costBasis;
   const pnlPct = costBasis > 0 ? (estimatedPnl / costBasis) * 100 : 0;
 

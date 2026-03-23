@@ -11,3 +11,4 @@ coverage/
 !src/instinct/data/
 demo-output/
 .claude/worktrees/
+showcase/.next/

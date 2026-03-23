@@ -1449,6 +1449,7 @@ export class DarwinAgent {
       lastEvolution: this.lastEvolutionTime.toISOString(),
       totalPnL: liveMetrics?.totalPnL ?? 0,
       uptime: uptimeSeconds,
+      status: "running",
       recentTrades: recentTrades.slice(0, 20),
       evolutionHistory,
       frontierStrategies,

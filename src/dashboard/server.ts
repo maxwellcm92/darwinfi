@@ -24,6 +24,7 @@ export interface DashboardState {
   lastEvolution: string | null;
   totalPnL: number;
   uptime: number;
+  status?: string;
   recentTrades: Array<{
     timestamp: string;
     strategyId: string;
@@ -91,7 +92,23 @@ let state: DashboardState = {
 };
 
 // Share price history for mini-chart (sampled every 15 min, kept for 7 days)
-let sharePriceHistory: Array<{ timestamp: number; price: number }> = [];
+const HISTORY_FILE = path.resolve(__dirname, '../../../data/share-price-history.json');
+
+function loadSharePriceHistory(): Array<{ timestamp: number; price: number }> {
+  try {
+    const raw = fs.readFileSync(HISTORY_FILE, 'utf-8');
+    return JSON.parse(raw);
+  } catch { return []; }
+}
+
+function saveSharePriceHistory() {
+  try {
+    fs.mkdirSync(path.dirname(HISTORY_FILE), { recursive: true });
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(sharePriceHistory));
+  } catch { /* ignore */ }
+}
+
+let sharePriceHistory = loadSharePriceHistory();
 let sharePriceSamplerInterval: ReturnType<typeof setInterval> | null = null;
 
 // Conversation log entries (populated by the agent)
@@ -276,17 +293,36 @@ export function startDashboard(port: number = 3500): void {
       if (!cc.hasVaultV4()) {
         return res.json({ configured: false, message: "Vault not deployed" });
       }
-      const [managementFeeBps, performanceFeeBps, feeRecipient, highWaterMark] = await Promise.all([
-        cc.vaultV4ManagementFeeBps(),
-        cc.vaultV4PerformanceFeeBps(),
-        cc.vaultV4FeeRecipient(),
-        cc.vaultV4HighWaterMark(),
-      ]);
+      let managementFeeBps: number;
+      let performanceFeeBps: number;
+      let feeRecipient: string;
+      let highWaterMark: string;
+      let fallback = false;
+      try {
+        const [mFee, pFee, recipient, hwm] = await Promise.all([
+          cc.vaultV4ManagementFeeBps(),
+          cc.vaultV4PerformanceFeeBps(),
+          cc.vaultV4FeeRecipient(),
+          cc.vaultV4HighWaterMark(),
+        ]);
+        managementFeeBps = Number(mFee);
+        performanceFeeBps = Number(pFee);
+        feeRecipient = recipient;
+        highWaterMark = ethers.formatUnits(hwm, 6);
+      } catch (onChainErr) {
+        console.warn("[/api/fees] On-chain fee read failed, using fallback values:", onChainErr instanceof Error ? onChainErr.message : String(onChainErr));
+        managementFeeBps = 100;
+        performanceFeeBps = 500;
+        feeRecipient = "0xb2db53Db9a2349186F0214BC3e1bF08a195570e3";
+        highWaterMark = "0.0";
+        fallback = true;
+      }
       res.json({
-        managementFeeBps: Number(managementFeeBps),
-        performanceFeeBps: Number(performanceFeeBps),
+        managementFeeBps,
+        performanceFeeBps,
         feeRecipient,
-        highWaterMark: ethers.formatUnits(highWaterMark, 6),
+        highWaterMark,
+        ...(fallback ? { fallback: true } : {}),
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -510,13 +546,15 @@ export function startDashboard(port: number = 3500): void {
       if (sharePriceHistory.length > 672) {
         sharePriceHistory = sharePriceHistory.slice(-672);
       }
+      saveSharePriceHistory();
     } catch {
       // Silently skip failed samples
     }
   }
 
-  // Initial sample + periodic sampling
+  // Initial sample + burst second sample after 1 min + periodic sampling
   sampleSharePrice();
+  setTimeout(() => sampleSharePrice(), 60_000);
   sharePriceSamplerInterval = setInterval(sampleSharePrice, 15 * 60 * 1000);
 
   app.listen(port, () => {

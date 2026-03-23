@@ -23,15 +23,17 @@ function formatUSD(value: string | null): string {
   });
 }
 
-// Compute aggregate stats from raw API data (field names differ from AgentState type)
+// Compute aggregate stats from raw API data (survives agent restarts)
 function useAgentStats() {
-  const { agentState, strategies } = useDarwinFiAPI();
+  const { agentState, strategies, evolution } = useDarwinFiAPI();
   const raw = agentState as Record<string, unknown> | null;
 
   const totalTrades = strategies.reduce((sum, s) => sum + (s.trades || 0), 0);
 
-  // API returns totalPnL (capital L), not totalPnl
-  const totalPnl = typeof raw?.totalPnL === "number" ? (raw.totalPnL as number) : null;
+  // Sum PNL from all strategies (survives agent restarts, unlike agentState.totalPnL)
+  const totalPnl = strategies.length > 0
+    ? strategies.reduce((sum, s) => sum + (s.pnl || 0), 0)
+    : null;
 
   // Champion = liveStrategy name or best-scoring strategy
   let champion: string | null = null;
@@ -42,6 +44,11 @@ function useAgentStats() {
     if (best.score > 0) champion = best.name;
   }
 
+  // Evolution cycle from evolution history
+  const evolutionCycle = evolution.length > 0
+    ? Math.max(...evolution.map(e => e.cycle))
+    : null;
+
   // Win rate from strategies with trades
   const withTrades = strategies.filter((s) => s.trades > 0);
   const winRate =
@@ -50,7 +57,7 @@ function useAgentStats() {
         withTrades.reduce((sum, s) => sum + s.trades, 0)
       : null;
 
-  return { totalTrades, totalPnl, champion, winRate };
+  return { totalTrades, totalPnl, champion, winRate, evolutionCycle };
 }
 
 function LiveStats({ items }: { items: { label: string; value: string; accent?: boolean; color?: string }[] }) {
@@ -103,9 +110,9 @@ function HeroSection({ children }: { children: React.ReactNode }) {
 export function Home() {
   const { isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
-  const { tvl, sharePrice, userShares, userShareValue } = useVaultStats();
+  const { tvl, sharePrice, userShares, userShareValue, userNetDeposited } = useVaultStats();
   const { agentState, agentLoading, trades, tradesLoading } = useDarwinFiAPI();
-  const { totalTrades, totalPnl, champion, winRate } = useAgentStats();
+  const { totalTrades, totalPnl, champion, winRate, evolutionCycle } = useAgentStats();
 
   const hasPosition = isConnected && userShares != null && parseFloat(userShares) > 0;
 
@@ -176,9 +183,12 @@ export function Home() {
   // STATE 2: Connected, has position (Dashboard)
   if (hasPosition) {
     const sharesNum = userShares ? parseFloat(userShares) : 0;
-    const priceNum = sharePrice ? parseFloat(sharePrice) : 1;
-    const pnlPct = ((priceNum - 1.0) / 1.0) * 100;
-    const isPositive = pnlPct >= 0;
+    const netDeposited = userNetDeposited ? parseFloat(userNetDeposited) : null;
+    const currentValue = userShareValue ? parseFloat(userShareValue) : 0;
+    const personalPnl = netDeposited != null ? currentValue - netDeposited : null;
+    const personalPnlPct = netDeposited != null && netDeposited > 0
+      ? ((currentValue - netDeposited) / netDeposited) * 100 : null;
+    const isPositive = personalPnlPct != null ? personalPnlPct >= 0 : true;
 
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
@@ -191,8 +201,15 @@ export function Home() {
           <span className={`inline-block text-sm font-mono px-3 py-1 rounded-full mb-2 ${
             isPositive ? "bg-darwin-accent/20 text-darwin-accent" : "bg-darwin-danger/20 text-darwin-danger"
           }`}>
-            {isPositive ? "+" : ""}{pnlPct.toFixed(2)}%
+            {personalPnlPct != null
+              ? `${isPositive ? "+" : ""}${personalPnlPct.toFixed(2)}%`
+              : "--"}
           </span>
+          {personalPnl != null && (
+            <p className={`text-sm font-mono mb-1 ${isPositive ? "text-darwin-accent" : "text-darwin-danger"}`}>
+              {personalPnl >= 0 ? "+" : ""}${Math.abs(personalPnl).toFixed(2)}
+            </p>
+          )}
           <p className="text-sm font-mono text-darwin-text-dim">
             {sharesNum.toLocaleString("en-US", { maximumFractionDigits: 6 })} dvUSDC shares
           </p>
@@ -219,7 +236,7 @@ export function Home() {
         ]} />
 
         {/* Agent Activity - visible by default */}
-        <AgentStatus agentState={agentState} loading={agentLoading} />
+        <AgentStatus agentState={agentState} loading={agentLoading} computedPnl={totalPnl} computedChampion={champion} computedCycle={evolutionCycle} />
         <TradesFeed trades={trades} loading={tradesLoading} maxItems={5} />
         <div className="text-center">
           <Link

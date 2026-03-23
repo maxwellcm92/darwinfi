@@ -1,13 +1,23 @@
 #!/usr/bin/env bash
 #
-# DarwinFi Demo Video - Full Build Pipeline
-# Orchestrates: narration -> screen recording -> title cards -> compositing
+# DarwinFi Demo Video - Full Build Pipeline (v2)
+# Orchestrates: narration -> screen recording -> infographic slides -> compositing
+#
+# Generates:
+#   - 8 MP3 files (scenes 1-8, Darwin TTS narration)
+#   - 4 WebM screen recordings (showcase hero, organism, quick scroll+chat, closing)
+#   - 4 slide clips (3 infographics + 1 closing card)
+#   - 1 final composite video
+#
+# Maxwell records separately:
+#   - maxwell-intro.mp4 (20s webcam intro)
+#   - maxwell-dapp.mp4 (40s DApp walkthrough with wallet connected)
 #
 # Usage:
 #   ./build-demo.sh              # Run full pipeline
 #   ./build-demo.sh --skip-tts   # Skip narration (use existing audio)
 #   ./build-demo.sh --skip-record # Skip screen recording (use existing recordings)
-#   ./build-demo.sh --slides-only # Only generate title cards
+#   ./build-demo.sh --slides-only # Only generate infographic slides
 #
 set -euo pipefail
 
@@ -32,7 +42,7 @@ for arg in "$@"; do
 done
 
 echo "============================================"
-echo "  DarwinFi Demo Video - Build Pipeline"
+echo "  DarwinFi Demo Video - Build Pipeline (v2)"
 echo "============================================"
 echo ""
 echo "Output directory: $OUTPUT_DIR"
@@ -74,10 +84,11 @@ fi
 
 echo ""
 
-# --- Step 2: Generate narration ---
+# --- Step 2: Generate narration (8 scene MP3s) ---
 if [ "$SKIP_TTS" = false ] && [ "$SLIDES_ONLY" = false ]; then
     echo "============================================"
     echo "  Step 1/4: Generating Voice Narration"
+    echo "  (8 scenes + full narration)"
     echo "============================================"
     python3 "$SCRIPT_DIR/generate-narration.py"
     echo ""
@@ -86,10 +97,11 @@ else
     echo ""
 fi
 
-# --- Step 3: Record screen ---
+# --- Step 3: Record screen (4 Playwright scenes) ---
 if [ "$SKIP_RECORD" = false ] && [ "$SLIDES_ONLY" = false ]; then
     echo "============================================"
     echo "  Step 2/4: Recording Screen Demos"
+    echo "  (showcase hero, organism, quick scroll+chat, closing)"
     echo "============================================"
     cd "$PROJECT_DIR"
     npx ts-node "$SCRIPT_DIR/record-demo.ts"
@@ -100,9 +112,10 @@ else
     echo ""
 fi
 
-# --- Step 4: Generate title cards ---
+# --- Step 4: Generate infographic slides (3 infographics + closing card) ---
 echo "============================================"
-echo "  Step 3/4: Generating Title Cards"
+echo "  Step 3/4: Generating Infographic Slides"
+echo "  (tournament, evolution, instinct, closing card)"
 echo "============================================"
 python3 "$SCRIPT_DIR/generate-slides.py"
 echo ""

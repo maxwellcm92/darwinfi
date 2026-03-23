@@ -1,3 +1,0 @@
-module.exports=[93695,(a,b,c)=>{b.exports=a.x("next/dist/shared/lib/no-fallback-error.external.js",()=>require("next/dist/shared/lib/no-fallback-error.external.js"))},51985,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(58435);a.n(d("[project]/showcase/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},93634,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(58435);a.n(d("[project]/showcase/node_modules/next/dist/client/components/builtin/global-error.js"))},49526,a=>{"use strict";a.i(51985);var b=a.i(93634);a.n(b)},37113,a=>{a.n(a.i(49526))}];
-
-//# sourceMappingURL=%5Broot-of-the-server%5D__0nn6kjv._.js.map

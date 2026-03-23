@@ -13,9 +13,12 @@ function formatUptime(seconds?: number): string {
 interface AgentStatusProps {
   agentState: AgentState | null;
   loading: boolean;
+  computedPnl?: number | null;
+  computedChampion?: string | null;
+  computedCycle?: number | null;
 }
 
-export function AgentStatus({ agentState, loading }: AgentStatusProps) {
+export function AgentStatus({ agentState, loading, computedPnl, computedChampion, computedCycle }: AgentStatusProps) {
   if (loading && !agentState) {
     return (
       <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6">
@@ -32,7 +35,8 @@ export function AgentStatus({ agentState, loading }: AgentStatusProps) {
     );
   }
 
-  const isOnline = agentState?.status === "running" || agentState?.status === "active";
+  const isOnline = agentState?.status === "running" || agentState?.status === "active"
+    || (agentState?.uptime != null && agentState.uptime > 0);
 
   return (
     <div className="bg-darwin-card/70 backdrop-blur-sm border border-darwin-border/50 rounded-xl p-6 transition-all duration-300 hover:border-darwin-border/80 hover:shadow-lg hover:shadow-black/20">
@@ -67,28 +71,33 @@ export function AgentStatus({ agentState, loading }: AgentStatusProps) {
         <div className="bg-darwin-bg rounded-lg p-4">
           <p className="text-sm font-mono text-darwin-text-dim mb-1">Champion Strategy</p>
           <p className="text-base font-mono text-darwin-accent font-medium truncate">
-            {agentState?.championStrategy ?? "--"}
+            {computedChampion ?? agentState?.championStrategy ?? "--"}
           </p>
         </div>
 
         <div className="bg-darwin-bg rounded-lg p-4">
           <p className="text-sm font-mono text-darwin-text-dim mb-1">Evolution Cycle</p>
           <p className="text-base font-mono text-darwin-purple font-medium text-glow-purple">
-            {agentState?.evolutionCycle ?? "--"}
+            {computedCycle ?? agentState?.evolutionCycle ?? "--"}
           </p>
         </div>
 
         <div className="bg-darwin-bg rounded-lg p-4">
           <p className="text-sm font-mono text-darwin-text-dim mb-1">Total PnL</p>
-          <p
-            className={`text-base font-mono font-medium ${
-              (agentState?.totalPnl ?? 0) >= 0 ? "text-darwin-accent" : "text-darwin-danger"
-            }`}
-          >
-            {agentState?.totalPnl != null
-              ? `${agentState.totalPnl >= 0 ? "+" : ""}$${Math.abs(agentState.totalPnl).toFixed(2)}`
-              : "--"}
-          </p>
+          {(() => {
+            const pnl = computedPnl ?? agentState?.totalPnl;
+            return (
+              <p
+                className={`text-base font-mono font-medium ${
+                  (pnl ?? 0) >= 0 ? "text-darwin-accent" : "text-darwin-danger"
+                }`}
+              >
+                {pnl != null
+                  ? `${pnl >= 0 ? "+" : ""}$${Math.abs(pnl).toFixed(2)}`
+                  : "--"}
+              </p>
+            );
+          })()}
         </div>
       </div>
 

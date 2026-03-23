@@ -1,7 +1,6 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { Navbar } from "./components/Navbar";
 import { Home } from "./pages/Home";
-import { Advanced } from "./pages/Advanced";
 import { FAQ } from "./pages/FAQ";
 import { Results } from "./pages/Results";
 
@@ -12,13 +11,8 @@ export function App() {
       <main className="flex-1 w-full">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/advanced" element={<Advanced />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/results" element={<Results />} />
-          {/* Legacy redirects */}
-          <Route path="/tournament" element={<Navigate to="/advanced?tab=tournament" replace />} />
-          <Route path="/instinct" element={<Navigate to="/advanced?tab=instinct" replace />} />
-          <Route path="/frontier" element={<Navigate to="/advanced?tab=frontier" replace />} />
         </Routes>
       </main>
       {/* Subtle unaudited badge */}

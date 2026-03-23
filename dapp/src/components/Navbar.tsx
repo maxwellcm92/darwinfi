@@ -103,9 +103,6 @@ export function Navbar() {
             <NavLink to="/faq" className={navPillClass}>
               FAQ
             </NavLink>
-            <NavLink to="/advanced" className={navPillClass}>
-              Advanced
-            </NavLink>
           </div>
 
           {/* Desktop Connect Button */}
@@ -149,9 +146,6 @@ export function Navbar() {
           </NavLink>
           <NavLink to="/faq" className={mobileNavClass} onClick={() => setMobileOpen(false)}>
             FAQ
-          </NavLink>
-          <NavLink to="/advanced" className={mobileNavClass} onClick={() => setMobileOpen(false)}>
-            Advanced
           </NavLink>
           <div className="px-4 py-3">
             <GradientWalletButton />

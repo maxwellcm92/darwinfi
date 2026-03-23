@@ -1,10 +1,52 @@
-import { useReadContract, useAccount } from "wagmi";
-import { formatUnits } from "viem";
+import { useState, useEffect } from "react";
+import { useReadContract, useAccount, usePublicClient } from "wagmi";
+import { formatUnits, parseAbiItem } from "viem";
 import { VAULT_ABI, USDC_ABI, VAULT_ADDRESS, USDC_ADDRESS } from "../lib/contracts";
 import { USDC_DECIMALS, SHARE_DECIMALS, SHARE_PRICE_DECIMALS } from "../lib/constants";
 
+const DEPOSIT_EVENT = parseAbiItem(
+  "event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)"
+);
+const WITHDRAW_EVENT = parseAbiItem(
+  "event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)"
+);
+
 export function useVaultStats() {
   const { address } = useAccount();
+  const publicClient = usePublicClient();
+  const [userNetDeposited, setUserNetDeposited] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!address || !publicClient) return;
+
+    async function fetchDepositHistory() {
+      const depositLogs = await publicClient!.getLogs({
+        address: VAULT_ADDRESS,
+        event: DEPOSIT_EVENT,
+        args: { owner: address },
+        fromBlock: 0n,
+      });
+      const totalDeposited = depositLogs.reduce(
+        (sum, log) => sum + (log.args.assets ?? 0n),
+        0n
+      );
+
+      const withdrawLogs = await publicClient!.getLogs({
+        address: VAULT_ADDRESS,
+        event: WITHDRAW_EVENT,
+        args: { owner: address },
+        fromBlock: 0n,
+      });
+      const totalWithdrawn = withdrawLogs.reduce(
+        (sum, log) => sum + (log.args.assets ?? 0n),
+        0n
+      );
+
+      setUserNetDeposited(formatUnits(totalDeposited - totalWithdrawn, USDC_DECIMALS));
+    }
+
+    fetchDepositHistory().catch(() => {});
+  }, [address, publicClient]);
 
   const { data: totalAssets } = useReadContract({
     address: VAULT_ADDRESS,
@@ -162,5 +204,8 @@ export function useVaultStats() {
     feeBps,
     mgmtFeeBps,
     lockSeconds,
+
+    // On-chain PnL
+    userNetDeposited,
   };
 }

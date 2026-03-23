@@ -33,7 +33,6 @@ html {
   background-color: var(--color-darwin-bg);
   color: var(--color-darwin-text);
   scroll-behavior: smooth;
-  scrollbar-gutter: stable;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

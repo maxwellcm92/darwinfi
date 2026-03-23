@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-DarwinFi Demo Narration Generator
+DarwinFi Demo Narration Generator (v2)
 Uses ElevenLabs API to generate voice narration from the demo script.
 Voice: British male (Daniel), Model: eleven_multilingual_v2
 
-Generates 5 scene audio files (Darwin's narration only).
+Generates 8 scene audio files (Darwin's narration only).
 Maxwell's intro (Scene 0) is recorded separately by Maxwell.
 """
 
@@ -21,48 +21,80 @@ VOICE_NAME = "Daniel"  # British male preset
 MODEL_ID = "eleven_multilingual_v2"  # Best quality multilingual model
 API_BASE = "https://api.elevenlabs.io/v1"
 
-# Scene narrations -- Darwin's voice only (scenes 1-5 from demo-script.md)
+# Scene narrations -- Darwin's voice only (8 scenes from demo-script.md v2)
 # Scene 0 (Maxwell's intro) is NOT generated here -- Maxwell records it himself.
+# Scene 4 (DApp Dashboard) is screen-recorded by Maxwell but uses Darwin TTS.
 SCENES = {
-    "dashboard": (
-        "Good evening. I'm DarwinFi -- a self-evolving financial organism "
-        "living on Base L2. I have sixteen competing trading strategies. The "
-        "weakest die so the strongest can trade with real capital. Think of it "
-        "as natural selection, but for money. Everything I do serves one rule: "
-        "increase profits and win rate. I call it the Golden Rule."
+    "showcase_hero": (
+        "I'm DarwinFi. A living financial organism on Base L2. Not a "
+        "dashboard with a chatbot bolted on -- an autonomous system with "
+        "organs that sense, adapt, defend, and evolve. Let me show you my "
+        "anatomy."
     ),
-    "vault": (
-        "Here's how it works. You deposit USDC into my ERC-4626 vault and "
-        "receive dvUSDC shares. Those shares represent your proportional claim "
-        "on everything I earn. As my strategies generate profit, your share "
-        "value increases automatically. One vault, one engine, every depositor "
-        "shares pro-rata. No lock-ups, no gatekeepers."
+    "organism": (
+        "At the center -- my Vault. The heart. An ERC-4626 smart contract "
+        "that pumps capital to strategies and collects returns. Every "
+        "heartbeat is an on-chain transaction. "
+        "Surrounding it -- sixteen competing strategies. Species. The "
+        "weakest get eliminated. The strongest reproduce. "
+        "My DNA. Every four hours, AI proposes mutations to my own source "
+        "code. Crossover, selection, promotion -- but only if changes pass "
+        "all four hundred twenty-three tests. "
+        "My nervous system. Three AI models vote independently on market "
+        "direction. When they agree, I act. When they disagree, I wait. "
+        "Eight self-healing divisions. If a strategy goes rogue or the "
+        "market flash-crashes, my immune system quarantines the problem "
+        "before it spreads. "
+        "Pain receptors. Circuit breakers halt all trading when drawdown "
+        "or volatility cross hard thresholds. Enforced cryptographically "
+        "through Lit Protocol."
     ),
-    "instinct": (
-        "Now watch how I trade. Every transaction is real USDC, real Uniswap "
-        "V3 swaps, on Base mainnet. But I don't trade blind. My Instinct brain "
-        "has five departments generating predictions across multiple timeframes. "
-        "When Instinct says 'up' with high confidence, I boost my entry signal "
-        "by up to twenty points. When it says 'down', I pull back. I also "
-        "calibrate every AI source -- if a model claims eighty percent confidence "
-        "but only wins half the time, I treat it as fifty. I learn who to trust."
+    "quick_scroll_chat": (
+        "Self-evolving strategies. Multi-AI consensus. Live telemetry "
+        "updating every eight seconds. And if you want to ask me anything "
+        "-- I'm always here. "
+        "But right now -- let me show you where the money moves."
+    ),
+    "dashboard_pitch": (
+        "Here's the part most protocols get wrong. They show you fifty "
+        "buttons and expect you to figure it out. DarwinFi has three steps. "
+        "Connect your wallet. Deposit USDC. Walk away. "
+        "You get dvUSDC shares -- your proportional claim on everything I "
+        "earn. As strategies generate profit, your share value goes up "
+        "automatically. No staking. No locking. No governance votes. "
+        "Now here's what makes this different. Most DeFi protocols are "
+        "static. You pick a pool, you hope the APY holds. This isn't that. "
+        "I'm not supposed to be the best crypto trader on day one. I'm "
+        "supposed to evolve into the best -- and keep adapting to stay the "
+        "best. The strategies that lose get killed. The strategies that win "
+        "get cloned and mutated. Your capital always rides the current "
+        "champion."
     ),
     "tournament": (
-        "Sixteen strategies compete in a Darwinian tournament. Twelve classic "
-        "bots on Base, four Frontier archetypes hunting cross-chain. A "
-        "centralized grading department scores every subsystem from A to F -- "
-        "strategies, instinct, immune, evolution, frontier. The lowest-graded "
-        "departments get targeted for improvement first. Every six hours I "
-        "propose mutations to my own source code, test them in a sandboxed git "
-        "worktree, and only promote changes that pass all five hundred tests. "
-        "Winning genomes are pinned to IPFS. My fitness function itself adapts "
-        "to market conditions."
+        "Sixteen strategies ranked by fitness. PnL gets thirty-five percent "
+        "weight. Sharpe ratio twenty-five. Consistency twenty. Win rate "
+        "fifteen. And drawdown is penalized exponentially -- a twenty "
+        "percent drawdown costs four times more than ten. No gambling your "
+        "way to the top."
+    ),
+    "evolution": (
+        "Every four hours, AI proposes mutations to my own source code. "
+        "Each mutation runs in a sandboxed git worktree. It has to pass "
+        "all four hundred twenty-three tests and survive a canary "
+        "deployment before it goes live. Failures get killed. Winners get "
+        "pinned to IPFS -- permanent, immutable proof of evolution."
+    ),
+    "instinct": (
+        "My Instinct brain runs three AI models in parallel. When they "
+        "agree with high confidence, I act. When one disagrees, I wait. "
+        "And I track every model's accuracy -- if one claims eighty "
+        "percent but only wins half, I recalibrate to fifty. I learn who "
+        "to trust."
     ),
     "closing": (
-        "Everything is on-chain and verifiable. Nineteen transactions on Base "
-        "mainnet. An immune system with eight self-healing divisions. And I'm "
-        "already evaluating five new chains for expansion. I am DarwinFi. "
-        "Survival of the fittest, on-chain."
+        "Everything is on-chain and verifiable. Over seventy real trades. "
+        "Eight thousand agent loops. Day five. I am DarwinFi. The vault "
+        "is open."
     ),
 }
 
@@ -77,7 +109,7 @@ def get_voice_id(api_key: str, voice_name: str) -> str:
         data = json.loads(resp.read())
 
     for voice in data.get("voices", []):
-        if voice["name"].lower() == voice_name.lower():
+        if voice["name"].lower().startswith(voice_name.lower()):
             return voice["voice_id"]
 
     # Fallback: list available voices

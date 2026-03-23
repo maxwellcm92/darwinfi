@@ -138,11 +138,11 @@ export const CHAT_FLOWS: Record<string, FlowStep[]> = {
     },
     {
       type: "bot",
-      text: "**Off-chain**: The Darwin Agent orchestrates everything -- 3 tick speeds (1min/5min/15min), strategy management, circuit breakers, and vault integration. Lit Protocol PKP integration is built and ready for Chipotle v3 -- IPFS-hosted policy enforcement for transaction signing.",
+      text: "**Off-chain**: The Darwin Agent orchestrates everything -- 3 tick speeds (1min/5min/15min), strategy management, circuit breakers, and vault integration. Lit Protocol PKP integration is built and ready for Chipotle v3 launch.",
     },
     {
       type: "bot",
-      text: "**Sponsor integrations**: Base (L2), Uniswap (trading), Venice AI (evolution), Lit Protocol (security), Filecoin/IPFS (storage), ENS/Basenames (identity: darwinfi.base.eth), Lido (wstETH trading). Total operational cost: ~$0.40/day.",
+      text: "**Sponsor integrations**: Base (L2), Uniswap (trading), Venice AI (evolution), Lit Protocol (security), IPFS/Storacha (storage), ENS/Basenames (identity: darwinfi.base.eth), Lido (wstETH trading). Total operational cost: ~$0.40/day.",
       cta: { label: "View Source", url: "https://github.com/maxwellcm92/darwinfi" },
     },
   ],

@@ -77,7 +77,7 @@ export default function HomePage() {
           </p>
           <p className="font-mono text-sm text-darwin-text-dim max-w-lg mx-auto mb-10 tracking-wide">
             ERC-4626 Vault &middot; Lit Protocol Integration (Chipotle v3 Ready) &middot; Multi-AI
-            Consensus &middot; Base Mainnet
+            Fallback &middot; Base Mainnet
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -223,8 +223,8 @@ export default function HomePage() {
                   />
                 </svg>
               }
-              title="Multi-AI Architecture"
-              description="Three AI models vote on market direction independently. Consensus drives action. No single point of failure."
+              title="Three-Tier AI Routing"
+              description="Health-checked fallback chain: Claude Haiku for signals, Venice AI for evolution, Ollama for local resilience. Always-on intelligence with zero API dependency."
             />
             <FeatureCard
               accentColor="gold"
@@ -624,7 +624,7 @@ export default function HomePage() {
               {openSections["breakers"] && (
                 <div className="mt-4 pt-4 border-t border-darwin-border/30 text-base text-darwin-text leading-relaxed space-y-4">
                   <p>
-                    Five independent circuit breakers protect the vault:
+                    Four independent circuit breakers protect the vault:
                   </p>
                   <div className="space-y-2">
                     {[
@@ -647,11 +647,6 @@ export default function HomePage() {
                         name: "Volatility Throttle",
                         rule: "Reduces position sizes when VIX-equivalent spikes",
                         color: "text-darwin-gold",
-                      },
-                      {
-                        name: "Heartbeat Monitor",
-                        rule: "Pauses execution if agent goes silent for >5 minutes",
-                        color: "text-darwin-accent",
                       },
                     ].map((breaker) => (
                       <div
@@ -718,8 +713,8 @@ export default function HomePage() {
                         detail: "Whitelist of DEX routers and vault contract only",
                       },
                       {
-                        name: "Signature Quorum",
-                        detail: "2-of-3 Lit nodes must agree to sign",
+                        name: "Signature Policy",
+                        detail: "Lit PKP integration staged for Chipotle v3 launch",
                       },
                     ].map((policy) => (
                       <div
@@ -737,8 +732,8 @@ export default function HomePage() {
                   </div>
                   <p className="text-darwin-text-dim text-sm border-l-2 border-darwin-purple/30 pl-3">
                     Lit Protocol integration is built and ready for Chipotle v3 mainnet.
-                    PKP key management and IPFS-hosted policy enforcement will ensure
-                    the deployer wallet cannot bypass trading constraints.
+                    PKP key management will ensure the deployer wallet cannot bypass
+                    trading constraints.
                   </p>
                 </div>
               )}

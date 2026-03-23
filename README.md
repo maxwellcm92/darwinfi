@@ -77,7 +77,7 @@ The code evolution engine (11 modules, 2,114 LOC) gives DarwinFi the ability to 
 2. **AI Proposal**: Venice AI (Llama 3.3 70B) generates code mutations
 3. **Static Validation**: Ring checks prevent mutations to critical infrastructure
 4. **Sandbox**: Git worktree isolation + TypeScript compilation
-5. **Test Gate**: All 488 tests must pass
+5. **Test Gate**: All 515 tests must pass
 6. **Canary Deploy**: 4-hour minimum monitoring with 60-second health checks
 7. **Promote or Rollback**: If canary degrades performance, automatic git rollback
 
@@ -165,7 +165,7 @@ Full coverage of vault math, fee calculations, multi-user deposits, agent borrow
 
 ## Testing
 
-488 tests across 27+ modules:
+515 tests across 27+ modules:
 
 ```bash
 npm test
@@ -271,7 +271,7 @@ Venice powers `src/agent/venice-engine.ts` (real-time execution signals) and `sr
 
 | Metric | Value |
 |--------|-------|
-| Tests passing | 488 |
+| Tests passing | 515 |
 | Solidity statement coverage | 70% (V4 vault: 91%) |
 | On-chain transactions | 19 (Base mainnet) |
 | Autonomous evolution cycles | 5 (all safety-gated) |

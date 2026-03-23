@@ -32,7 +32,7 @@ import { LiveEngine } from '../trading/live-engine';
 import { computeAllIndicators, PricePoint } from '../trading/indicators';
 import { StatePersistence, PersistedState } from './state-persistence';
 import { ConversationLog } from './conversation-log';
-import { startDashboard, updateDashboardState, updateConversationLog, DashboardState } from '../dashboard/server';
+import { startDashboard, updateDashboardState, updateConversationLog, pushEvent, DashboardState } from '../dashboard/server';
 import { ContractClient } from '../chain/contract-client';
 import { FilecoinStore } from '../integrations/filecoin';
 import { Championship } from './championship';
@@ -302,6 +302,23 @@ export class DarwinAgent {
     this.printStatusReport();
   }
 
+  /**
+   * Auto-demote strategies with chronically low win rates.
+   */
+  private checkStrategyDemotion(): void {
+    const allStrategies = this.strategyManager.getAllStrategies();
+    for (const strategy of allStrategies) {
+      const metrics = this.performanceTracker.getMetrics(strategy.id);
+      if (!metrics || metrics.tradesCompleted < 10) continue;
+      if (metrics.winRate < 0.10 && strategy.status !== 'sell_only') {
+        strategy.status = 'sell_only';
+        this.conversationLog.system('Brain',
+          `Auto-demoted strategy ${strategy.name}: ${(metrics.winRate * 100).toFixed(1)}% win rate over ${metrics.tradesCompleted} trades`);
+        pushEvent('demotion', `${strategy.name} auto-demoted (${(metrics.winRate * 100).toFixed(1)}% win rate)`);
+      }
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Main Loop
   // -------------------------------------------------------------------------
@@ -380,6 +397,9 @@ export class DarwinAgent {
 
     // === EVOLUTION TICK (every ~4h): Venice API evolution cycle ===
     await this.checkEvolutionTrigger();
+
+    // Auto-demote chronic losers
+    this.checkStrategyDemotion();
 
     // Periodic status log (every 10 iterations)
     if (this.loopCount % 10 === 0) {

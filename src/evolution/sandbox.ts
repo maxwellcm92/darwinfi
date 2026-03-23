@@ -168,9 +168,7 @@ export function convertUnifiedToSearchReplace(
           searchLines.push(hunkLine.substring(1));
           replaceLines.push(hunkLine.substring(1));
         } else if (hunkLine === '') {
-          // Empty line in unified diff = empty context line in source
-          searchLines.push('');
-          replaceLines.push('');
+          // Skip bare empty lines (proper context lines start with ' ')
         }
         i++;
       }

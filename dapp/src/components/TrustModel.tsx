@@ -12,7 +12,7 @@ export function TrustModel() {
           </div>
         </div>
         <p className="text-sm font-sans text-darwin-text leading-relaxed flex-1">
-          Audited ERC-4626 vault on Base. On-chain trade limits with 80% max borrow cap.
+          Security-hardened ERC-4626 vault on Base. On-chain trade limits with 80% max borrow cap.
           Lit Protocol signed transactions. 48h timelock on agent changes.
           Emergency withdraw always works.
         </p>

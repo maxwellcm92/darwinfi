@@ -225,6 +225,31 @@ export function startDashboard(port: number = 3500): void {
     }
   });
 
+  // Fee transparency endpoint
+  app.get("/api/fees", async (_req, res) => {
+    try {
+      const cc = new ContractClient();
+      if (!cc.hasVaultV4()) {
+        return res.json({ configured: false, message: "Vault not deployed" });
+      }
+      const [managementFeeBps, performanceFeeBps, feeRecipient, highWaterMark] = await Promise.all([
+        cc.vaultV4ManagementFeeBps(),
+        cc.vaultV4PerformanceFeeBps(),
+        cc.vaultV4FeeRecipient(),
+        cc.vaultV4HighWaterMark(),
+      ]);
+      res.json({
+        managementFeeBps: Number(managementFeeBps),
+        performanceFeeBps: Number(performanceFeeBps),
+        feeRecipient,
+        highWaterMark: ethers.formatUnits(highWaterMark, 6),
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: msg });
+    }
+  });
+
   // User portfolio endpoint
   app.get("/api/portfolio/:address", async (req, res) => {
     try {

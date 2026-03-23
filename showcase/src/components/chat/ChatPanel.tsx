@@ -143,17 +143,23 @@ export function ChatPanel() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1 scroll-smooth">
-          {messages.map((msg, i) => (
-            <ChatMessageBubble
-              key={msg.id}
-              message={msg}
-              isStreaming={
-                isStreaming &&
-                i === messages.length - 1 &&
-                msg.role === "assistant"
-              }
-            />
-          ))}
+          {messages.map((msg, i) => {
+            // Don't render empty assistant bubble while streaming -- ThinkingIndicator handles that
+            if (isStreaming && i === messages.length - 1 && msg.role === "assistant" && msg.content === "") {
+              return null;
+            }
+            return (
+              <ChatMessageBubble
+                key={msg.id}
+                message={msg}
+                isStreaming={
+                  isStreaming &&
+                  i === messages.length - 1 &&
+                  msg.role === "assistant"
+                }
+              />
+            );
+          })}
 
           {/* Evolution thinking indicator */}
           {isStreaming && messages.length > 0 && messages[messages.length - 1].role === "assistant" && messages[messages.length - 1].content === "" && (

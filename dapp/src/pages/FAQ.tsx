@@ -5,7 +5,7 @@ const faqs = [
   },
   {
     q: "How does the AI decide what to trade?",
-    a: "16 strategies run simultaneously, each with different trading logic. A fitness evaluation ranks them by risk-adjusted returns. The champion strategy gets to execute real trades. Every evolution cycle, the weakest strategies are replaced by mutated versions of the strongest ones.",
+    a: "Multiple strategies run simultaneously, each with different trading logic. A fitness evaluation ranks them by risk-adjusted returns. The champion strategy gets to execute real trades. Every evolution cycle, the weakest strategies are replaced by mutated versions of the strongest ones -- the population grows and shrinks as DarwinFi evolves.",
   },
   {
     q: "Is my money safe?",

@@ -23,7 +23,7 @@ const features = [
     title: "Tournament",
     subtitle: "Strategy Leaderboard",
     description:
-      "Watch 16 strategies compete in real time. Ranked by composite fitness score across PnL, Sharpe ratio, win rate, consistency, and drawdown.",
+      "Watch all strategies compete in real time. Ranked by composite fitness score across PnL, Sharpe ratio, win rate, consistency, and drawdown.",
     capabilities: [
       "Live composite score rankings",
       "Strategy PnL + Sharpe ratio per strategy",
@@ -243,6 +243,54 @@ export default function ProductPage() {
                 <h3 className="font-semibold text-darwin-text-bright">ENS Identity</h3>
               </div>
               <p className="font-mono text-base text-darwin-accent">darwinfi.base.eth</p>
+            </div>
+          </div>
+        </AnimatedSection>
+
+        {/* Fee Structure */}
+        <AnimatedSection className="pb-20">
+          <h2 className="font-serif text-3xl md:text-4xl font-bold text-darwin-text-bright text-center mb-4">
+            Fee Structure
+          </h2>
+          <p className="text-darwin-text-dim text-center max-w-lg mx-auto mb-12">
+            Transparent, on-chain, and verifiable. No hidden costs.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="darwin-card">
+              <h3 className="font-semibold text-darwin-text-bright text-lg mb-2">Management Fee</h3>
+              <p className="text-3xl font-mono font-bold text-darwin-accent mb-2">1% <span className="text-base text-darwin-text-dim">/ year</span></p>
+              <p className="text-base text-darwin-text-dim">
+                Accrued continuously based on total vault assets. Collected automatically when the agent returns funds or via manual trigger.
+              </p>
+            </div>
+            <div className="darwin-card">
+              <h3 className="font-semibold text-darwin-text-bright text-lg mb-2">Performance Fee</h3>
+              <p className="text-3xl font-mono font-bold text-darwin-accent mb-2">5% <span className="text-base text-darwin-text-dim">on profits</span></p>
+              <p className="text-base text-darwin-text-dim">
+                Only charged on gains above the high-water mark. You are never charged twice on the same profit.
+              </p>
+            </div>
+            <div className="darwin-card">
+              <h3 className="font-semibold text-darwin-text-bright text-lg mb-2">Deposit / Withdrawal</h3>
+              <p className="text-3xl font-mono font-bold text-darwin-accent mb-2">0%</p>
+              <p className="text-base text-darwin-text-dim">
+                No entry or exit fees. Deposit and withdraw USDC freely (subject to lock time and available liquidity).
+              </p>
+            </div>
+            <div className="darwin-card">
+              <h3 className="font-semibold text-darwin-text-bright text-lg mb-2">On-Chain Verification</h3>
+              <p className="text-base text-darwin-text-dim mb-3">
+                All fee parameters are stored in the smart contract and can be verified by anyone. Fee changes require a 48-hour timelock.
+              </p>
+              <a
+                href={`https://basescan.org/address/${VAULT_ADDRESS}#readContract`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-darwin-accent hover:text-darwin-accent-dim transition-colors"
+              >
+                {"Verify on BaseScan ->"}
+              </a>
             </div>
           </div>
         </AnimatedSection>

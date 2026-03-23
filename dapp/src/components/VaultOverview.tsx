@@ -59,6 +59,7 @@ export function VaultOverview() {
     maxCapacity,
     paused,
     feeBps,
+    mgmtFeeBps,
   } = useVaultStats();
 
   const isLoading = tvl == null && sharePrice == null;
@@ -176,10 +177,19 @@ export function VaultOverview() {
             }}
           />
         </div>
-        {feeBps != null && (
-          <p className="text-sm font-mono text-darwin-text-dim mt-2">
-            Performance Fee: {(feeBps / 100).toFixed(1)}%
-          </p>
+        {(mgmtFeeBps != null || feeBps != null) && (
+          <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2">
+            {mgmtFeeBps != null && (
+              <p className="text-sm font-mono text-darwin-text-dim">
+                Management Fee: {(mgmtFeeBps / 100).toFixed(1)}% / yr
+              </p>
+            )}
+            {feeBps != null && (
+              <p className="text-sm font-mono text-darwin-text-dim">
+                Performance Fee: {(feeBps / 100).toFixed(1)}%
+              </p>
+            )}
+          </div>
         )}
       </div>
     </div>

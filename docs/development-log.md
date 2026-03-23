@@ -1,9 +1,9 @@
 # DarwinFi Development Log
 
 > Built with [Claude Code](https://claude.com/claude-code) (`claude-opus-4-6`) as the agent harness.
-> Sessions: March 18-22, 2026. Total: 224+ source files, ~45,600+ lines of code, 509+ tests passing.
+> Sessions: March 18-22, 2026. Total: 224+ source files, ~46,300+ lines of code, 515+ tests passing.
 > Judge assessment scores: R1 5.8 -> R2 6.8 -> R3 7.7 -> R4 8.0 -> R5 8.3 -> R6 8.4
-> Final sessions: Wave Swarm polish (7 agents) + "Make the Narrative True" (10 agents).
+> Final sessions: Wave Swarm polish (7 agents) + "Make the Narrative True" (10 agents) + Organ Autopsy R1 (3 agents).
 
 ---
 
@@ -929,9 +929,10 @@ R3: 7.7/10  (+0.9 -- security audit closed, VaultV3, self-evolution engine)
 R4: 8.0/10  (+0.3 -- all 6 security findings closed, 488 tests, integration suite)
 R5: 8.3/10  (+0.3 -- Storacha active, USDC funded, evolution proof, documentation)
 R6: 8.4/10  (+0.1 -- final polish, comprehensive docs, full sponsor integration)
+Organ Autopsy R1: 3.3/10 autonomy (internal stress test -- 4 P0 subsystem failures found and fixed)
 ```
 
-Each round's improvements were driven by Wave Sprints -- parallel agent execution via git worktrees, zero merge conflicts, 10 min wall clock time per wave. Session 41 ran the largest Wave Swarm (10 agents, 3 waves) to fix 5 broken claims identified in the demo narrative.
+Each round's improvements were driven by Wave Sprints -- parallel agent execution via git worktrees, zero merge conflicts, 10 min wall clock time per wave. Session 41 ran the largest Wave Swarm (10 agents, 3 waves) to fix 5 broken claims identified in the demo narrative. Session 43 ran an "Organ Autopsy" -- a deeper stress test of all autonomous subsystems -- and fixed 4 critical failures in evolution, immune, instinct, and self-healing.
 
 ### Session 42: Frontier State Bridge (March 22, post-submission)
 
@@ -946,6 +947,34 @@ Closed the last major operational gap: the 4 frontier strategies (Team 4) were i
 
 **Result:** Dashboard API now returns all 16 strategies (12 main + 4 frontier). Championship shows all 4 teams. The 16-strategy Darwinian tournament architecture described throughout this log is now fully operational end-to-end.
 
+### Session 43: Organ Autopsy R1 -- 4 P0 Self-Healing Fixes (March 22)
+
+Internal organ assessment scored DarwinFi's autonomous subsystems at **3.3/10 with 15% autonomy**. Four critical failures were identified and fixed in a single Wave Sprint (3 parallel worktree agents, zero file conflicts):
+
+**P0-1: Evolution 100% rejection rate (FIXED)**
+- Root cause: `convertUnifiedToSearchReplace()` had 3 bugs -- empty lines treated as context (bloating SEARCH blocks), no per-file path tracking (blocks from file A applied to file B), and corrupt fallback to `git apply` on SEARCH/REPLACE text
+- Fix: Rewrote converter to return `Map<filePath, SearchReplaceBlock[]>`, skip empty lines, track `+++ b/` headers. Updated `createSandbox()` to apply each file's blocks only to that file. Added `// File:` annotations for round-trip serialization
+- Files: `src/evolution/sandbox.ts`, `src/evolution/proposal.ts`
+
+**P0-2: Platelet healing 1.7% success rate (FIXED)**
+- Root cause: `stateRebuild()` required a `.tmp` backup that was never created. PM2 verify delay (10s) too short for process startup
+- Fix: Enhanced `stateRebuild()` with 3 paths: .tmp backup (existing), missing state file (write skeleton), corrupt state (overwrite with skeleton). Added `verifyDelayMs` per-fix override on `FixRegistryEntry` -- PM2 fixes get 20s, state rebuild gets 5s
+- Files: `src/immune/platelets/safe-fixes.ts`, `src/immune/types.ts`, `src/immune/platelets/fix-engine.ts`, `src/immune/config.ts`
+
+**P0-3: Instinct wrong optimization target (FIXED)**
+- Root cause: Cortex weight optimizer ranked sources by `predictiveScore` (prediction accuracy) instead of realized trade P&L. `agent-state.json` had per-strategy `totalPnL` and full `tradeHistory[]` but this data was never fed to the Cortex
+- Fix: Added `readAgentPerformance()`, `buildPnlStrategyRanking()`, and `buildPnlSourceRanking()` helpers. Cortex now ranks by realized P&L from agent-state.json, with cold-start fallback to prediction accuracy. Weight history logs include "P&L-ranked" in reason field
+- Files: `src/instinct/instinct-agent.ts`, `src/instinct/cortex/weight-optimizer.ts`
+
+**P0-4: Thymus 0% auto-remediation (FIXED)**
+- Root cause: `fix-registry.ts` manual loop overwrote the `antibody.test_runner` safe fix (hardhat cache clear) with `async () => false`. All 11 manual checks were hardcoded to fail
+- Fix: Removed `antibody.test_runner` from manual list. Added 4 real auto-fix functions: `mathRecompute()` (recomputes totalPnL/winRate from tradeHistory), `stateInvariantRepair()` (prunes stale trades, adds missing performance entries), `integrationRestart()` (restarts non-immune PM2 processes), `dashboardRestart()` (restarts main darwinfi process). Reduced manual checks from 11 to 6 (only genuinely human-judgment items remain)
+- Files: `src/immune/platelets/fix-registry.ts`, `src/immune/platelets/safe-fixes.ts`, `src/immune/config.ts`
+
+**Execution method:** Wave Sprint with 3 parallel Claude Code agents in isolated git worktrees. Zero file overlaps between worktrees, fast-forward merge. 515 tests passing (up from 509), zero new type errors.
+
+**Result:** 11 files changed, +686/-89 lines. All 4 PM2 processes restarted and online. The organism's self-healing and self-improvement loops are now functional -- evolution can parse and apply mutations, the immune system can actually fix problems it detects, the Cortex optimizes for profit not accuracy, and the Thymus has real remediation actions instead of no-ops.
+
 ---
 
-*This development log covers 42 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~5 days.*
+*This development log covers 43 sessions building a fully autonomous trading organism, generated from Claude Code session transcripts and git history. DarwinFi operates with full autonomy -- adding or removing teams, adjusting strategies, evolving its own code, and scaling compute -- all governed by the Golden Rule: increase profits and win rate. Agent harness: Claude Code (claude-opus-4-6). Total build time: ~5 days.*

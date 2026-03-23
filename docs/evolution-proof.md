@@ -155,9 +155,28 @@ The root cause of all 5 cycle failures was identified and fixed in Session 41 ("
 
 The evolution engine can now successfully parse Venice AI's output and apply mutations. Future cycles should progress past the sandbox stage.
 
+## Session 43 Fix: Per-File Block Tracking (Organ Autopsy R1)
+
+The Session 41 auto-converter had 3 remaining bugs discovered during the Organ Autopsy (internal stress test of all autonomous subsystems):
+
+1. **Empty lines treated as context**: `line === ''` was treated as a context line and added to both SEARCH and REPLACE blocks. In real unified diffs, truly empty lines within hunks may not have a leading space. This bloated SEARCH blocks with phantom lines that don't exist in the source file.
+
+2. **No per-file tracking**: The converter ignored `--- a/file` / `+++ b/file` headers and produced a flat list of blocks. When `createSandbox()` applied ALL blocks to EACH target file, blocks intended for file A got applied to file B, causing "SEARCH block not found" errors.
+
+3. **Cross-file misapplication in createSandbox()**: Even with correct blocks, the sandbox iterated over `proposal.targetFiles` and applied every block to every file -- a guaranteed failure for multi-file proposals.
+
+**Fix (Session 43):**
+- `convertUnifiedToSearchReplace()` now returns `Map<filePath, SearchReplaceBlock[]>` instead of a flat string
+- Tracks `+++ b/` headers to associate each hunk with its target file
+- Empty lines are skipped (only space-prefixed lines are context)
+- `createSandbox()` uses `// File:` annotations to apply each file's blocks only to that file
+- `proposal.ts` serializes the Map with `// File:` comments for round-trip fidelity
+
+**Additional tests added:** 4 new evolution smoke tests + 4 new diff converter integration tests covering multi-file diffs, per-file tracking, and empty line handling. Total: 515+ tests passing.
+
 ## What This Proves
 
-DarwinFi's evolution engine is not a mockup. It runs autonomously on a 6-hour cycle, selects mutation targets, queries Venice AI for code proposals, validates them through a multi-stage safety pipeline, and rejects unsafe mutations before they can affect production. The 5 cycles documented here are the first generation of DarwinFi's evolutionary lineage. With the Session 41 diff converter fix, future cycles will produce successful mutations, and those winning genomes will be pinned to IPFS via Storacha for immutable proof of Darwinian evolution.
+DarwinFi's evolution engine is not a mockup. It runs autonomously on a 6-hour cycle, selects mutation targets, queries Venice AI for code proposals, validates them through a multi-stage safety pipeline, and rejects unsafe mutations before they can affect production. The 5 cycles documented here are the first generation of DarwinFi's evolutionary lineage. With the Session 41 diff converter and Session 43 per-file block tracking fixes, the evolution pipeline is fully operational -- proposals can target multiple files without cross-contamination, and winning genomes will be pinned to IPFS via Storacha for immutable proof of Darwinian evolution.
 
 ## Evolution Pipeline Architecture
 
@@ -172,7 +191,7 @@ Static Validation (ring checks, forbidden patterns, size limits)
        |
 Sandbox (git worktree + SEARCH/REPLACE apply + TypeScript compilation)
        |
-Test Gate (all 509+ tests must pass)
+Test Gate (all 515+ tests must pass)
        |
 Canary Deploy (4-hour monitoring, 60-second health checks)
        |

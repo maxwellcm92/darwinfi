@@ -188,7 +188,7 @@ export function Home() {
 
               {/* Sub-text */}
               <p className="font-sans text-lg md:text-xl text-darwin-text max-w-2xl mx-auto mb-10 leading-relaxed">
-                16 strategies compete. AI mutates the winners. You collect the yield.
+                Strategies compete. AI mutates the winners. You collect the yield.
               </p>
 
               {/* Connect CTA */}

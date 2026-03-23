@@ -74,7 +74,7 @@ export function ChatMessageBubble({ message, isStreaming }: ChatMessageProps) {
       >
         <span className="whitespace-pre-wrap break-words">
           {formatContent(message.content)}
-          {isStreaming && (
+          {isStreaming && message.content.length > 0 && (
             <span className="inline-block w-0.5 h-4 ml-0.5 bg-darwin-accent align-middle animate-pulse" />
           )}
         </span>

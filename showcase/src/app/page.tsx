@@ -8,9 +8,8 @@ import { FeatureCard } from "@/components/FeatureCard";
 import { StatCounter } from "@/components/StatCounter";
 import { SponsorBar } from "@/components/SponsorBar";
 import { OrganismDiagram } from "@/components/OrganismDiagram";
-import { usePollAPI } from "@/hooks/usePollAPI";
+import { useAgentState } from "@/hooks/useAgentState";
 import { DAPP_URL, VAULT_ADDRESS } from "@/lib/constants";
-import type { AgentState } from "@/lib/api";
 
 /* ── Chevron icon for expandable sections ── */
 function ChevronIcon({ open }: { open: boolean }) {
@@ -35,7 +34,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 
 
 export default function HomePage() {
-  const { data: state, loading } = usePollAPI<AgentState>("/api/state", 8000);
+  const { data: state, loading } = useAgentState(8000);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
   const toggle = (key: string) =>

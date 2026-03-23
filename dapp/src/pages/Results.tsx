@@ -107,7 +107,7 @@ function TradesFeed({ trades, loading }: { trades: any[]; loading: boolean }) {
 }
 
 function Leaderboard({ strategies, loading }: { strategies: any[]; loading: boolean }) {
-  const sorted = strategies ? [...strategies].sort((a, b) => b.score - a.score).slice(0, 16) : [];
+  const sorted = strategies ? [...strategies].sort((a, b) => b.score - a.score) : [];
   const champion = sorted.length > 0 ? sorted[0].name : null;
 
   return (

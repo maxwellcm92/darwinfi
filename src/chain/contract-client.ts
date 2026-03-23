@@ -207,6 +207,9 @@ const DARWIN_VAULT_V4_ABI: InterfaceAbi = [
   'function lastFeeCollection() external view returns (uint256)',
   'function collectManagementFee() external',
   'function setManagementFeeBps(uint256 _bps) external',
+  'function performanceFeeBps() external view returns (uint256)',
+  'function feeRecipient() external view returns (address)',
+  'function highWaterMark() external view returns (uint256)',
   // V4-specific functions
   'function maxBorrowRatioBps() external view returns (uint256)',
   'function maxBorrowDuration() external view returns (uint256)',
@@ -726,6 +729,18 @@ export class ContractClient {
 
   async vaultV4ManagementFeeBps(): Promise<bigint> {
     return this.darwinVaultV4.managementFeeBps();
+  }
+
+  async vaultV4PerformanceFeeBps(): Promise<bigint> {
+    return this.darwinVaultV4.performanceFeeBps();
+  }
+
+  async vaultV4FeeRecipient(): Promise<string> {
+    return this.darwinVaultV4.feeRecipient();
+  }
+
+  async vaultV4HighWaterMark(): Promise<bigint> {
+    return this.darwinVaultV4.highWaterMark();
   }
 
   async vaultV4LastFeeCollection(): Promise<bigint> {

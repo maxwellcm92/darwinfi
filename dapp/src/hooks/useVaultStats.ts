@@ -62,6 +62,13 @@ export function useVaultStats() {
     query: { refetchInterval: 60_000 },
   });
 
+  const { data: managementFeeBps } = useReadContract({
+    address: VAULT_ADDRESS,
+    abi: VAULT_ABI,
+    functionName: "managementFeeBps",
+    query: { refetchInterval: 60_000 },
+  });
+
   const { data: minLockTime } = useReadContract({
     address: VAULT_ADDRESS,
     abi: VAULT_ABI,
@@ -113,6 +120,7 @@ export function useVaultStats() {
   const userShares = userShareBalance != null ? formatUnits(userShareBalance, USDC_DECIMALS) : null;
   const userUsdc = userUsdcBalance != null ? formatUnits(userUsdcBalance, USDC_DECIMALS) : null;
   const feeBps = performanceFeeBps != null ? Number(performanceFeeBps) : null;
+  const mgmtFeeBps = managementFeeBps != null ? Number(managementFeeBps) : null;
   const lockSeconds = minLockTime != null ? Number(minLockTime) : null;
 
   // Compute user's share value in USDC
@@ -150,6 +158,7 @@ export function useVaultStats() {
     // Config
     paused: paused ?? false,
     feeBps,
+    mgmtFeeBps,
     lockSeconds,
   };
 }

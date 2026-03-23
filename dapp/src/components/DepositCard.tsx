@@ -98,6 +98,11 @@ export function DepositCard() {
         </div>
       </div>
 
+      {/* Fee disclosure */}
+      <p className="text-xs font-mono text-darwin-text-dim mb-4">
+        Fees: 1% annual management + 5% performance (on profits only). No deposit/withdrawal fees.
+      </p>
+
       {/* Action Button */}
       {!isConnected ? (
         <div className="text-center py-3 text-darwin-text-dim text-base font-mono">

@@ -24,9 +24,9 @@ export function Header() {
           : "bg-transparent"
       }`}
     >
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between py-2">
         <Link href="/" className="flex items-center gap-2 group">
-          <img src="/darwinfi-logo.png" alt="" className="w-auto h-9 mt-0.5 rounded-lg transition-transform duration-200 group-hover:scale-105" />
+          <img src="/darwinfi-logo.png" alt="" className="w-auto h-8 rounded-lg transition-transform duration-200 group-hover:scale-105" />
           <span className="font-bold text-darwin-accent tracking-tight">
             DarwinFi
           </span>

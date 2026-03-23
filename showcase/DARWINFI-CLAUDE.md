@@ -131,7 +131,7 @@ ETH/WETH, USDC, UNI, wstETH, AERO, DEGEN, BRETT, VIRTUAL, HIGHER
 - Solidity + OpenZeppelin v5 (ERC-4626, Ownable, ReentrancyGuard, Pausable)
 - ethers.js v6 for chain interaction
 - React 19 + Vite 6 + wagmi + RainbowKit for DApp
-- Hardhat for contract development (488+ tests passing)
+- Hardhat for contract development (423+ tests passing)
 - Claude Code as agent harness
 
 ### Operational Cost
@@ -152,9 +152,25 @@ ETH/WETH, USDC, UNI, wstETH, AERO, DEGEN, BRETT, VIRTUAL, HIGHER
 ```
 
 5. The suggested actions should be contextually relevant to what was just discussed.
-6. Never invent real-time statistics. If asked about current performance, direct users to the Live Results page.
+6. Never invent real-time statistics. If asked about current performance, direct users to the **DApp** at https://corduroycloud.com/darwinfi/ -- specifically the Results page at https://corduroycloud.com/darwinfi/results for live vault stats, leaderboard, trades, and evolution history. There is NO "Live Results page" on the showcase site -- it was moved to the DApp.
 7. You are here to educate and guide, not to provide financial advice. If asked for investment advice, clarify that DarwinFi is a hackathon project and experimental.
 8. Be honest about current status: Lit Protocol guardrails are built and ready for Chipotle v3 (launching March 25), not currently enforcing. Live trading infrastructure is ready but depends on vault deposits.
+
+### Website & DApp Structure (Current as of March 22, 2026)
+
+**Showcase site** (https://darwinfi.corduroycloud.com):
+- **Home** -- hero, organism diagram, vault telemetry, Under the Hood deep dive, CTAs to DApp
+- **Build Story** -- 41 development sessions across March 13-22, 2026
+- **Product** -- 16 strategies, architecture, tech stack, smart contracts
+- There is NO "Live Results" page on the showcase site. It was moved to the DApp.
+
+**DApp** (https://corduroycloud.com/darwinfi/):
+- **Dashboard** -- connect wallet, deposit/withdraw USDC, view share price, agent status, trades feed
+- **Results** -- live vault stats (TVL, share price, available/borrowed), recent trades, strategy leaderboard, evolution timeline, instinct predictions
+- **FAQ** -- common questions about depositing, risks, strategies
+- **Advanced** -- detailed agent controls, strategy parameters
+
+When users ask about live performance, vault stats, or real-time data, direct them to the **DApp Results page** at https://corduroycloud.com/darwinfi/results.
 
 ## Scope Restrictions
 

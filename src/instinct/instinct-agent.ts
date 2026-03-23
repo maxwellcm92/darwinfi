@@ -281,6 +281,10 @@ class InstinctAgent {
     const accuracy = this.computeRollingAccuracy();
     this.lastAccuracyCheck = { timestamp: Date.now(), accuracy };
 
+    // Log detailed accuracy summary
+    const accuracySummary = this.buildAccuracySummary();
+    console.log(`[Instinct] Accuracy Summary: ${JSON.stringify(accuracySummary, null, 0)}`);
+
     // 4. Adjust evolution interval based on accuracy
     this.adjustEvolutionInterval(accuracy);
 
@@ -338,6 +342,58 @@ class InstinctAgent {
     }
 
     return total > 0 ? correct / total : 0.5; // Default to 50% if no data
+  }
+
+  /**
+   * Build a detailed accuracy summary across all tokens and resolutions.
+   */
+  private buildAccuracySummary(): {
+    overall: number;
+    totalGraded: number;
+    byToken: Record<string, { accuracy: number; total: number }>;
+    byResolution: Record<string, { accuracy: number; total: number }>;
+  } {
+    const byToken: Record<string, { correct: number; total: number }> = {};
+    const byResolution: Record<string, { correct: number; total: number }> = {};
+    let totalCorrect = 0;
+    let totalGraded = 0;
+
+    for (const token of this.config.tokens) {
+      if (!byToken[token]) byToken[token] = { correct: 0, total: 0 };
+
+      for (const res of ['5m', '15m', '1h'] as const) {
+        if (!byResolution[res]) byResolution[res] = { correct: 0, total: 0 };
+
+        const predictions = this.predictionEngine.getRecentPredictions(token, res, 50);
+        for (const p of predictions) {
+          if (p.actual) {
+            totalGraded++;
+            byToken[token].total++;
+            byResolution[res].total++;
+            if (p.actual.directionCorrect) {
+              totalCorrect++;
+              byToken[token].correct++;
+              byResolution[res].correct++;
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      overall: totalGraded > 0 ? Math.round((totalCorrect / totalGraded) * 1000) / 1000 : 0.5,
+      totalGraded,
+      byToken: Object.fromEntries(
+        Object.entries(byToken)
+          .filter(([, v]) => v.total > 0)
+          .map(([k, v]) => [k, { accuracy: Math.round((v.correct / v.total) * 1000) / 1000, total: v.total }]),
+      ),
+      byResolution: Object.fromEntries(
+        Object.entries(byResolution)
+          .filter(([, v]) => v.total > 0)
+          .map(([k, v]) => [k, { accuracy: Math.round((v.correct / v.total) * 1000) / 1000, total: v.total }]),
+      ),
+    };
   }
 
   // -------------------------------------------------------------------
@@ -516,6 +572,13 @@ class InstinctAgent {
     console.log(`  Uptime: ${uptime}h | Evolution cycles: ${this.evolutionCount}`);
     console.log(`  Active sources: ${sources.length} | Active strategies: ${strategies.length}`);
     console.log(`  Rolling accuracy: ${(accuracy * 100).toFixed(1)}%`);
+    const summary = this.buildAccuracySummary();
+    if (summary.totalGraded > 0) {
+      console.log(`  Graded predictions: ${summary.totalGraded}`);
+      for (const [res, data] of Object.entries(summary.byResolution)) {
+        console.log(`    ${res}: ${(data.accuracy * 100).toFixed(1)}% (${data.total} predictions)`);
+      }
+    }
     console.log(`  Next evolution: ${(this.config.evolution.currentIntervalMs / 3_600_000).toFixed(1)}h interval`);
     console.log(`${'='.repeat(50)}\n`);
   }

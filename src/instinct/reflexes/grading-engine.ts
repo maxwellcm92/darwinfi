@@ -63,6 +63,56 @@ export class GradingEngine {
   }
 
   /**
+   * Get an accuracy summary across all tokens and timeframes.
+   * Reads from graded predictions in the prediction engine.
+   */
+  getAccuracySummary(predictions: Prediction[]): {
+    totalPredictions: number;
+    graded: number;
+    correct: number;
+    accuracy: number;
+    byToken: Record<string, { correct: number; total: number; accuracy: number }>;
+    byTimeframe: Record<string, { correct: number; total: number; accuracy: number }>;
+  } {
+    const graded = predictions.filter(p => p.actual);
+    const correct = graded.filter(p => p.actual!.directionCorrect).length;
+
+    const byToken: Record<string, { correct: number; total: number; accuracy: number }> = {};
+    const byTimeframe: Record<string, { correct: number; total: number; accuracy: number }> = {};
+
+    for (const p of graded) {
+      // By token
+      const token = p.token || 'unknown';
+      if (!byToken[token]) byToken[token] = { correct: 0, total: 0, accuracy: 0 };
+      byToken[token].total++;
+      if (p.actual!.directionCorrect) byToken[token].correct++;
+
+      // By timeframe/resolution
+      const tf = p.resolution || 'unknown';
+      if (!byTimeframe[tf]) byTimeframe[tf] = { correct: 0, total: 0, accuracy: 0 };
+      byTimeframe[tf].total++;
+      if (p.actual!.directionCorrect) byTimeframe[tf].correct++;
+    }
+
+    // Compute accuracy ratios
+    for (const entry of Object.values(byToken)) {
+      entry.accuracy = entry.total > 0 ? entry.correct / entry.total : 0;
+    }
+    for (const entry of Object.values(byTimeframe)) {
+      entry.accuracy = entry.total > 0 ? entry.correct / entry.total : 0;
+    }
+
+    return {
+      totalPredictions: predictions.length,
+      graded: graded.length,
+      correct,
+      accuracy: graded.length > 0 ? correct / graded.length : 0,
+      byToken,
+      byTimeframe,
+    };
+  }
+
+  /**
    * Compute aggregate accuracy stats for a set of graded predictions.
    */
   static computeStats(predictions: Prediction[]): {

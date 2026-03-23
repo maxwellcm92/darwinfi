@@ -10,7 +10,7 @@ import * as crypto from 'crypto';
 import { EvolutionProposal, AntiLoopEntry } from './types';
 import { PROJECT_ROOT, loadEvolutionConfig } from './config';
 import { getFailedProposals, loadMemory } from './memory';
-import { convertUnifiedToSearchReplace, fileBlockMapToString } from './sandbox';
+import { convertUnifiedToSearchReplace, fileBlockMapToString, parseSearchReplaceBlocks, parsePerFileBlocks } from './sandbox';
 import { GradingDepartment } from '../agent/grading-department';
 
 export interface ProposalContext {
@@ -257,6 +257,16 @@ export async function generateProposal(
         return null;
       }
     }
+
+    // Validate that the diff contains parseable SEARCH/REPLACE blocks
+    const testBlocks = parseSearchReplaceBlocks(parsed.diff);
+    const testPerFile = parsePerFileBlocks(parsed.diff);
+    if (testBlocks.length === 0 && (!testPerFile || testPerFile.size === 0)) {
+      console.error('[Evolution] AI generated diff with no parseable SEARCH/REPLACE blocks');
+      console.error('[Evolution] Diff preview (first 300 chars):', parsed.diff.substring(0, 300));
+      return null;
+    }
+    console.log(`[Evolution] Diff validated: ${testBlocks.length} flat blocks, ${testPerFile?.size ?? 0} per-file groups`);
 
     const diffHash = crypto.createHash('sha256').update(parsed.diff).digest('hex');
     const stats = parseDiffStats(parsed.diff);

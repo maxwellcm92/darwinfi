@@ -345,6 +345,11 @@ async function runEvolutionCycle(): Promise<void> {
   }
 
   // 7. Sandbox (git worktree + tsc)
+  // Log diff format for debugging
+  const diffPreview = proposal.diff.substring(0, 200);
+  const hasSearchReplace = proposal.diff.includes('<<<<<<< SEARCH');
+  const hasUnifiedDiff = proposal.diff.includes('--- a/') || proposal.diff.includes('+++ b/');
+  console.log(`${LOG_PREFIX} Diff format: ${hasSearchReplace ? 'SEARCH/REPLACE' : hasUnifiedDiff ? 'unified' : 'unknown'} (${proposal.diff.length} chars)`);
   console.log(`${LOG_PREFIX} Creating sandbox for ${proposal.id.slice(0, 8)}...`);
   proposal.status = 'sandboxing';
   const sandboxResult = await createSandbox(proposal);
